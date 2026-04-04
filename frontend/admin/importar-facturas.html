@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Compras Proveedores | Giorda Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #000; color: #fff; }
+        .sidebar-link { display:flex; align-items:center; gap:10px; padding:10px 16px; border-radius:8px; color:#9ca3af; font-size:14px; font-weight:500; transition:all .2s; cursor:pointer; text-decoration:none; }
+        .sidebar-link:hover { background:#1a1a1a; color:#fff; }
+        .sidebar-link.active { background:#1a1a1a; color:#fff; border-left:3px solid #dc2626; padding-left:13px; }
+        .custom-scrollbar::-webkit-scrollbar { width:4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background:transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background:#333; border-radius:2px; }
+        .glass-header { background:rgba(5,5,5,0.95); backdrop-filter:blur(20px); border-bottom:1px solid #1f1f22; }
+        .tab-btn { padding:10px 20px; border-radius:8px; font-weight:600; font-size:14px; transition:all .2s; cursor:pointer; }
+        .tab-btn.active { background:#dc2626; color:#fff; }
+        .tab-btn:not(.active) { background:#18181b; color:#9ca3af; border:1px solid #27272a; }
+        .tab-btn:not(.active):hover { background:#27272a; color:#fff; }
+        .input-dark { background:#09090b; border:1px solid #27272a; color:#fff; padding:8px 12px; border-radius:8px; font-size:14px; width:100%; outline:none; transition:border .2s; }
+        .input-dark:focus { border-color:#dc2626; }
+        .input-dark::placeholder { color:#555; }
+        select.input-dark { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23666' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 8px center; background-size:20px; padding-right:32px; }
+    </style>
+</head>
+<body class="bg-black text-white flex h-screen overflow-hidden">
+
+<!-- SIDEBAR -->
+<aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-50 w-64 bg-[#050505] border-r border-[#1f1f22] flex flex-col flex-shrink-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl">
+    <div class="h-16 flex items-center px-5 border-b border-[#1f1f22] flex-shrink-0">
+        <span class="text-xl font-black text-white tracking-tight">Giorda<span class="text-red-600">OS</span></span>
+        <button onclick="document.getElementById('sidebar').classList.add('-translate-x-full')" class="ml-auto md:hidden text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+    </div>
+    <nav class="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+        <a href="pedidos-demo.html" class="sidebar-link"><i class="fas fa-tachometer-alt w-5 text-center text-blue-400"></i> Tablero General</a>
+        <a href="pos-mostrador.html" class="sidebar-link"><i class="fas fa-cash-register w-5 text-center text-green-400"></i> POS Mostrador</a>
+        <a href="catalogo-servicios.html" class="sidebar-link"><i class="fas fa-tools w-5 text-center text-yellow-400"></i> Servicios & MO</a>
+        <a href="stock-gestion.html" class="sidebar-link"><i class="fas fa-boxes w-5 text-center text-purple-400"></i> Stock Gestión</a>
+        <a href="importar-facturas.html" class="sidebar-link active"><i class="fas fa-file-invoice-dollar w-5 text-center text-orange-400"></i> Compras (Prov.)</a>
+        <a href="finanzas-dashboard.html" class="sidebar-link"><i class="fas fa-chart-line w-5 text-center text-emerald-400"></i> Finanzas & Caja</a>
+        <a href="cuenta-corriente.html" class="sidebar-link"><i class="fas fa-users w-5 text-center text-cyan-400"></i> Cuentas Corrientes</a>
+        <a href="sueldos.html" class="sidebar-link"><i class="fas fa-id-card w-5 text-center text-pink-400"></i> Sueldos</a>
+        <a href="coeficientes-tarjetas.html" class="sidebar-link"><i class="fas fa-credit-card w-5 text-center text-pink-400"></i> Planes Tarjetas</a>
+        <a href="taller-control.html" class="sidebar-link"><i class="fas fa-wrench w-5 text-center text-red-400"></i> Tablero Mecanicos</a>
+        <a href="turnos-demo.html" class="sidebar-link"><i class="fas fa-calendar-alt w-5 text-center text-indigo-400"></i> Agenda de Turnos</a>
+        <a href="recepcion-taller.html" class="sidebar-link"><i class="fas fa-file-alt w-5 text-center text-gray-400"></i> Recepcion Vehiculos</a>
+        <a href="inventario.html" class="sidebar-link"><i class="fas fa-user-friends w-5 text-center text-teal-400"></i> Inventario</a>
+    </nav>
+    <div class="p-4 border-t border-[#1f1f22] flex-shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-red-700 flex items-center justify-center text-xs font-bold">S</div>
+            <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-white truncate">Sergio Admin</p><p class="text-xs text-gray-500">GERENCIA</p></div>
+            <a onclick="document.cookie='becubical_session=; max-age=0; path=/'; window.location.href='../login.html'" class="text-gray-500 hover:text-red-500 cursor-pointer"><i class="fas fa-sign-out-alt"></i></a>
+        </div>
+    </div>
+</aside>
+
+<div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden" onclick="closeSidebar()"></div>
+
+<div class="flex-1 flex flex-col overflow-hidden">
+    <header class="glass-header md:hidden flex items-center justify-between px-4 h-14 flex-shrink-0">
+        <button onclick="openSidebar()" class="text-gray-400 hover:text-white"><i class="fas fa-bars text-xl"></i></button>
+        <span class="text-lg font-black">Giorda<span class="text-red-600">OS</span></span>
+        <div class="w-8"></div>
+    </header>
+
+    <main class="flex-1 overflow-x-hidden overflow-y-auto bg-black p-4 md:p-8 pb-24 md:pb-8 custom-scrollbar">
+        <div class="space-y-6">
+            <!-- TITULO -->
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center">
+                    <i class="fas fa-truck text-red-600 mr-3"></i>
+                    Compras & Proveedores
+                </h2>
+            </div>
+
+            <!-- TABS -->
+            <div class="flex gap-2 flex-wrap">
+                <button class="tab-btn active" onclick="showTab('carga')"><i class="fas fa-plus-circle mr-2"></i>Carga Manual</button>
+                <button class="tab-btn" onclick="showTab('ia')"><i class="fas fa-brain mr-2"></i>Importar PDF con IA</button>
+                <button class="tab-btn" onclick="showTab('ctacte')"><i class="fas fa-wallet mr-2"></i>Cta. Cte. Proveedores</button>
+                <button class="tab-btn" onclick="showTab('historial')"><i class="fas fa-history mr-2"></i>Historial Compras</button>
+            </div>
+
+            <!-- ═══════════ TAB IMPORTAR PDF CON IA ═══════════ -->
+            <div id="tab-ia" class="hidden space-y-6">
+                <div class="bg-[#18181b] border border-[#27272a] rounded-xl p-6">
+                    <h3 class="text-lg font-bold mb-5 flex items-center gap-2">
+                        <i class="fas fa-brain text-purple-400"></i> Importar Factura PDF con IA
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Upload Section -->
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase font-bold mb-2 block">Seleccionar Factura PDF</label>
+                            <div class="border-2 border-dashed border-[#3f3f46] rounded-xl p-8 text-center hover:border-purple-500 transition cursor-pointer"
+                                 id="dropzone"
+                                 onclick="document.getElementById('filePdf').click()">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-600 mb-3"></i>
+                                <p class="text-gray-400 text-sm">Arrastrá el PDF aquí o hacé click</p>
+                                <p class="text-gray-600 text-xs mt-1">Máx. 10MB</p>
+                                <input type="file" id="filePdf" accept=".pdf" class="hidden" onchange="handleFileSelect(this)">
+                            </div>
+                            
+                            <div id="fileInfo" class="hidden mt-4 bg-[#09090b] border border-[#27272a] rounded-lg p-3">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <i class="fas fa-file-pdf text-red-400 text-xl"></i>
+                                        <div>
+                                            <p class="text-sm text-white font-semibold" id="fileName">-</p>
+                                            <p class="text-xs text-gray-500" id="fileSize">-</p>
+                                        </div>
+                                    </div>
+                                    <button onclick="clearFile()" class="text-red-400 hover:text-red-300">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <button onclick="validarFactura()" id="btnValidar" class="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg transition hidden">
+                                <i class="fas fa-search mr-2"></i> Previsualizar Datos
+                            </button>
+                        </div>
+                        
+                        <!-- Preview Section -->
+                        <div>
+                            <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Datos Extraídos</h4>
+                            <div id="previewDatos" class="bg-[#09090b] border border-[#27272a] rounded-xl p-4 space-y-3">
+                                <p class="text-gray-600 text-sm text-center py-8">Subí una factura para ver la previsualización</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Proveedor y Método de Pago -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Proveedor</label>
+                            <select id="provSelect" class="input-dark">
+                                <option value="">-- Seleccionar proveedor --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Forma de Pago</label>
+                            <select id="metodoPagoPdf" class="input-dark">
+                                <option value="efectivo">Efectivo</option>
+                                <option value="cheque">Cheque</option>
+                                <option value="cuenta_corriente">Cuenta Corriente</option>
+                                <option value="transferencia">Transferencia</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Items Extraídos -->
+                    <div class="mt-6">
+                        <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Items Detectados</h4>
+                        <div id="itemsTable" class="bg-[#09090b] border border-[#27272a] rounded-xl overflow-hidden">
+                            <table class="w-full text-sm">
+                                <thead class="bg-[#27272a]">
+                                    <tr class="text-[10px] text-gray-500 uppercase tracking-wider">
+                                        <th class="px-4 py-3 text-left">Producto</th>
+                                        <th class="px-4 py-3 text-center">Cant.</th>
+                                        <th class="px-4 py-3 text-right">Costo Unit.</th>
+                                        <th class="px-4 py-3 text-right">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itemsBodyPdf" class="divide-y divide-[#27272a]"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Totales -->
+                    <div class="flex justify-end mt-4">
+                        <div class="bg-[#09090b] border border-purple-900/30 rounded-xl p-4 w-full md:w-64 space-y-2">
+                            <div class="flex justify-between text-sm text-gray-400">
+                                <span>Items</span>
+                                <span id="pdf-count-items">0</span>
+                            </div>
+                            <div class="flex justify-between text-lg font-bold text-white border-t border-[#27272a] pt-2">
+                                <span>TOTAL</span>
+                                <span id="pdf-total" class="text-purple-400">$0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end mt-6">
+                        <button onclick="importarFactura()" id="btnImportar" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg transition flex items-center gap-2" disabled>
+                            <i class="fas fa-file-import"></i> Importar y Actualizar Stock
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Info Box -->
+                <div class="bg-purple-900/20 border border-purple-800/30 rounded-xl p-4">
+                    <h4 class="text-sm font-bold text-purple-400 flex items-center gap-2 mb-2">
+                        <i class="fas fa-info-circle"></i> Cómo funciona
+                    </h4>
+                    <ul class="text-xs text-gray-400 space-y-1">
+                        <li>1. Subí el PDF de la factura del proveedor</li>
+                        <li>2. La IA extraerá automáticamente: proveedor, productos, cantidades y precios</li>
+                        <li>3. Verificá los datos y seleccioná el proveedor correcto</li>
+                        <li>4. Al importar se actualizará: stock de productos, costos, y cuenta corriente del proveedor</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- ═══════════ TAB CARGA MANUAL ═══════════ -->
+            <div id="tab-carga" class="space-y-6">
+                <div class="bg-[#18181b] border border-[#27272a] rounded-xl p-6">
+                    <h3 class="text-lg font-bold mb-5 flex items-center gap-2"><i class="fas fa-file-invoice text-orange-400"></i> Nueva Compra</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Proveedor</label>
+                            <input id="inp-proveedor" type="text" class="input-dark" placeholder="Nombre del proveedor" list="lista-proveedores">
+                            <datalist id="lista-proveedores"></datalist>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">N Factura (opcional)</label>
+                            <input id="inp-nfactura" type="text" class="input-dark" placeholder="A-0001-00012345">
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Forma de Pago</label>
+                            <select id="inp-metodo" class="input-dark">
+                                <option value="efectivo">Efectivo</option>
+                                <option value="cheque">Cheque</option>
+                                <option value="cuenta_corriente">Cuenta Corriente</option>
+                                <option value="transferencia">Transferencia</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="cheque-row" class="hidden mb-4">
+                        <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Numero de Cheque</label>
+                        <input id="inp-cheque" type="text" class="input-dark md:w-1/3" placeholder="Nro. cheque">
+                    </div>
+
+                    <!-- ITEMS -->
+                    <div class="mb-4 flex items-center justify-between">
+                        <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Articulos</h4>
+                        <button onclick="agregarItem()" class="text-sm bg-[#27272a] hover:bg-[#3f3f46] text-white px-4 py-2 rounded-lg transition flex items-center gap-2">
+                            <i class="fas fa-plus"></i> Agregar Linea
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-[10px] text-gray-500 uppercase tracking-wider border-b border-[#27272a]">
+                                    <th class="pb-3 text-left pl-2">Descripcion / Articulo</th>
+                                    <th class="pb-3 text-center w-20">Cant.</th>
+                                    <th class="pb-3 text-right w-32">Costo Unit.</th>
+                                    <th class="pb-3 text-right w-32">Subtotal</th>
+                                    <th class="pb-3 text-center w-12"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="items-body"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- TOTALES -->
+                    <div class="flex justify-end mt-4">
+                        <div class="bg-[#09090b] border border-[#27272a] rounded-xl p-4 w-full md:w-64 space-y-2">
+                            <div class="flex justify-between text-sm text-gray-400">
+                                <span>Subtotal</span>
+                                <span id="comp-subtotal">$0</span>
+                            </div>
+                            <div class="flex justify-between text-lg font-bold text-white border-t border-[#27272a] pt-2">
+                                <span>TOTAL</span>
+                                <span id="comp-total" class="text-green-400">$0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Observaciones</label>
+                        <input id="inp-obs" type="text" class="input-dark" placeholder="Notas adicionales...">
+                    </div>
+
+                    <div class="flex justify-end mt-6">
+                        <button onclick="guardarCompra()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg transition flex items-center gap-2">
+                            <i class="fas fa-save"></i> Registrar Compra
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════════ TAB CTA CTE PROVEEDORES ═══════════ -->
+            <div id="tab-ctacte" class="hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-[#18181b] border border-[#27272a] rounded-xl p-5">
+                        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Proveedores con Deuda</p>
+                        <p class="text-3xl font-black text-red-400" id="kpi-cant-deuda">0</p>
+                    </div>
+                    <div class="bg-[#18181b] border border-[#27272a] rounded-xl p-5">
+                        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Deuda Total</p>
+                        <p class="text-3xl font-black text-white" id="kpi-deuda-total">$0</p>
+                    </div>
+                    <div class="bg-[#18181b] border border-[#27272a] rounded-xl p-5 flex items-center justify-center">
+                        <button onclick="modalNuevoProveedor()" class="bg-[#27272a] hover:bg-[#3f3f46] text-white font-bold py-3 px-6 rounded-lg transition flex items-center gap-2">
+                            <i class="fas fa-user-plus"></i> Nuevo Proveedor
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-[#18181b] border border-[#27272a] rounded-xl overflow-hidden">
+                    <div class="p-4">
+                        <input id="buscar-prov" type="text" class="input-dark" placeholder="Buscar proveedor..." oninput="filtrarProveedores()">
+                    </div>
+                    <table class="w-full text-sm">
+                        <thead class="bg-[#27272a]">
+                            <tr class="text-[10px] text-gray-500 uppercase tracking-wider">
+                                <th class="px-4 py-3 text-left">Proveedor</th>
+                                <th class="px-4 py-3 text-left">CUIT</th>
+                                <th class="px-4 py-3 text-left">Telefono</th>
+                                <th class="px-4 py-3 text-right">Saldo Deudor</th>
+                                <th class="px-4 py-3 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-proveedores" class="divide-y divide-[#27272a]"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ═══════════ TAB HISTORIAL ═══════════ -->
+            <div id="tab-historial" class="hidden space-y-6">
+                <!-- Filtro proveedor -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Filtrar por Proveedor</label>
+                        <select id="filtro-prov-hist" class="input-dark" onchange="filtrarHistorial()">
+                            <option value="">-- Todos los proveedores --</option>
+                        </select>
+                    </div>
+                    <div id="resumen-prov-hist" class="hidden bg-[#09090b] border border-red-900/30 rounded-xl p-4 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase">Deuda con este proveedor</p>
+                            <p class="text-2xl font-black text-red-400" id="hist-deuda-prov">$0</p>
+                        </div>
+                        <button onclick="abrirDetalleProv(parseInt(document.getElementById('filtro-prov-hist').value))" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition"><i class="fas fa-money-bill-wave mr-1"></i> Pagar</button>
+                    </div>
+                </div>
+
+                <div class="bg-[#18181b] border border-[#27272a] rounded-xl overflow-hidden">
+                    <table class="w-full text-sm">
+                        <thead class="bg-[#27272a]">
+                            <tr class="text-[10px] text-gray-500 uppercase tracking-wider">
+                                <th class="px-4 py-3 text-left">#</th>
+                                <th class="px-4 py-3 text-left">Fecha</th>
+                                <th class="px-4 py-3 text-left">Proveedor</th>
+                                <th class="px-4 py-3 text-left">Factura</th>
+                                <th class="px-4 py-3 text-right">Total</th>
+                                <th class="px-4 py-3 text-center">Pago</th>
+                                <th class="px-4 py-3 text-right">Pendiente</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-historial" class="divide-y divide-[#27272a]"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- MODAL DETALLE PROVEEDOR -->
+<div id="modal-prov" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#18181b] border border-[#27272a] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div class="p-6 border-b border-[#27272a] flex items-center justify-between">
+            <h3 class="text-xl font-bold" id="modal-prov-titulo">Proveedor</h3>
+            <button onclick="cerrarModalProv()" class="text-gray-500 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+        </div>
+        <div class="p-6 space-y-6">
+            <!-- Info + Saldo -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-[#09090b] border border-[#27272a] rounded-xl p-4">
+                    <p class="text-xs text-gray-500 uppercase font-bold">Saldo Deudor</p>
+                    <p class="text-3xl font-black text-red-400" id="modal-saldo">$0</p>
+                </div>
+                <div class="bg-[#09090b] border border-[#27272a] rounded-xl p-4">
+                    <p class="text-xs text-gray-500 uppercase font-bold">CUIT</p>
+                    <p class="text-lg font-bold text-white" id="modal-cuit">-</p>
+                </div>
+            </div>
+
+            <!-- Formulario Pago -->
+            <div class="bg-[#09090b] border border-[#27272a] rounded-xl p-4">
+                <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3"><i class="fas fa-money-bill-wave text-green-500 mr-2"></i>Registrar Pago</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                        <label class="text-xs text-gray-600 mb-1 block">Monto</label>
+                        <input id="pago-monto" type="number" class="input-dark" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-600 mb-1 block">Metodo</label>
+                        <select id="pago-metodo" class="input-dark" onchange="toggleChequeModal()">
+                            <option value="efectivo">Efectivo</option>
+                            <option value="cheque">Cheque</option>
+                            <option value="transferencia">Transferencia</option>
+                        </select>
+                    </div>
+                    <div id="pago-cheque-row" class="hidden">
+                        <label class="text-xs text-gray-600 mb-1 block">Nro Cheque</label>
+                        <input id="pago-cheque" type="text" class="input-dark" placeholder="Nro.">
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <input id="pago-obs" type="text" class="input-dark" placeholder="Observaciones del pago...">
+                </div>
+                <button onclick="registrarPago()" class="mt-3 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2">
+                    <i class="fas fa-check"></i> Confirmar Pago
+                </button>
+            </div>
+
+            <!-- Facturas Impagas -->
+            <div>
+                <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3"><i class="fas fa-exclamation-triangle text-yellow-400 mr-2"></i>Facturas Impagas</h4>
+                <div id="modal-impagas" class="space-y-2 max-h-40 overflow-y-auto custom-scrollbar"></div>
+            </div>
+
+            <!-- Acciones: PDF, WhatsApp, Imprimir -->
+            <div class="flex gap-2">
+                <a id="link-pdf-prov" href="#" target="_blank" class="flex-1 text-center text-red-500 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 px-3 py-2.5 rounded-lg text-xs font-bold transition">
+                    <i class="fas fa-file-pdf mr-1"></i> PDF
+                </a>
+                <button onclick="enviarWhatsAppProv()" class="flex-1 text-green-400 hover:text-green-300 bg-green-500/10 hover:bg-green-500/20 px-3 py-2.5 rounded-lg text-xs font-bold transition">
+                    <i class="fab fa-whatsapp mr-1"></i> WhatsApp
+                </button>
+                <button onclick="enviarMailProv()" class="flex-1 text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 px-3 py-2.5 rounded-lg text-xs font-bold transition">
+                    <i class="fas fa-envelope mr-1"></i> Email
+                </button>
+                <button onclick="imprimirProv()" class="flex-1 text-gray-400 hover:text-gray-300 bg-gray-500/10 hover:bg-gray-500/20 px-3 py-2.5 rounded-lg text-xs font-bold transition">
+                    <i class="fas fa-print mr-1"></i> Imprimir
+                </button>
+            </div>
+
+            <!-- Movimientos -->
+            <div>
+                <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3"><i class="fas fa-list text-blue-400 mr-2"></i>Movimientos</h4>
+                <div class="max-h-48 overflow-y-auto custom-scrollbar">
+                    <table class="w-full text-xs">
+                        <thead class="bg-[#27272a] sticky top-0">
+                            <tr class="text-gray-500 uppercase">
+                                <th class="px-3 py-2 text-left">Fecha</th>
+                                <th class="px-3 py-2 text-left">Tipo</th>
+                                <th class="px-3 py-2 text-left">Descripcion</th>
+                                <th class="px-3 py-2 text-left">Metodo</th>
+                                <th class="px-3 py-2 text-right">Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-movimientos" class="divide-y divide-[#27272a]"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL NUEVO PROVEEDOR -->
+<div id="modal-nuevo-prov" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#18181b] border border-[#27272a] rounded-2xl w-full max-w-md">
+        <div class="p-6 border-b border-[#27272a] flex items-center justify-between">
+            <h3 class="text-lg font-bold">Nuevo Proveedor</h3>
+            <button onclick="document.getElementById('modal-nuevo-prov').classList.add('hidden')" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Nombre *</label>
+                <input id="np-nombre" type="text" class="input-dark" placeholder="Nombre o razon social">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">CUIT</label>
+                    <input id="np-cuit" type="text" class="input-dark" placeholder="XX-XXXXXXXX-X">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Telefono</label>
+                    <input id="np-tel" type="text" class="input-dark" placeholder="351-XXXXXXX">
+                </div>
+            </div>
+            <div>
+                <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Email</label>
+                <input id="np-email" type="email" class="input-dark" placeholder="proveedor@email.com">
+            </div>
+            <div>
+                <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Direccion</label>
+                <input id="np-dir" type="text" class="input-dark" placeholder="Direccion">
+            </div>
+            <button onclick="crearProveedor()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition">
+                <i class="fas fa-save mr-2"></i> Guardar Proveedor
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let proveedoresCache = [];
+    let provActualId = null;
+
+    // ── TABS ──────────────────────────────────────────────
+    let facturaData = null;
+    
+    function showTab(tab) {
+        document.querySelectorAll('.tab-btn').forEach((b, i) => {
+            b.classList.toggle('active', ['carga','ia','ctacte','historial'][i] === tab);
+        });
+        document.getElementById('tab-carga').classList.toggle('hidden', tab !== 'carga');
+        document.getElementById('tab-ia').classList.toggle('hidden', tab !== 'ia');
+        document.getElementById('tab-ctacte').classList.toggle('hidden', tab !== 'ctacte');
+        document.getElementById('tab-historial').classList.toggle('hidden', tab !== 'historial');
+        if (tab === 'ctacte') cargarProveedores();
+        if (tab === 'historial') cargarHistorial();
+        if (tab === 'carga') cargarListaProveedores();
+        if (tab === 'ia') { cargarListaProveedores(); }
+    }
+
+    // ── SIDEBAR ───────────────────────────────────────────
+    function openSidebar() {
+        document.getElementById('sidebar').classList.remove('-translate-x-full');
+        document.getElementById('sidebar-overlay').classList.remove('hidden');
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.add('-translate-x-full');
+        document.getElementById('sidebar-overlay').classList.add('hidden');
+    }
+
+    // ── CARGA MANUAL ──────────────────────────────────────
+    document.getElementById('inp-metodo').addEventListener('change', function() {
+        document.getElementById('cheque-row').classList.toggle('hidden', this.value !== 'cheque');
+    });
+
+    function agregarItem() {
+        const tbody = document.getElementById('items-body');
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-white/5';
+        tr.innerHTML = `
+            <td class="py-2 px-2"><input type="text" class="input-dark" placeholder="Ej: Neumatico 205/55R16 Pirelli"></td>
+            <td class="py-2 px-1"><input type="number" value="1" min="1" class="input-dark text-center w-20" oninput="calcTotales()"></td>
+            <td class="py-2 px-1"><input type="number" value="0" class="input-dark text-right w-32" placeholder="0" oninput="calcTotales()"></td>
+            <td class="py-2 px-1 text-right text-gray-400 font-mono item-sub">$0</td>
+            <td class="py-2 px-1 text-center"><button onclick="this.closest('tr').remove();calcTotales()" class="text-red-500 hover:text-red-400"><i class="fas fa-trash-alt"></i></button></td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    function calcTotales() {
+        let subtotal = 0;
+        document.querySelectorAll('#items-body tr').forEach(tr => {
+            const inputs = tr.querySelectorAll('input[type=number]');
+            const cant = parseFloat(inputs[0]?.value) || 0;
+            const costo = parseFloat(inputs[1]?.value) || 0;
+            const sub = cant * costo;
+            subtotal += sub;
+            tr.querySelector('.item-sub').textContent = `$${sub.toLocaleString('es-AR')}`;
+        });
+        document.getElementById('comp-subtotal').textContent = `$${subtotal.toLocaleString('es-AR')}`;
+        document.getElementById('comp-total').textContent = `$${subtotal.toLocaleString('es-AR')}`;
+    }
+
+    async function cargarListaProveedores() {
+        try {
+            const res = await fetch('/api/v1/compras/proveedores');
+            const data = await res.json();
+            proveedoresCache = data.data || [];
+            const dl = document.getElementById('lista-proveedores');
+            dl.innerHTML = '';
+            proveedoresCache.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.nombre;
+                dl.appendChild(opt);
+            });
+            
+            // Also populate select in IA tab
+            const sel = document.getElementById('provSelect');
+            if (sel) {
+                sel.innerHTML = '<option value="">-- Seleccionar proveedor --</option>';
+                proveedoresCache.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = p.nombre;
+                    sel.appendChild(opt);
+                });
+            }
+        } catch(e) {}
+    }
+
+    async function guardarCompra() {
+        const proveedor = document.getElementById('inp-proveedor').value.trim();
+        if (!proveedor) return Swal.fire({icon:'warning', title:'Falta proveedor', background:'#111', color:'#fff'});
+
+        const items = [];
+        document.querySelectorAll('#items-body tr').forEach(tr => {
+            const inputs = tr.querySelectorAll('input');
+            if (inputs.length >= 3) {
+                const desc = inputs[0].value.trim();
+                const cant = parseInt(inputs[1].value) || 1;
+                const costo = parseFloat(inputs[2].value) || 0;
+                if (desc) items.push({ descripcion: desc, cantidad: cant, costo_unitario: costo });
+            }
+        });
+
+        if (!items.length) return Swal.fire({icon:'warning', title:'Agrega al menos un articulo', background:'#111', color:'#fff'});
+
+        const metodo = document.getElementById('inp-metodo').value;
+        const total = items.reduce((s, i) => s + i.cantidad * i.costo_unitario, 0);
+        const prov = proveedoresCache.find(p => p.nombre === proveedor);
+
+        const payload = {
+            proveedor_id: prov ? prov.id : null,
+            proveedor_nombre: proveedor,
+            metodo_pago: metodo,
+            numero_factura: document.getElementById('inp-nfactura').value.trim(),
+            numero_cheque: document.getElementById('inp-cheque').value.trim(),
+            items: items,
+            total: total,
+            observaciones: document.getElementById('inp-obs').value.trim(),
+        };
+
+        try {
+            const res = await fetch('/api/v1/compras/registrar', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) throw new Error('Error');
+            const data = await res.json();
+
+            let msg = `Compra #${data.compra_id} registrada por $${total.toLocaleString('es-AR')}`;
+            if (metodo === 'cuenta_corriente') msg += '\nCargado a cuenta corriente del proveedor.';
+
+            await Swal.fire({icon:'success', title:'Compra Registrada', text: msg, background:'#111', color:'#fff', confirmButtonColor:'#dc2626'});
+
+            // Limpiar form
+            document.getElementById('inp-proveedor').value = '';
+            document.getElementById('inp-nfactura').value = '';
+            document.getElementById('inp-cheque').value = '';
+            document.getElementById('inp-obs').value = '';
+            document.getElementById('items-body').innerHTML = '';
+            calcTotales();
+            cargarListaProveedores();
+        } catch(e) {
+            Swal.fire({icon:'error', title:'Error', text:'No se pudo registrar la compra', background:'#111', color:'#fff'});
+        }
+    }
+
+    // ── CTA CTE PROVEEDORES ───────────────────────────────
+    async function cargarProveedores() {
+        try {
+            const res = await fetch('/api/v1/compras/proveedores');
+            const data = await res.json();
+            proveedoresCache = data.data || [];
+            renderProveedores(proveedoresCache);
+
+            const conDeuda = proveedoresCache.filter(p => p.saldo_deudor > 0);
+            const totalDeuda = proveedoresCache.reduce((s, p) => s + (p.saldo_deudor || 0), 0);
+            document.getElementById('kpi-cant-deuda').textContent = conDeuda.length;
+            document.getElementById('kpi-deuda-total').textContent = `$${totalDeuda.toLocaleString('es-AR')}`;
+        } catch(e) {}
+    }
+
+    function renderProveedores(lista) {
+        const tbody = document.getElementById('tabla-proveedores');
+        tbody.innerHTML = '';
+        if (!lista.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-600">Sin proveedores registrados</td></tr>';
+            return;
+        }
+        lista.forEach(p => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-white/5 cursor-pointer';
+            tr.onclick = () => abrirDetalleProv(p.id);
+            const deudaClass = p.saldo_deudor > 0 ? 'text-red-400 font-bold' : 'text-green-400';
+            tr.innerHTML = `
+                <td class="px-4 py-3 font-semibold text-white">${p.nombre}</td>
+                <td class="px-4 py-3 text-gray-400">${p.cuit || '-'}</td>
+                <td class="px-4 py-3 text-gray-400">${p.telefono || '-'}</td>
+                <td class="px-4 py-3 text-right ${deudaClass}">$${(p.saldo_deudor||0).toLocaleString('es-AR')}</td>
+                <td class="px-4 py-3 text-center">
+                    <button class="text-blue-400 hover:text-blue-300 mr-2" title="Ver detalle"><i class="fas fa-eye"></i></button>
+                    ${p.saldo_deudor > 0 ? '<button class="text-green-400 hover:text-green-300" title="Pagar"><i class="fas fa-money-bill-wave"></i></button>' : ''}
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function filtrarProveedores() {
+        const q = document.getElementById('buscar-prov').value.toLowerCase();
+        const filtrados = proveedoresCache.filter(p => p.nombre.toLowerCase().includes(q));
+        renderProveedores(filtrados);
+    }
+
+    async function abrirDetalleProv(provId) {
+        provActualId = provId;
+        try {
+            // Cargar movimientos + facturas impagas en paralelo
+            const [resMovs, resImpagas] = await Promise.all([
+                fetch(`/api/v1/compras/proveedores/${provId}/movimientos`),
+                fetch(`/api/v1/compras/proveedores/${provId}/facturas-impagas`)
+            ]);
+            const dataMovs = await resMovs.json();
+            const dataImpagas = await resImpagas.json();
+            const prov = dataMovs.proveedor;
+            const movs = dataMovs.movimientos || [];
+            const impagas = dataImpagas.facturas_impagas || [];
+
+            document.getElementById('modal-prov-titulo').textContent = prov.nombre;
+            document.getElementById('modal-saldo').textContent = `$${(prov.saldo_deudor||0).toLocaleString('es-AR')}`;
+            document.getElementById('modal-cuit').textContent = prov.cuit || '-';
+            document.getElementById('pago-monto').value = '';
+            document.getElementById('pago-obs').value = '';
+            document.getElementById('pago-cheque').value = '';
+
+            // PDF link
+            document.getElementById('link-pdf-prov').href = `/api/v1/reportes/resumen-proveedor/${provId}`;
+
+            // Facturas impagas
+            const divImpagas = document.getElementById('modal-impagas');
+            if (!impagas.length) {
+                divImpagas.innerHTML = '<p class="text-green-400 text-sm"><i class="fas fa-check-circle mr-1"></i>Sin facturas impagas</p>';
+            } else {
+                divImpagas.innerHTML = impagas.map(f => {
+                    const fecha = f.fecha ? new Date(f.fecha).toLocaleDateString('es-AR') : '';
+                    return `<div class="bg-[#27272a] rounded-lg p-3 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-white font-semibold">${f.numero_factura}</p>
+                            <p class="text-[10px] text-gray-500">${fecha} | Total: $${(f.total||0).toLocaleString('es-AR')}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500">Pagado: $${(f.pagado||0).toLocaleString('es-AR')}</p>
+                            <p class="text-sm font-bold text-red-400">Debe: $${(f.pendiente||0).toLocaleString('es-AR')}</p>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            // Movimientos
+            const tbody = document.getElementById('modal-movimientos');
+            tbody.innerHTML = '';
+            movs.forEach(m => {
+                const fecha = m.fecha ? new Date(m.fecha).toLocaleDateString('es-AR') : '';
+                const color = m.tipo === 'pago' ? 'text-green-400' : 'text-red-400';
+                const signo = m.tipo === 'pago' ? '-' : '+';
+                const metodo = m.metodo_pago || '';
+                let desc = m.descripcion || '';
+                if (m.numero_cheque) desc += ` (Ch: ${m.numero_cheque})`;
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-white/5';
+                tr.innerHTML = `
+                    <td class="px-3 py-2 text-gray-400">${fecha}</td>
+                    <td class="px-3 py-2"><span class="px-2 py-0.5 rounded text-xs font-bold ${m.tipo==='pago'?'bg-green-900/50 text-green-400':'bg-red-900/50 text-red-400'}">${m.tipo.toUpperCase()}</span></td>
+                    <td class="px-3 py-2 text-gray-300">${desc}</td>
+                    <td class="px-3 py-2 text-gray-400">${metodo}</td>
+                    <td class="px-3 py-2 text-right ${color} font-mono font-bold">${signo}$${m.monto.toLocaleString('es-AR')}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('modal-prov').classList.remove('hidden');
+        } catch(e) {
+            Swal.fire({icon:'error', title:'Error', text:'No se pudo cargar el proveedor', background:'#111', color:'#fff'});
+        }
+    }
+
+    // ── ENVIO PDF/WHATSAPP/EMAIL/IMPRIMIR PROVEEDOR ──────
+    function enviarWhatsAppProv() {
+        if (!provActualId) return;
+        const prov = proveedoresCache.find(p => p.id === provActualId);
+        const url = `${window.location.origin}/api/v1/reportes/resumen-proveedor/${provActualId}`;
+        const texto = encodeURIComponent(`Hola${prov?' '+prov.nombre:''}! Te enviamos el resumen de cuenta: ${url}`);
+        const tel = prov?.telefono ? prov.telefono.replace(/[^0-9]/g,'') : '';
+        window.open(`https://wa.me/${tel}?text=${texto}`, '_blank');
+    }
+
+    function enviarMailProv() {
+        if (!provActualId) return;
+        const prov = proveedoresCache.find(p => p.id === provActualId);
+        const url = `${window.location.origin}/api/v1/reportes/resumen-proveedor/${provActualId}`;
+        const subject = encodeURIComponent(`Resumen de cuenta - Giorda Neumaticos`);
+        const body = encodeURIComponent(`Estimado/a ${prov?.nombre || ''},\n\nAdjuntamos el resumen de su cuenta corriente:\n${url}\n\nSaludos,\nGiorda Neumaticos`);
+        const email = prov?.email || '';
+        window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
+    }
+
+    function imprimirProv() {
+        if (!provActualId) return;
+        window.open(`/api/v1/reportes/resumen-proveedor/${provActualId}`, '_blank');
+    }
+
+    function cerrarModalProv() {
+        document.getElementById('modal-prov').classList.add('hidden');
+        provActualId = null;
+    }
+
+    function toggleChequeModal() {
+        document.getElementById('pago-cheque-row').classList.toggle('hidden', document.getElementById('pago-metodo').value !== 'cheque');
+    }
+
+    async function registrarPago() {
+        if (!provActualId) return;
+        const monto = parseFloat(document.getElementById('pago-monto').value) || 0;
+        if (monto <= 0) return Swal.fire({icon:'warning', title:'Monto invalido', background:'#111', color:'#fff'});
+
+        const metodo = document.getElementById('pago-metodo').value;
+        const payload = {
+            monto,
+            metodo_pago: metodo,
+            observaciones: document.getElementById('pago-obs').value.trim(),
+            numero_cheque: document.getElementById('pago-cheque').value.trim(),
+        };
+
+        try {
+            const res = await fetch(`/api/v1/compras/proveedores/${provActualId}/pagar`, {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+
+            await Swal.fire({icon:'success', title:'Pago Registrado', text:`Nuevo saldo: $${data.nuevo_saldo.toLocaleString('es-AR')}`, background:'#111', color:'#fff', confirmButtonColor:'#dc2626'});
+
+            abrirDetalleProv(provActualId);
+            cargarProveedores();
+        } catch(e) {
+            Swal.fire({icon:'error', title:'Error', text:'No se pudo registrar el pago', background:'#111', color:'#fff'});
+        }
+    }
+
+    // ── NUEVO PROVEEDOR ──────────────────────────────────
+    function modalNuevoProveedor() {
+        document.getElementById('np-nombre').value = '';
+        document.getElementById('np-cuit').value = '';
+        document.getElementById('np-tel').value = '';
+        document.getElementById('np-email').value = '';
+        document.getElementById('np-dir').value = '';
+        document.getElementById('modal-nuevo-prov').classList.remove('hidden');
+    }
+
+    async function crearProveedor() {
+        const nombre = document.getElementById('np-nombre').value.trim();
+        if (!nombre) return Swal.fire({icon:'warning', title:'Ingresa el nombre', background:'#111', color:'#fff'});
+
+        try {
+            const res = await fetch('/api/v1/compras/proveedores', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    nombre,
+                    cuit: document.getElementById('np-cuit').value.trim(),
+                    telefono: document.getElementById('np-tel').value.trim(),
+                    email: document.getElementById('np-email').value.trim(),
+                    direccion: document.getElementById('np-dir').value.trim(),
+                })
+            });
+            if (!res.ok) throw new Error();
+
+            document.getElementById('modal-nuevo-prov').classList.add('hidden');
+            await Swal.fire({icon:'success', title:'Proveedor creado', background:'#111', color:'#fff', confirmButtonColor:'#dc2626', timer:1500, showConfirmButton:false});
+            cargarProveedores();
+            cargarListaProveedores();
+        } catch(e) {
+            Swal.fire({icon:'error', title:'Error', background:'#111', color:'#fff'});
+        }
+    }
+
+    // ── HISTORIAL ─────────────────────────────────────────
+    let historialCache = [];
+
+    async function cargarHistorial() {
+        // Cargar select de proveedores
+        const sel = document.getElementById('filtro-prov-hist');
+        const currentVal = sel.value;
+        sel.innerHTML = '<option value="">-- Todos los proveedores --</option>';
+        proveedoresCache.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = `${p.nombre}${p.saldo_deudor > 0 ? ' ($' + p.saldo_deudor.toLocaleString('es-AR') + ' deuda)' : ''}`;
+            sel.appendChild(opt);
+        });
+        if (currentVal) sel.value = currentVal;
+
+        try {
+            const provId = sel.value || '';
+            const url = provId ? `/api/v1/compras/historial?proveedor_id=${provId}` : '/api/v1/compras/historial';
+            const res = await fetch(url);
+            const data = await res.json();
+            historialCache = data.data || [];
+            renderHistorial(historialCache);
+
+            // Mostrar resumen si hay proveedor seleccionado
+            const resumen = document.getElementById('resumen-prov-hist');
+            if (provId) {
+                const prov = proveedoresCache.find(p => p.id == provId);
+                if (prov) {
+                    document.getElementById('hist-deuda-prov').textContent = `$${(prov.saldo_deudor||0).toLocaleString('es-AR')}`;
+                    resumen.classList.remove('hidden');
+                }
+            } else {
+                resumen.classList.add('hidden');
+            }
+        } catch(e) {}
+    }
+
+    function filtrarHistorial() { cargarHistorial(); }
+
+    function renderHistorial(lista) {
+        const tbody = document.getElementById('tabla-historial');
+        tbody.innerHTML = '';
+        if (!lista.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-600">Sin compras registradas</td></tr>';
+            return;
+        }
+        lista.forEach(c => {
+            const fecha = c.fecha ? new Date(c.fecha).toLocaleDateString('es-AR') : '';
+            const metodos = {efectivo:'Efectivo', cheque:'Cheque', cuenta_corriente:'Cta. Cte.', transferencia:'Transfer.'};
+            const metodoBadge = c.metodo_pago === 'cuenta_corriente'
+                ? 'bg-yellow-900/50 text-yellow-400'
+                : c.metodo_pago === 'cheque' ? 'bg-blue-900/50 text-blue-400' : 'bg-green-900/50 text-green-400';
+            const pendiente = c.pendiente || 0;
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-white/5 cursor-pointer';
+            tr.onclick = () => abrirDetalleProv(c.proveedor_id);
+            tr.innerHTML = `
+                <td class="px-4 py-3 text-gray-500">${c.id}</td>
+                <td class="px-4 py-3 text-gray-400">${fecha}</td>
+                <td class="px-4 py-3 font-semibold text-white">${c.proveedor_nombre}</td>
+                <td class="px-4 py-3 text-gray-400">${c.numero_factura || '-'}</td>
+                <td class="px-4 py-3 text-right text-white font-mono">$${(c.total||0).toLocaleString('es-AR')}</td>
+                <td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded text-xs font-bold ${metodoBadge}">${metodos[c.metodo_pago]||c.metodo_pago}</span></td>
+                <td class="px-4 py-3 text-right font-mono ${pendiente > 0 ? 'text-red-400 font-bold' : 'text-green-400'}">$${pendiente.toLocaleString('es-AR')}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // ── INIT ──────────────────────────────────────────────
+    agregarItem();
+    cargarListaProveedores();
+    
+    // ═══════════ IMPORTAR PDF CON IA ═══════════════════════
+    let selectedFile = null;
+    
+    function handleFileSelect(input) {
+        const file = input.files[0];
+        if (!file) return;
+        
+        if (file.size > 10 * 1024 * 1024) {
+            Swal.fire({icon:'error', title:'Archivo muy grande', text:'Máx 10MB', background:'#111', color:'#fff'});
+            return;
+        }
+        
+        selectedFile = file;
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileSize').textContent = (file.size / 1024).toFixed(1) + ' KB';
+        document.getElementById('fileInfo').classList.remove('hidden');
+        document.getElementById('btnValidar').classList.remove('hidden');
+    }
+    
+    function clearFile() {
+        selectedFile = null;
+        facturaData = null;
+        document.getElementById('filePdf').value = '';
+        document.getElementById('fileInfo').classList.add('hidden');
+        document.getElementById('btnValidar').classList.add('hidden');
+        document.getElementById('btnImportar').disabled = true;
+        document.getElementById('previewDatos').innerHTML = '<p class="text-gray-600 text-sm text-center py-8">Subí una factura para ver la previsualización</p>';
+        document.getElementById('itemsBodyPdf').innerHTML = '';
+        document.getElementById('pdf-count-items').textContent = '0';
+        document.getElementById('pdf-total').textContent = '$0';
+    }
+    
+    async function validarFactura() {
+        if (!selectedFile) return;
+        
+        const btn = document.getElementById('btnValidar');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Procesando...';
+        
+        try {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            
+            const res = await fetch('/api/v1/compras/importar-factura-validar', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await res.json();
+            
+            if (!res.ok) {
+                throw new Error(data.error || 'Error al procesar');
+            }
+            
+            facturaData = data;
+            renderPreview(data);
+            
+        } catch(e) {
+            Swal.fire({icon:'error', title:'Error', text: e.message, background:'#111', color:'#fff'});
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-search mr-2"></i> Previsualizar Datos';
+        }
+    }
+    
+    function renderPreview(data) {
+        const datos = data.datos || {};
+        const proveedores = data.proveedores_match || [];
+        
+        // Render preview box
+        const preview = document.getElementById('previewDatos');
+        preview.innerHTML = `
+            <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Proveedor:</span>
+                    <span class="text-white font-semibold">${datos.proveedor || '-'}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">N° Factura:</span>
+                    <span class="text-white">${datos.numero_factura || '-'}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Fecha:</span>
+                    <span class="text-white">${datos.fecha || '-'}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Forma de Pago:</span>
+                    <span class="text-white">${datos.metodo_pago || '-'}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Total:</span>
+                    <span class="text-green-400 font-bold">$${((datos.total) || 0).toLocaleString('es-AR')}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Items:</span>
+                    <span class="text-white">${(datos.items || []).length}</span>
+                </div>
+            </div>
+            ${proveedores.length ? `
+                <div class="mt-3 pt-3 border-t border-[#27272a]">
+                    <p class="text-xs text-green-400 mb-2"><i class="fas fa-check mr-1"></i>Proveedor detectado:</p>
+                    <select class="input-dark text-sm" onchange="seleccionarProveedor(this.value)">
+                        <option value="">-- Seleccionar --</option>
+                        ${proveedores.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('')}
+                    </select>
+                </div>
+            ` : `
+                <div class="mt-3 pt-3 border-t border-[#27272a]">
+                    <p class="text-xs text-yellow-400 mb-2"><i class="fas fa-exclamation-triangle mr-1"></i>No se detectó proveedor. Seleccioná manualmente:</p>
+                </div>
+            `}
+        `;
+        
+        // Render items table
+        const items = datos.items || [];
+        const tbody = document.getElementById('itemsBodyPdf');
+        tbody.innerHTML = items.map(it => `
+            <tr class="hover:bg-white/5">
+                <td class="px-4 py-3 text-white">${it.descripcion || '-'}</td>
+                <td class="px-4 py-3 text-center text-gray-400">${it.cantidad || 1}</td>
+                <td class="px-4 py-3 text-right text-green-400 font-mono">$${((it.costo_unitario) || 0).toLocaleString('es-AR')}</td>
+                <td class="px-4 py-3 text-right text-white font-mono">$${(((it.cantidad) || 1) * ((it.costo_unitario) || 0)).toLocaleString('es-AR')}</td>
+            </tr>
+        `).join('');
+        
+        // Update totals
+        const total = datos.total || items.reduce((s, it) => s + ((it.cantidad || 1) * (it.costo_unitario || 0)), 0);
+        document.getElementById('pdf-count-items').textContent = items.length;
+        document.getElementById('pdf-total').textContent = `$${total.toLocaleString('es-AR')}`;
+        
+        // Enable import button
+        document.getElementById('btnImportar').disabled = false;
+    }
+    
+    function seleccionarProveedor(provId) {
+        if (provId) {
+            document.getElementById('provSelect').value = provId;
+        }
+    }
+    
+    async function importarFactura() {
+        if (!selectedFile || !facturaData) {
+            Swal.fire({icon:'warning', title:'Primero validá la factura', background:'#111', color:'#fff'});
+            return;
+        }
+        
+        const proveedorId = document.getElementById('provSelect').value;
+        const metodo = document.getElementById('metodoPagoPdf').value;
+        
+        const btn = document.getElementById('btnImportar');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Importando...';
+        
+        try {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            if (proveedorId) {
+                formData.append('proveedor_id', proveedorId);
+            }
+            
+            const res = await fetch('/api/v1/compras/importar-factura', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await res.json();
+            
+            if (!res.ok) {
+                throw new Error(data.error || 'Error al importar');
+            }
+            
+            await Swal.fire({
+                icon: 'success',
+                title: '¡Factura Importada!',
+                html: `<p class="text-sm">Proveedor: <b>${data.proveedor_nombre}</b></p>
+                       <p class="text-sm">Total: <b>$${data.total.toLocaleString('es-AR')}</b></p>
+                       <p class="text-sm text-green-400">${data.message}</p>`,
+                background: '#111',
+                color: '#fff',
+                confirmButtonColor: '#22c55e'
+            });
+            
+            clearFile();
+            showTab('ctacte');
+            
+        } catch(e) {
+            Swal.fire({icon:'error', title:'Error', text: e.message, background:'#111', color:'#fff'});
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-file-import"></i> Importar y Actualizar Stock';
+        }
+    }
+    
+    // Drag and drop
+    const dropzone = document.getElementById('dropzone');
+    if (dropzone) {
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('border-purple-500', 'bg-purple-500/10');
+        });
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('border-purple-500', 'bg-purple-500/10');
+        });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-purple-500', 'bg-purple-500/10');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === 'application/pdf') {
+                const input = document.getElementById('filePdf');
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                input.files = dt.files;
+                handleFileSelect(input);
+            } else {
+                Swal.fire({icon:'error', title:'Solo PDF', background:'#111', color:'#fff'});
+            }
+        });
+    }
+</script>
+</body>
+</html>

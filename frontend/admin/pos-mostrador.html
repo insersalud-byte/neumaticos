@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POS Mostrador | GiordaOS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 12px; border-radius: 8px;
+      color: #6b7280; font-size: 13px; font-weight: 500;
+      transition: all 0.15s; margin: 1px 8px;
+      text-decoration: none;
+    }
+    .sidebar-link:hover { background: #111113; color: #e5e7eb; }
+    .sidebar-link.active { background: #18181b; color: #fff; border-left: 3px solid #dc2626; padding-left: 9px; }
+    .sidebar-section-title {
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em;
+      color: #374151; padding: 14px 20px 4px; font-weight: 800;
+    }
+    .input-dark {
+      background: #09090b; border: 1px solid #27272a; color: #fff;
+      border-radius: 8px; padding: 8px 12px; font-size: 13px;
+      transition: border-color 0.15s; outline: none; width: 100%;
+    }
+    .input-dark:focus { border-color: #dc2626; }
+    .input-dark::placeholder { color: #52525b; }
+    .btn-red {
+      background: #dc2626; color: #fff; font-weight: 700;
+      padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;
+      transition: background 0.15s; font-size: 13px;
+    }
+    .btn-red:hover { background: #b91c1c; }
+    .btn-ghost {
+      background: transparent; color: #71717a; font-weight: 600;
+      padding: 10px 20px; border-radius: 8px; border: 1px solid #27272a;
+      cursor: pointer; transition: all 0.15s; font-size: 13px;
+    }
+    .btn-ghost:hover { border-color: #52525b; color: #e5e7eb; }
+    .card { background: #09090b; border: 1px solid #18181b; border-radius: 12px; }
+    .badge-red { background: #450a0a; color: #fca5a5; border: 1px solid #7f1d1d; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+    .autocomplete-box {
+      position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+      background: #09090b; border: 1px solid #27272a; border-radius: 8px;
+      margin-top: 4px; max-height: 220px; overflow-y: auto;
+    }
+    .autocomplete-item {
+      padding: 8px 14px; cursor: pointer; font-size: 13px; color: #d4d4d8;
+      transition: background 0.1s;
+    }
+    .autocomplete-item:hover { background: #18181b; }
+    .carrito-row { border-bottom: 1px solid #18181b; }
+    .carrito-row:last-child { border-bottom: none; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-[#000000] text-white min-h-screen flex">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-50 w-64 bg-[#050505] border-r border-[#1f1f22] flex flex-col flex-shrink-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+
+    <!-- LOGO -->
+    <div class="h-16 flex items-center justify-between px-6 border-b border-[#1f1f22]">
+      <h1 class="text-xl font-black italic tracking-tighter text-white flex items-center gap-2 select-none">
+        <div class="bg-red-600 text-white w-8 h-8 flex items-center justify-center rounded-lg shadow-red-900/50 shadow-lg">
+          <i class="fas fa-tire"></i>
+        </div>
+        <span>GIORDA<span class="text-red-600">OS</span></span>
+      </h1>
+      <button class="md:hidden text-gray-500 hover:text-white" onclick="document.getElementById('sidebar').classList.add('-translate-x-full')">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- NAV -->
+    <nav class="flex-1 overflow-y-auto py-2 space-y-0.5">
+      <div class="sidebar-section-title">Mostrador &amp; Ventas</div>
+    <a href="pos-mostrador.html" class="sidebar-link active">
+      <i class="fas fa-cash-register w-6 text-center text-green-500"></i>
+      <span>Punto de Venta</span>
+    </a>
+    <a href="pedidos-demo.html" class="sidebar-link">
+      <i class="fas fa-globe w-6 text-center text-blue-400"></i>
+      <span>Cotizacion - Pedidos</span>
+    </a>
+      <div class="sidebar-section-title">Planta &amp; Taller</div>
+    <a href="recepcion-taller.html" class="sidebar-link">
+      <i class="fas fa-clipboard-list w-6 text-center text-orange-400"></i>
+      <span>Recepción Vehículos</span>
+    </a>
+    <a href="taller-control.html" class="sidebar-link">
+      <i class="fas fa-wrench w-6 text-center text-gray-400"></i>
+      <span>Tablero Mecánicos</span>
+    </a>
+    <a href="turnos-demo.html" class="sidebar-link">
+      <i class="fas fa-calendar-alt w-6 text-center text-purple-400"></i>
+      <span>Agenda de Turnos</span>
+    </a>
+      <div class="sidebar-section-title flex items-center gap-2">Back Office <i class="fas fa-lock text-[9px] text-red-900"></i></div>
+    <a href="inventario.html" class="sidebar-link">
+      <i class="fas fa-boxes w-6 text-center text-yellow-500"></i>
+      <span>Inventario &amp; Stock</span>
+    </a>
+    <a href="catalogo-servicios.html" class="sidebar-link">
+      <i class="fas fa-list-ul w-6 text-center text-cyan-400"></i>
+      <span>Servicios &amp; MO</span>
+    </a>
+    <a href="stock-gestion.html" class="sidebar-link">
+      <i class="fas fa-layer-group w-6 text-center text-amber-400"></i>
+      <span>Stock Gestión</span>
+    </a>
+    <a href="importar-facturas.html" class="sidebar-link">
+      <i class="fas fa-file-invoice-dollar w-6 text-center text-emerald-400"></i>
+      <span>Compras (Proveedores)</span>
+    </a>
+    <a href="finanzas-dashboard.html" class="sidebar-link">
+      <i class="fas fa-chart-pie w-6 text-center text-red-500"></i>
+      <span>Finanzas &amp; Caja</span>
+    </a>
+    <a href="cuenta-corriente.html" class="sidebar-link">
+      <i class="fas fa-users w-6 text-center text-blue-500"></i>
+      <span>Cuentas Corrientes</span>
+    </a>
+    <a href="sueldos.html" class="sidebar-link">
+      <i class="fas fa-id-card w-6 text-center text-pink-400"></i>
+      <span>Sueldos</span>
+    </a>
+    <a href="coeficientes-tarjetas.html" class="sidebar-link">
+      <i class="fas fa-credit-card w-6 text-center text-green-400"></i>
+      <span>Planes Tarjetas</span>
+    </a>
+    <a href="backup.html" class="sidebar-link">
+      <i class="fas fa-database w-6 text-center text-gray-400"></i>
+      <span>Backup &amp; Restore</span>
+    </a>
+    </nav>
+
+    <!-- FOOTER -->
+    <div class="p-4 border-t border-[#1f1f22] bg-[#0a0a0c]">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-gray-800 to-black border border-gray-700 flex items-center justify-center text-white font-bold text-sm">S</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-bold text-white truncate">Sergio Giorda</p>
+          <p class="text-[10px] text-gray-600 truncate">gerencia</p>
+        </div>
+        <button onclick="logout()" class="text-gray-600 hover:text-red-500 transition" title="Salir">
+          <i class="fas fa-power-off text-sm"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 flex flex-col min-h-screen overflow-hidden">
+
+    <!-- TOP BAR -->
+    <header class="h-14 bg-[#050505] border-b border-[#1f1f22] flex items-center justify-between px-6 flex-shrink-0">
+      <div class="flex items-center gap-3">
+        <button class="md:hidden text-gray-500 hover:text-white mr-2" onclick="document.getElementById('sidebar').classList.remove('-translate-x-full')">
+          <i class="fas fa-bars"></i>
+        </button>
+        <span class="text-xs text-gray-600 uppercase tracking-widest font-bold">Punto de Venta</span>
+        <span class="badge-red">MOSTRADOR</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="abrirCotizaciones()" class="btn-ghost text-xs py-2 px-3">
+          <i class="fas fa-clock mr-1 text-yellow-500"></i> Cotizaciones
+        </button>
+        <button onclick="nuevaVenta()" class="btn-ghost text-xs py-2 px-3">
+          <i class="fas fa-plus mr-1"></i> Nueva Venta
+        </button>
+      </div>
+    </header>
+
+    <!-- CONTENT GRID -->
+    <div class="flex-1 flex overflow-hidden">
+
+      <!-- LEFT: CLIENTE + BUSQUEDA + CARRITO -->
+      <div class="flex-1 flex flex-col p-5 gap-4 overflow-y-auto">
+
+        <!-- Cliente / Vehículo -->
+        <div class="card p-4">
+          <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold mb-3">Cliente &amp; Vehículo</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <!-- Cliente con autocomplete -->
+            <div class="relative">
+              <label class="block text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Cliente</label>
+              <input id="inpCliente" type="text" placeholder="Nombre o teléfono..." class="input-dark"
+                oninput="buscarCliente(this.value)" autocomplete="off"/>
+              <div id="dropCliente" class="autocomplete-box hidden"></div>
+            </div>
+            <!-- Patente -->
+            <div class="relative">
+              <label class="block text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Patente</label>
+              <input id="inpPatente" type="text" placeholder="ABC123 o AB123CD" class="input-dark mono uppercase"
+                oninput="this.value=this.value.toUpperCase()" onblur="buscarPatente(this.value)"/>
+              <div id="dropPatente" class="autocomplete-box hidden"></div>
+            </div>
+            <!-- Modelo -->
+            <div>
+              <label class="block text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Modelo / Año</label>
+              <input id="inpModelo" type="text" placeholder="Ej: Ford Ranger 2022" class="input-dark"/>
+            </div>
+            <!-- Teléfono -->
+            <div>
+              <label class="block text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Teléfono</label>
+              <input id="inpTelefono" type="text" placeholder="Ej: 2644123456" class="input-dark"/>
+            </div>
+          </div>
+          <!-- Enviar a taller -->
+          <div class="mt-3 flex items-center gap-2">
+            <input id="chkTaller" type="checkbox" class="w-4 h-4 accent-red-600 cursor-pointer"/>
+            <label for="chkTaller" class="text-xs text-gray-400 cursor-pointer">Enviar vehículo a taller después de la venta</label>
+          </div>
+        </div>
+
+        <!-- Buscador de productos/servicios -->
+        <div class="card p-4">
+          <div class="flex items-center justify-between mb-3">
+            <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold">Agregar Producto o Servicio</p>
+            <button onclick="toggleItemLibre()" class="text-[10px] font-bold uppercase tracking-wider text-red-500 hover:text-red-400 transition flex items-center gap-1" id="btnToggleLibre">
+              <i class="fas fa-plus-circle"></i> Item Libre
+            </button>
+          </div>
+          <div class="relative">
+            <input id="inpBusqueda" type="text" placeholder="Buscar por nombre, código o medida..." class="input-dark pr-10"
+              oninput="buscarProducto(this.value)" autocomplete="off"/>
+            <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 text-xs"></i>
+            <div id="dropBusqueda" class="autocomplete-box hidden"></div>
+          </div>
+          <!-- Item libre (no está en stock) -->
+          <div id="itemLibreBox" class="hidden mt-3 bg-[#18181b] border border-[#27272a] rounded-lg p-3 space-y-2">
+            <p class="text-[10px] text-yellow-400 uppercase tracking-widest font-bold"><i class="fas fa-edit mr-1"></i>Item fuera de stock</p>
+            <div class="grid grid-cols-12 gap-2">
+              <div class="col-span-5">
+                <input id="libreDesc" type="text" placeholder="Descripción del artículo" class="input-dark text-xs py-2"/>
+              </div>
+              <div class="col-span-2">
+                <input id="libreCant" type="number" value="1" min="1" placeholder="Cant" class="input-dark text-xs py-2 text-center"/>
+              </div>
+              <div class="col-span-3">
+                <input id="librePrecio" type="number" placeholder="Precio" class="input-dark text-xs py-2 text-right"/>
+              </div>
+              <div class="col-span-2 flex items-center justify-center">
+                <button onclick="agregarItemLibre()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg text-xs transition">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Carrito -->
+        <div class="card flex-1">
+          <div class="flex items-center justify-between px-4 pt-4 pb-3 border-b border-[#18181b]">
+            <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold">Carrito</p>
+            <span id="carritoCount" class="badge-red">0 items</span>
+          </div>
+          <div id="carritoBody" class="divide-y divide-[#18181b] min-h-[80px]">
+            <div class="flex items-center justify-center py-10 text-gray-700 text-xs">
+              <i class="fas fa-shopping-cart mr-2 opacity-30"></i> Sin items
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: TOTALES + PAGO -->
+      <div class="w-80 flex-shrink-0 border-l border-[#1f1f22] flex flex-col bg-[#050505]">
+
+        <!-- Totales -->
+        <div class="p-5 border-b border-[#1f1f22]">
+          <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold mb-4">Resumen</p>
+
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between text-gray-400">
+              <span>Subtotal</span>
+              <span id="lblSubtotal" class="mono">$0</span>
+            </div>
+            <!-- Bonificación -->
+            <div class="flex justify-between items-center text-gray-400">
+              <span>Bonif. %</span>
+              <input id="inpBonif" type="number" min="0" max="100" value="0" class="input-dark w-20 text-right mono py-1 px-2 text-xs"
+                oninput="recalcular()"/>
+            </div>
+            <!-- IVA opcional -->
+            <div class="flex justify-between items-center text-gray-400">
+              <div class="flex items-center gap-2">
+                <input id="chkIva" type="checkbox" class="w-3.5 h-3.5 accent-red-600 cursor-pointer" onchange="recalcular()"/>
+                <label for="chkIva" class="cursor-pointer text-sm">IVA (21%)</label>
+              </div>
+              <span id="lblIva" class="mono">$0</span>
+            </div>
+            <div class="flex justify-between text-white font-black text-xl border-t border-[#27272a] pt-3 mt-3">
+              <span>TOTAL</span>
+              <span id="lblTotal" class="mono text-red-500">$0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Método de pago -->
+        <div class="p-5 border-b border-[#1f1f22]">
+          <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold mb-3">Método de Pago</p>
+          <select id="selMetodoPago" class="input-dark text-xs" onchange="cambiarMetodoPago()">
+            <option value="efectivo">Efectivo</option>
+            <option value="tarjeta">Tarjeta (Plan de Cuotas)</option>
+            <option value="transferencia">Transferencia</option>
+            <option value="cuenta_corriente">Cuenta Corriente Cliente</option>
+          </select>
+
+          <!-- Plan tarjeta -->
+          <div id="divPlanTarjeta" class="hidden mt-3">
+            <select id="selPlan" class="input-dark text-xs" onchange="calcularCuota()">
+              <option value="">-- Seleccionar plan --</option>
+            </select>
+            <div id="infoCuota" class="hidden mt-3 bg-[#0a0a0c] border border-[#18181b] rounded-lg p-3 text-xs text-gray-400">
+              <div class="flex justify-between">
+                <span>Coeficiente</span>
+                <span id="lblCoef" class="mono text-white">—</span>
+              </div>
+              <div class="flex justify-between mt-1">
+                <span>Cuota aprox.</span>
+                <span id="lblCuota" class="mono text-green-400 font-bold">—</span>
+              </div>
+              <div class="flex justify-between mt-1">
+                <span>Total financiado</span>
+                <span id="lblTotalFin" class="mono text-white">—</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cuenta corriente info -->
+          <div id="divCtaCte" class="hidden mt-3 bg-[#0a0a0c] border border-yellow-900/30 rounded-lg p-3 text-xs text-yellow-400">
+            <i class="fas fa-info-circle mr-1"></i> Se cargará como deuda en la cuenta corriente del cliente seleccionado.
+          </div>
+        </div>
+
+        <!-- Observaciones -->
+        <div class="p-5 border-b border-[#1f1f22]">
+          <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold mb-2">Observaciones</p>
+          <textarea id="inpObs" rows="2" placeholder="Notas para la venta..." class="input-dark text-xs resize-none"></textarea>
+        </div>
+
+        <!-- Acciones -->
+        <div class="p-5 space-y-2 mt-auto">
+          <button onclick="guardarCotizacion()" class="w-full btn-ghost text-sm">
+            <i class="fas fa-save mr-2 text-yellow-500"></i> Guardar Cotización
+          </button>
+          <button onclick="confirmarVenta(false)" class="w-full btn-red text-sm">
+            <i class="fas fa-check mr-2"></i> CONFIRMAR VENTA
+          </button>
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <button onclick="enviarWhatsApp()" class="btn-ghost text-xs py-2">
+              <i class="fab fa-whatsapp mr-1 text-green-500"></i> WhatsApp
+            </button>
+            <button onclick="verPDF()" class="btn-ghost text-xs py-2">
+              <i class="fas fa-file-pdf mr-1 text-red-500"></i> PDF
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL: Cotizaciones pendientes -->
+  <div id="modalCots" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#09090b] border border-[#27272a] rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+      <div class="flex items-center justify-between p-5 border-b border-[#18181b]">
+        <h3 class="font-bold text-white">Cotizaciones Pendientes</h3>
+        <button onclick="cerrarCotizaciones()" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+      </div>
+      <div id="listaCots" class="flex-1 overflow-y-auto p-5 space-y-3"></div>
+    </div>
+  </div>
+
+  <script>
+    // ─── STATE ───────────────────────────────────────────
+    let carrito = [];
+    let clienteId = null;
+    let vehiculoId = null;
+    let ultimaVentaId = null;
+    let planesCache = [];
+
+    const currency = (n) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(n || 0);
+
+    function logout() {
+      document.cookie = 'becubical_session=; max-age=0; path=/';
+      window.location.href = '../login.html';
+    }
+
+    // ─── CLIENTE AUTOCOMPLETE ─────────────────────────────
+    let timerCliente;
+    function buscarCliente(val) {
+      clearTimeout(timerCliente);
+      clienteId = null;
+      if (val.length < 2) { document.getElementById('dropCliente').classList.add('hidden'); return; }
+      timerCliente = setTimeout(async () => {
+        try {
+          const r = await fetch(`/api/v1/crm/clientes/buscar?termino=${encodeURIComponent(val)}`);
+          const resp = await r.json();
+          const data = resp.data || [];
+          const drop = document.getElementById('dropCliente');
+          if (!data.length) { drop.classList.add('hidden'); return; }
+          drop.innerHTML = data.map(c =>
+            `<div class="autocomplete-item" onclick="selCliente(${c.id},'${(c.nombre||'').replace(/'/g,"\\'")}','${c.telefono||''}')">
+              <span class="font-bold">${c.nombre}</span>
+              <span class="text-gray-600 text-xs ml-2">${c.telefono || ''}</span>
+            </div>`
+          ).join('');
+          drop.classList.remove('hidden');
+        } catch(e) {}
+      }, 300);
+    }
+
+    function selCliente(id, nombre, tel) {
+      clienteId = id;
+      document.getElementById('inpCliente').value = nombre;
+      document.getElementById('inpTelefono').value = tel;
+      document.getElementById('dropCliente').classList.add('hidden');
+    }
+
+    // ─── PATENTE LOOKUP ───────────────────────────────────
+    async function buscarPatente(pat) {
+      pat = pat.trim().toUpperCase();
+      if (pat.length < 5) return;
+      try {
+        const r = await fetch(`/api/v1/crm/clientes/buscar?termino=${encodeURIComponent(pat)}`);
+        const data = await r.json();
+        // data puede contener vehículo, usar primer resultado si tiene patente
+        const v = data.find(x => x.vehiculo_patente === pat);
+        if (v) {
+          vehiculoId = v.vehiculo_id || null;
+          if (v.nombre) selCliente(v.id, v.nombre, v.telefono || '');
+          if (v.vehiculo_modelo) document.getElementById('inpModelo').value = v.vehiculo_modelo;
+        }
+      } catch(e) {}
+    }
+
+    // ─── PRODUCTO BUSQUEDA ────────────────────────────────
+    let timerProd;
+    function buscarProducto(val) {
+      clearTimeout(timerProd);
+      if (val.length < 2) { document.getElementById('dropBusqueda').classList.add('hidden'); return; }
+      timerProd = setTimeout(async () => {
+        try {
+          const [rProd, rServ] = await Promise.all([
+            fetch(`/api/v1/operaciones/admin/inventario?buscar=${encodeURIComponent(val)}`),
+            fetch(`/api/v1/operaciones/servicios/buscar?termino=${encodeURIComponent(val)}`)
+          ]);
+          const dataProd = await rProd.json();
+          const servs = await rServ.json();
+          const prods = Array.isArray(dataProd) ? dataProd : (dataProd.data || []);
+          const drop = document.getElementById('dropBusqueda');
+          const all = [
+            ...prods.map(p => ({ ...p, _tipo: 'producto' })),
+            ...servs.map(s => ({ ...s, _tipo: 'servicio' }))
+          ];
+          if (!all.length) { drop.classList.add('hidden'); return; }
+          drop.innerHTML = all.map(x => {
+            const icon = x._tipo === 'servicio' ? 'fa-wrench text-orange-400' : 'fa-box text-blue-400';
+            const stock = x._tipo === 'producto' ? ` <span class="text-gray-600">(${x.stock ?? 0})</span>` : '';
+            return `<div class="autocomplete-item" onclick="agregarItem(${JSON.stringify(x).replace(/"/g,'&quot;')})">
+              <i class="fas ${icon} text-[10px] mr-1"></i>
+              <span class="font-bold">${x.descripcion || x.nombre}</span>
+              <span class="mono text-green-400 ml-2 text-xs">${currency(x.precio_venta || x.precio)}</span>
+              ${stock}
+            </div>`;
+          }).join('');
+          drop.classList.remove('hidden');
+        } catch(e) {}
+      }, 300);
+    }
+
+    // ─── ITEM LIBRE ─────────────────────────────────────────
+    function toggleItemLibre() {
+      const box = document.getElementById('itemLibreBox');
+      box.classList.toggle('hidden');
+      if (!box.classList.contains('hidden')) {
+        document.getElementById('libreDesc').value = '';
+        document.getElementById('libreCant').value = '1';
+        document.getElementById('librePrecio').value = '';
+        document.getElementById('libreDesc').focus();
+      }
+    }
+
+    function agregarItemLibre() {
+      const desc = document.getElementById('libreDesc').value.trim();
+      const cant = parseInt(document.getElementById('libreCant').value) || 1;
+      const precio = parseFloat(document.getElementById('librePrecio').value) || 0;
+      if (!desc) { Swal.fire({icon:'warning',title:'Ingresá una descripción',background:'#111',color:'#fff'}); return; }
+      if (precio <= 0) { Swal.fire({icon:'warning',title:'Ingresá un precio',background:'#111',color:'#fff'}); return; }
+      carrito.push({ id: 'libre_' + Date.now(), _tipo: 'libre', descripcion: desc, precio, qty: cant });
+      renderCarrito();
+      document.getElementById('libreDesc').value = '';
+      document.getElementById('libreCant').value = '1';
+      document.getElementById('librePrecio').value = '';
+      document.getElementById('libreDesc').focus();
+    }
+
+    // ─── CARRITO ──────────────────────────────────────────
+    function agregarItem(item) {
+      document.getElementById('dropBusqueda').classList.add('hidden');
+      document.getElementById('inpBusqueda').value = '';
+      const precio = item.precio_venta || item.precio || 0;
+      const existing = carrito.find(c => c.id === item.id && c._tipo === item._tipo);
+      if (existing) {
+        existing.qty++;
+      } else {
+        carrito.push({ id: item.id, _tipo: item._tipo, descripcion: item.descripcion || item.nombre, precio, qty: 1 });
+      }
+      renderCarrito();
+    }
+
+    function renderCarrito() {
+      const body = document.getElementById('carritoBody');
+      document.getElementById('carritoCount').textContent = `${carrito.length} item${carrito.length !== 1 ? 's' : ''}`;
+      if (!carrito.length) {
+        body.innerHTML = `<div class="flex items-center justify-center py-10 text-gray-700 text-xs">
+          <i class="fas fa-shopping-cart mr-2 opacity-30"></i> Sin items</div>`;
+        recalcular(); return;
+      }
+      body.innerHTML = carrito.map((item, i) => `
+        <div class="carrito-row flex items-center gap-2 px-4 py-3">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-white truncate">${item.descripcion}</p>
+            <p class="text-xs text-gray-600 mono">${currency(item.precio)} c/u</p>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="cambiarQty(${i},-1)" class="w-6 h-6 rounded bg-[#18181b] text-gray-400 hover:text-white text-xs flex items-center justify-center">-</button>
+            <span class="mono text-sm w-6 text-center">${item.qty}</span>
+            <button onclick="cambiarQty(${i},1)" class="w-6 h-6 rounded bg-[#18181b] text-gray-400 hover:text-white text-xs flex items-center justify-center">+</button>
+          </div>
+          <span class="mono text-sm text-white w-24 text-right">${currency(item.precio * item.qty)}</span>
+          <button onclick="quitarItem(${i})" class="text-gray-700 hover:text-red-500 ml-1"><i class="fas fa-times text-xs"></i></button>
+        </div>`).join('');
+      recalcular();
+    }
+
+    function cambiarQty(i, delta) {
+      carrito[i].qty = Math.max(1, carrito[i].qty + delta);
+      renderCarrito();
+    }
+
+    function quitarItem(i) {
+      carrito.splice(i, 1);
+      renderCarrito();
+    }
+
+    // ─── TOTALES ──────────────────────────────────────────
+    let totalCalculado = 0;
+    function recalcular() {
+      const subtotal = carrito.reduce((s, c) => s + c.precio * c.qty, 0);
+      const bonif = parseFloat(document.getElementById('inpBonif').value) || 0;
+      const descuento = subtotal * (bonif / 100);
+      const base = subtotal - descuento;
+      const conIva = document.getElementById('chkIva').checked;
+      const iva = conIva ? base * 0.21 : 0;
+      totalCalculado = base + iva;
+      document.getElementById('lblSubtotal').textContent = currency(subtotal);
+      document.getElementById('lblIva').textContent = currency(iva);
+      document.getElementById('lblTotal').textContent = currency(totalCalculado);
+      calcularCuota();
+    }
+
+    // ─── METODO DE PAGO ─────────────────────────────────
+    function cambiarMetodoPago() {
+      const metodo = document.getElementById('selMetodoPago').value;
+      document.getElementById('divPlanTarjeta').classList.toggle('hidden', metodo !== 'tarjeta');
+      document.getElementById('divCtaCte').classList.toggle('hidden', metodo !== 'cuenta_corriente');
+      if (metodo !== 'tarjeta') {
+        document.getElementById('selPlan').value = '';
+        document.getElementById('infoCuota').classList.add('hidden');
+      }
+    }
+
+    // ─── PLANES ───────────────────────────────────────────
+    async function cargarPlanes() {
+      try {
+        const r = await fetch('/api/v1/finanzas/coeficientes/28');
+        const data = await r.json();
+        planesCache = Array.isArray(data) ? data.filter(p => p.activo !== false) : [];
+        const sel = document.getElementById('selPlan');
+        sel.innerHTML = '<option value="">-- Seleccionar plan --</option>';
+        planesCache.forEach(p => {
+          sel.innerHTML += `<option value="${p.id}">${p.nombre} — ${p.cuotas} cuotas (x${p.coeficiente})</option>`;
+        });
+      } catch(e) {}
+    }
+
+    function calcularCuota() {
+      const planId = parseInt(document.getElementById('selPlan').value);
+      const info = document.getElementById('infoCuota');
+      if (!planId) { info.classList.add('hidden'); return; }
+      const plan = planesCache.find(p => p.id === planId);
+      if (!plan) { info.classList.add('hidden'); return; }
+      const totalFin = totalCalculado * plan.coeficiente;
+      const cuota = totalFin / plan.cuotas;
+      document.getElementById('lblCoef').textContent = `x${plan.coeficiente}`;
+      document.getElementById('lblCuota').textContent = currency(cuota);
+      document.getElementById('lblTotalFin').textContent = currency(totalFin);
+      info.classList.remove('hidden');
+    }
+
+    // ─── PAYLOAD HELPER ──────────────────────────────────
+    function buildPayload(esCotizacion) {
+      const bonif = parseFloat(document.getElementById('inpBonif').value) || 0;
+      const conIva = document.getElementById('chkIva').checked;
+      const ivaVal = conIva ? 0.21 : 0;
+      const metodo = document.getElementById('selMetodoPago').value;
+      const planId = parseInt(document.getElementById('selPlan').value) || null;
+
+      return {
+        cliente_nombre: document.getElementById('inpCliente').value || 'Anónimo',
+        cliente_telefono: document.getElementById('inpTelefono').value || '',
+        cliente_id: clienteId,
+        patente: document.getElementById('inpPatente').value || '',
+        modelo_vehiculo: document.getElementById('inpModelo').value || '',
+        vehiculo_id: vehiculoId,
+        observaciones: document.getElementById('inpObs').value || '',
+        monto_bonificacion: carrito.reduce((s, c) => s + c.precio * c.qty, 0) * (bonif / 100),
+        alicuota_iva: ivaVal,
+        metodo_pago: metodo === 'tarjeta' ? 'Tarjeta' : metodo === 'cuenta_corriente' ? 'Cuenta Corriente' : metodo === 'transferencia' ? 'Transferencia' : 'Efectivo',
+        coeficiente_id: planId,
+        monto_abonado: metodo === 'cuenta_corriente' ? 0 : totalCalculado,
+        es_cotizacion: esCotizacion,
+        enviar_a_taller: document.getElementById('chkTaller').checked,
+        items: carrito.map(c => ({
+          tipo: c._tipo,
+          referencia_id: c.id,
+          descripcion: c.descripcion,
+          cantidad: c.qty,
+          precio_final: c.precio
+        }))
+      };
+    }
+
+    // ─── GUARDAR COTIZACIÓN ───────────────────────────────
+    async function guardarCotizacion() {
+      if (!carrito.length) return Swal.fire('Carrito vacío', 'Agregá al menos un producto', 'warning');
+      try {
+        const r = await fetch('/api/v1/operaciones', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(buildPayload(true)) });
+        if (r.ok) {
+          const d = await r.json();
+          ultimaVentaId = d.id;
+          Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2500, background: '#09090b', color: '#fff' })
+            .fire({ icon: 'success', title: 'Cotización guardada' });
+        }
+      } catch(e) { Swal.fire('Error', 'No se pudo guardar', 'error'); }
+    }
+
+    // ─── CONFIRMAR VENTA ──────────────────────────────────
+    async function confirmarVenta(esCotizacion) {
+      if (!carrito.length) return Swal.fire('Carrito vacío', 'Agregá al menos un producto', 'warning');
+      try {
+        const r = await fetch('/api/v1/operaciones/venta-mostrador', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(buildPayload(false)) });
+        if (r.ok) {
+          const d = await r.json();
+          ultimaVentaId = d.id;
+          Swal.fire({ icon: 'success', title: '¡Venta confirmada!', text: `ID #${d.id}`, background: '#09090b', color: '#fff', confirmButtonColor: '#dc2626' });
+          nuevaVenta();
+        } else {
+          Swal.fire('Error', 'No se pudo confirmar la venta', 'error');
+        }
+      } catch(e) { Swal.fire('Error', 'Error de conexión', 'error'); }
+    }
+
+    // ─── NUEVA VENTA ──────────────────────────────────────
+    function nuevaVenta() {
+      carrito = [];
+      clienteId = null;
+      vehiculoId = null;
+      ultimaVentaId = null;
+      ['inpCliente','inpPatente','inpModelo','inpTelefono','inpObs'].forEach(id => { document.getElementById(id).value = ''; });
+      document.getElementById('inpBonif').value = 0;
+      document.getElementById('selPlan').value = '';
+      document.getElementById('infoCuota').classList.add('hidden');
+      document.getElementById('chkTaller').checked = false;
+      renderCarrito();
+    }
+
+    // ─── WHATSAPP ─────────────────────────────────────────
+    async function enviarWhatsApp() {
+      if (!carrito.length) return Swal.fire('Carrito vacío', 'Agregá al menos un producto', 'warning');
+      
+      Swal.fire({ title: 'Generando PDF...', text: 'Por favor espera', background: '#09090b', color: '#fff', showConfirmButton: false, allowOutsideClick: false });
+      
+      try {
+        let ventaId = ultimaVentaId;
+        
+        if (!ventaId) {
+          const r = await fetch('/api/v1/operaciones', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(buildPayload(true)) });
+          if (!r.ok) throw new Error('Error al guardar');
+          const d = await r.json();
+          ventaId = d.id;
+          ultimaVentaId = ventaId;
+        }
+        
+        const pdfUrl = `/api/v1/reportes/presupuesto/${ventaId}`;
+        
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        Swal.close();
+        
+        const tel = document.getElementById('inpTelefono').value.replace(/\D/g, '');
+        const num = tel ? `54${tel}` : '';
+        
+        Swal.fire({
+          title: 'PDF generado',
+          text: '¿Abrir WhatsApp para enviar el PDF?',
+          icon: 'success',
+          showCancelButton: true,
+          confirmButtonColor: '#25D366',
+          cancelButtonColor: '#6b7280',
+          background: '#09090b',
+          color: '#fff',
+          confirmButtonText: '<i class="fab fa-whatsapp mr-1"></i> Abrir WhatsApp',
+          cancelButtonText: 'Cerrar'
+        }).then(result => {
+          if (result.isConfirmed) {
+            window.open(`https://wa.me/${num}`, '_blank');
+          }
+        });
+        
+      } catch(e) {
+        Swal.close();
+        Swal.fire('Error', 'No se pudo generar el PDF', 'error');
+      }
+    }
+
+    // ─── PDF ──────────────────────────────────────────────
+    async function verPDF() {
+      if (!carrito.length) return Swal.fire('Carrito vacío', 'Agregá al menos un producto', 'warning');
+      
+      let ventaId = ultimaVentaId;
+      
+      if (!ventaId) {
+        try {
+          const r = await fetch('/api/v1/operaciones', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(buildPayload(true)) });
+          if (!r.ok) throw new Error('Error al guardar');
+          const d = await r.json();
+          ventaId = d.id;
+          ultimaVentaId = ventaId;
+        } catch(e) {
+          return Swal.fire('Error', 'No se pudo guardar la cotización', 'error');
+        }
+      }
+      
+      window.open(`/api/v1/reportes/presupuesto/${ventaId}`, '_blank');
+    }
+
+    // ─── COTIZACIONES PENDIENTES ──────────────────────────
+    async function abrirCotizaciones() {
+      document.getElementById('modalCots').classList.remove('hidden');
+      const lista = document.getElementById('listaCots');
+      lista.innerHTML = '<p class="text-gray-600 text-sm text-center py-8">Cargando...</p>';
+      try {
+        const r = await fetch('/api/v1/operaciones/cotizaciones/pendientes');
+        const data = await r.json();
+        if (!data.length) { lista.innerHTML = '<p class="text-gray-600 text-sm text-center py-8">Sin cotizaciones pendientes</p>'; return; }
+        lista.innerHTML = data.map(c => {
+          const fecha = c.fecha_creacion ? new Date(c.fecha_creacion).toLocaleDateString('es-AR') : '—';
+          const tipo = c.es_cotizacion ? '<span class="text-xs bg-yellow-600/30 text-yellow-400 px-2 py-0.5 rounded">Cotización</span>' : '<span class="text-xs bg-green-600/30 text-green-400 px-2 py-0.5 rounded">Venta</span>';
+          const metodoPago = c.metodo_pago || '';
+          const tel = c.cliente_telefono || '';
+          const telDisplay = tel ? `<span class="text-xs text-gray-500 ml-2"><i class="fas fa-phone text-[8px] mr-1"></i>${tel}</span>` : '';
+          const tipoDoc = c.es_cotizacion ? 'Cotización' : 'Venta';
+          return `<div class="bg-[#0f0f0f] border border-[#27272a] rounded-xl p-4 flex items-center gap-3">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1 flex-wrap">
+                <p class="font-bold text-white text-sm">${c.cliente_nombre || 'Anón'}</p>
+                ${telDisplay}
+                ${tipo}
+                ${metodoPago === 'cuenta_corriente' ? '<span class="text-xs bg-blue-600/30 text-blue-400 px-2 py-0.5 rounded">Cta. Cte.</span>' : ''}
+              </div>
+              <p class="text-xs text-gray-600 mono">${fecha} — ${currency(c.total_venta)}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="enviarPdfWhatsApp(${c.id}, '${(c.cliente_telefono||'').replace(/\D/g,'')}', '${tipoDoc}')" class="bg-green-600 hover:bg-green-700 text-white py-1.5 px-3 rounded-lg transition text-xs" title="Enviar PDF por WhatsApp">
+                <i class="fab fa-whatsapp mr-1"></i> WhatsApp
+              </button>
+              <button onclick="verPdfCotizacion(${c.id})" class="bg-blue-600/30 hover:bg-blue-600/50 text-blue-400 py-1.5 px-3 rounded-lg transition text-xs" title="Ver PDF">
+                <i class="fas fa-file-pdf mr-1"></i> PDF
+              </button>
+              <button onclick="recuperarCotizacion(${c.id})" class="btn-red text-xs py-1.5 px-3">Recuperar</button>
+              <button onclick="eliminarCotizacion(${c.id}, ${c.es_cotizacion ? 'true' : 'false'})" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 py-1.5 px-3 rounded-lg transition" title="Eliminar">
+                <i class="fas fa-trash text-xs"></i>
+              </button>
+            </div>
+          </div>`;
+        }).join('');
+      } catch(e) { lista.innerHTML = '<p class="text-red-500 text-sm text-center py-8">Error al cargar</p>'; }
+    }
+
+    function verPdfCotizacion(id) {
+      window.open(`/api/v1/reportes/presupuesto/${id}`, '_blank');
+    }
+
+    async function enviarPdfWhatsApp(id, telefono, tipoDoc) {
+      const tel = telefono.replace(/\D/g, '');
+      const num = tel ? `54${tel}` : '';
+      
+      if (!tel || num === '54') {
+        Swal.fire({ icon: 'info', title: 'Sin teléfono', text: 'Esta cotización no tiene teléfono registrado', background: '#09090b', color: '#fff' });
+        return;
+      }
+      
+      Swal.fire({ title: 'Descargando PDF...', text: 'Preparando archivo', background: '#09090b', color: '#fff', showConfirmButton: false, allowOutsideClick: false });
+      
+      try {
+        const pdfUrl = `/api/v1/reportes/presupuesto/${id}`;
+        const response = await fetch(pdfUrl);
+        const blob = await response.blob();
+        
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${tipoDoc}_${id}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        Swal.close();
+        
+        const mensaje = encodeURIComponent(
+          `¡Hola! Te enviamos tu ${tipoDoc} de Giorda Neumáticos.\n\n` +
+          `Encontrás el PDF adjunto en tus descargas.\n\n` +
+          `¿Tenés alguna consulta? Estamos para ayudarte.`
+        );
+        
+        Swal.fire({
+          title: 'PDF descargado',
+          text: 'El archivo está en tu carpeta de descargas. Adjuntalo en WhatsApp.',
+          icon: 'success',
+          showCancelButton: true,
+          confirmButtonColor: '#25D366',
+          cancelButtonColor: '#6b7280',
+          background: '#09090b',
+          color: '#fff',
+          confirmButtonText: '<i class="fab fa-whatsapp mr-1"></i> Abrir WhatsApp',
+          cancelButtonText: 'Cerrar'
+        }).then(result => {
+          if (result.isConfirmed) {
+            window.open(`https://wa.me/${num}?text=${mensaje}`, '_blank');
+          }
+        });
+        
+      } catch(e) {
+        Swal.close();
+        window.open(`/api/v1/reportes/presupuesto/${id}`, '_blank');
+        const mensaje = encodeURIComponent(`¡Hola! Te enviamos tu ${tipoDoc} de Giorda Neumáticos. ¿Tenés alguna consulta?`);
+        window.open(`https://wa.me/${num}?text=${mensaje}`, '_blank');
+      }
+    }
+
+    function cerrarCotizaciones() {
+      document.getElementById('modalCots').classList.add('hidden');
+    }
+
+    async function recuperarCotizacion(id) {
+      try {
+        const r = await fetch(`/api/v1/operaciones/cotizaciones/${id}/convertir`, { method: 'POST' });
+        const d = await r.json();
+        cerrarCotizaciones();
+        // Cargar datos en formulario
+        if (d.cliente_nombre) document.getElementById('inpCliente').value = d.cliente_nombre;
+        if (d.vehiculo_patente) document.getElementById('inpPatente').value = d.vehiculo_patente;
+        if (d.vehiculo_modelo) document.getElementById('inpModelo').value = d.vehiculo_modelo;
+        if (d.observaciones) document.getElementById('inpObs').value = d.observaciones;
+        ultimaVentaId = d.id;
+        carrito = (d.items || []).map(i => ({
+          id: i.referencia_id, _tipo: i.tipo,
+          descripcion: i.descripcion, precio: i.precio_unitario, qty: i.cantidad
+        }));
+        renderCarrito();
+      } catch(e) { Swal.fire('Error', 'No se pudo recuperar', 'error'); }
+    }
+
+    async function eliminarCotizacion(id) {
+      try {
+        const result = await Swal.fire({
+          title: '¿Eliminar esta cotización?',
+          text: 'Esta acción no se puede deshacer',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#dc2626',
+          cancelButtonColor: '#6b7280',
+          background: '#09090b',
+          color: '#fff',
+          confirmButtonText: 'Sí, eliminar',
+          cancelButtonText: 'Cancelar'
+        });
+        if (!result.isConfirmed) return;
+        
+        const r = await fetch(`/api/v1/operaciones/${id}`, { method: 'DELETE' });
+        if (r.ok) {
+          await Swal.fire({icon:'success', title:'Eliminada', text:'Cotización eliminada', background:'#09090b', color:'#fff', timer:2000, showConfirmButton:false});
+          abrirCotizaciones();
+        } else {
+          throw new Error('Error');
+        }
+      } catch(e) { Swal.fire('Error', 'No se pudo eliminar', 'error'); }
+    }
+
+    // ─── CERRAR DROPDOWNS AL CLICK FUERA ─────────────────
+    document.addEventListener('click', (e) => {
+      ['dropCliente','dropBusqueda','dropPatente'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !el.closest('div')?.contains(e.target)) el.classList.add('hidden');
+      });
+    });
+
+    // ─── INIT ─────────────────────────────────────────────
+    cargarPlanes();
+    
+    // ─── CARGAR DESDE TALLER ─────────────────────────────
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('taller') === '1') {
+      const datosTaller = sessionStorage.getItem('ventaTaller');
+      if (datosTaller) {
+        try {
+          const datos = JSON.parse(datosTaller);
+          document.getElementById('inpCliente').value = datos.cliente || '';
+          document.getElementById('inpTel').value = datos.telefono || '';
+          document.getElementById('inpPatente').value = datos.patente || '';
+          document.getElementById('inpModelo').value = datos.vehiculo || '';
+          
+          if (datos.items && datos.items.length) {
+            carrito = datos.items.map(i => ({
+              id: i.id || 0,
+              _tipo: i.tipo || 'libre',
+              descripcion: i.descripcion,
+              precio: i.precio_unitario || i.precio,
+              qty: i.cantidad || 1
+            }));
+            renderCarrito();
+          }
+          
+          sessionStorage.removeItem('ventaTaller');
+        } catch(e) {}
+      }
+    }
+  </script>
+</body>
+</html>

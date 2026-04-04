@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Artículos | Giorda Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #000; color: #fff; }
+        .sidebar-link { display:flex; align-items:center; gap:10px; padding:10px 16px; border-radius:8px; color:#9ca3af; font-size:14px; font-weight:500; transition:all .2s; cursor:pointer; text-decoration:none; }
+        .sidebar-link:hover { background:#1a1a1a; color:#fff; }
+        .sidebar-link.active { background:#1a1a1a; color:#fff; border-left:3px solid #10b981; padding-left:13px; }
+        .custom-scrollbar::-webkit-scrollbar { width:4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background:transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background:#333; border-radius:2px; }
+        .glass-header { background:rgba(5,5,5,0.95); backdrop-filter:blur(20px); border-bottom:1px solid #1f1f22; }
+        .tab-btn { padding:10px 20px; border-radius:8px; font-weight:600; font-size:14px; transition:all .2s; cursor:pointer; }
+        .tab-btn.active { background:#10b981; color:#fff; }
+        .tab-btn:not(.active) { background:#18181b; color:#9ca3af; border:1px solid #27272a; }
+        .tab-btn:not(.active):hover { background:#27272a; color:#fff; }
+        .input-dark { background:#09090b; border:1px solid #27272a; color:#fff; padding:8px 12px; border-radius:8px; font-size:14px; width:100%; outline:none; transition:border .2s; }
+        .input-dark:focus { border-color:#10b981; }
+        .input-dark::placeholder { color:#555; }
+        select.input-dark { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23666' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 8px center; background-size:20px; padding-right:32px; }
+        .menu-group { margin: 4px 0; }
+    </style>
+</head>
+<body class="bg-black text-white flex h-screen overflow-hidden">
+
+<!-- SIDEBAR -->
+<aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-50 w-64 bg-[#050505] border-r border-[#1f1f22] flex flex-col flex-shrink-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl">
+    <div class="h-16 flex items-center px-5 border-b border-[#1f1f22] flex-shrink-0">
+        <span class="text-xl font-black text-white tracking-tight">Giorda<span class="text-emerald-500">OS</span></span>
+        <button onclick="document.getElementById('sidebar').classList.add('-translate-x-full')" class="ml-auto md:hidden text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+    </div>
+    <nav class="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+        <a href="pedidos-demo.html" class="sidebar-link"><i class="fas fa-tachometer-alt w-5 text-center text-blue-400"></i> Tablero General</a>
+        <a href="pos-mostrador.html" class="sidebar-link"><i class="fas fa-cash-register w-5 text-center text-green-400"></i> POS Mostrador</a>
+        <a href="catalogo-servicios.html" class="sidebar-link"><i class="fas fa-tools w-5 text-center text-yellow-400"></i> Servicios & MO</a>
+        
+        <!-- ADMINISTRAR PRODUCTOS - Collapsible -->
+        <div class="menu-group">
+            <button onclick="toggleMenu('productos')" class="sidebar-link w-full text-left justify-between">
+                <span class="flex items-center gap-2"><i class="fas fa-boxes w-5 text-center text-emerald-400"></i> Administrar Productos</span>
+                <i class="fas fa-chevron-down text-xs transition-transform" id="icon-productos"></i>
+            </button>
+            <div id="sub-productos" class="pl-4 space-y-1 hidden">
+                <a href="articulos.html" class="sidebar-link text-xs py-2"><i class="fas fa-list w-4 text-center text-emerald-400"></i> Listar</a>
+                <a href="categorias.html" class="sidebar-link text-xs py-2"><i class="fas fa-tags w-4 text-center text-blue-400"></i> Categorías</a>
+                <a href="importar-facturas.html" class="sidebar-link text-xs py-2"><i class="fas fa-truck w-4 text-center text-orange-400"></i> Proveedores</a>
+                <a href="articulos.html" onclick="abrirModalArticulo(); return false;" class="sidebar-link text-xs py-2"><i class="fas fa-plus w-4 text-center text-purple-400"></i> Crear</a>
+                <a href="ajuste-precios.html" class="sidebar-link text-xs py-2"><i class="fas fa-percentage w-4 text-center text-yellow-400"></i> Ajuste Precios</a>
+                <a href="importador.html" class="sidebar-link text-xs py-2"><i class="fas fa-file-import w-4 text-center text-cyan-400"></i> Importador</a>
+            </div>
+        </div>
+        
+        <a href="importar-facturas.html" class="sidebar-link"><i class="fas fa-file-invoice-dollar w-5 text-center text-orange-400"></i> Compras (Prov.)</a>
+        <a href="finanzas-dashboard.html" class="sidebar-link"><i class="fas fa-chart-line w-5 text-center text-emerald-400"></i> Finanzas & Caja</a>
+        <a href="cuenta-corriente.html" class="sidebar-link"><i class="fas fa-users w-5 text-center text-cyan-400"></i> Cuentas Corrientes</a>
+        <a href="sueldos.html" class="sidebar-link"><i class="fas fa-id-card w-5 text-center text-pink-400"></i> Sueldos</a>
+        <a href="taller-control.html" class="sidebar-link"><i class="fas fa-wrench w-5 text-center text-red-400"></i> Tablero Mecanicos</a>
+    </nav>
+    <script>
+        function toggleMenu(id) {
+            const submenu = document.getElementById('sub-' + id);
+            const icon = document.getElementById('icon-' + id);
+            submenu.classList.toggle('hidden');
+            icon.classList.toggle('rotate-180');
+        }
+    </script>
+    <div class="p-4 border-t border-[#1f1f22] flex-shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-emerald-700 flex items-center justify-center text-xs font-bold">S</div>
+            <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-white truncate">Sergio Admin</p><p class="text-xs text-gray-500">GERENCIA</p></div>
+            <a onclick="document.cookie='becubical_session=; max-age=0; path=/'; window.location.href='../login.html'" class="text-gray-500 hover:text-red-500 cursor-pointer"><i class="fas fa-sign-out-alt"></i></a>
+        </div>
+    </div>
+</aside>
+
+<div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden" onclick="closeSidebar()"></div>
+
+<div class="flex-1 flex flex-col overflow-hidden">
+    <header class="glass-header md:hidden flex items-center justify-between px-4 h-14 flex-shrink-0">
+        <button onclick="openSidebar()" class="text-gray-400 hover:text-white"><i class="fas fa-bars text-xl"></i></button>
+        <span class="text-lg font-black">Giorda<span class="text-emerald-500">OS</span></span>
+        <div class="w-8"></div>
+    </header>
+
+    <main class="flex-1 overflow-x-hidden overflow-y-auto bg-black p-4 md:p-8 pb-24 md:pb-8 custom-scrollbar">
+        <div class="space-y-6">
+            <!-- TITULO -->
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center">
+                    <i class="fas fa-boxes text-emerald-500 mr-3"></i>
+                    Artículos & Categorías
+                </h2>
+            </div>
+
+            <!-- TABS -->
+            <div class="flex gap-2 flex-wrap">
+                <button class="tab-btn active" onclick="showTab('articulos')"><i class="fas fa-box mr-2"></i>Artículos</button>
+                <button class="tab-btn" onclick="showTab('categorias')"><i class="fas fa-tags mr-2"></i>Categorías</button>
+                <button class="tab-btn" onclick="showTab('importar')"><i class="fas fa-file-import mr-2"></i>Importar Excel</button>
+            </div>
+
+            <!-- ═══════════ TAB ARTÍCULOS ═══════════ -->
+            <div id="tab-articulos" class="space-y-6">
+                <!-- Estadísticas -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-[#18181b] border border-[#27272a] rounded-xl p-4">
+                        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Total Artículos</p>
+                        <p class="text-2xl font-black text-white" id="stat-total">0</p>
+                    </div>
+                    <div class="bg-[#18181b] border border-[#27272a] rounded-xl p-4">
+                        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Con Stock</p>
+                        <p class="text-2xl font-black text-green-400" id="stat-con-stock">0</p>
+                    </div>
+                    <div class="bg-[#18181b] border border-[#27272a] rounded-xl p-4">
+                        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Sin Stock</p>
+                        <p class="text-2xl font-black text-red-400" id="stat-sin-stock">0</p>
+                    </div>
+                    <div class="bg-[#18181b] border border-[#27272a] rounded-xl p-4">
+                        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Valor Stock</p>
+                        <p class="text-2xl font-black text-blue-400" id="stat-valor">$0</p>
+                    </div>
+                </div>
+
+                <!-- Acciones -->
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="abrirModalArticulo()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg transition flex items-center gap-2">
+                        <i class="fas fa-plus"></i> Nuevo Artículo
+                    </button>
+                    <select id="filtro-categoria" class="input-dark w-auto" onchange="cargarArticulos()">
+                        <option value="">Todas las categorías</option>
+                    </select>
+                    <input type="text" id="buscar-articulo" class="input-dark w-64" placeholder="Buscar artículo..." oninput="cargarArticulos()">
+                </div>
+
+                <!-- Tabla -->
+                <div class="bg-[#18181b] border border-[#27272a] rounded-xl overflow-hidden">
+                    <table class="w-full text-sm">
+                        <thead class="bg-[#27272a]">
+                            <tr class="text-[10px] text-gray-500 uppercase tracking-wider">
+                                <th class="px-4 py-3 text-left">Código</th>
+                                <th class="px-4 py-3 text-left">Artículo</th>
+                                <th class="px-4 py-3 text-left">Categoría</th>
+                                <th class="px-4 py-3 text-right">Stock</th>
+                                <th class="px-4 py-3 text-right">P. Compra</th>
+                                <th class="px-4 py-3 text-right">Ganancia %</th>
+                                <th class="px-4 py-3 text-right">P. Venta</th>
+                                <th class="px-4 py-3 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-articulos" class="divide-y divide-[#27272a]"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ═══════════ TAB CATEGORÍAS ═══════════ -->
+            <div id="tab-categorias" class="hidden space-y-6">
+                <div class="flex justify-end">
+                    <button onclick="abrirModalCategoria()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg transition flex items-center gap-2">
+                        <i class="fas fa-plus"></i> Nueva Categoría
+                    </button>
+                </div>
+                <div class="bg-[#18181b] border border-[#27272a] rounded-xl overflow-hidden">
+                    <table class="w-full text-sm">
+                        <thead class="bg-[#27272a]">
+                            <tr class="text-[10px] text-gray-500 uppercase tracking-wider">
+                                <th class="px-4 py-3 text-left">Nombre</th>
+                                <th class="px-4 py-3 text-center">Artículos</th>
+                                <th class="px-4 py-3 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-categorias" class="divide-y divide-[#27272a]"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ═══════════ TAB IMPORTAR EXCEL ═══════════ -->
+            <div id="tab-importar" class="hidden space-y-6">
+                <div class="bg-[#18181b] border border-[#27272a] rounded-xl p-6">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <i class="fas fa-file-excel text-green-500"></i> Importar Artículos desde Excel
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Upload -->
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase font-bold mb-2 block">Seleccionar archivo Excel</label>
+                            <div class="border-2 border-dashed border-[#3f3f46] rounded-xl p-8 text-center hover:border-emerald-500 transition cursor-pointer"
+                                 id="dropzone-excel"
+                                 onclick="document.getElementById('fileExcel').click()">
+                                <i class="fas fa-file-excel text-4xl text-gray-600 mb-3"></i>
+                                <p class="text-gray-400 text-sm">Arrastrá el Excel o hacé click</p>
+                                <p class="text-gray-600 text-xs mt-1">.xlsx, .xls</p>
+                                <input type="file" id="fileExcel" accept=".xlsx,.xls" class="hidden" onchange="handleExcelFile(this)">
+                            </div>
+                            
+                            <div id="fileExcelInfo" class="hidden mt-4 bg-[#09090b] border border-[#27272a] rounded-lg p-3">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <i class="fas fa-file-excel text-green-400 text-xl"></i>
+                                        <div>
+                                            <p class="text-sm text-white font-semibold" id="excelFileName">-</p>
+                                            <p class="text-xs text-gray-500" id="excelFileSheets">-</p>
+                                        </div>
+                                    </div>
+                                    <button onclick="clearExcelFile()" class="text-red-400 hover:text-red-300">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Opciones -->
+                        <div class="space-y-4">
+                            <h4 class="font-bold text-gray-400 uppercase text-xs tracking-wider">Opciones de Importación</h4>
+                            
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">¿Qué campos desea actualizar?</label>
+                                <select id="opc-actualizar-stock" class="input-dark">
+                                    <option value="todos">Actualizar stock Y precio de compra</option>
+                                    <option value="stock">Solo actualizar stock</option>
+                                    <option value="precio">Solo actualizar precio de compra</option>
+                                    <option value="ninguno">No actualizar (solo crear nuevos)</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">Acción para artículos existentes</label>
+                                <select id="opc-existente" class="input-dark">
+                                    <option value="actualizar">Actualizar si existe</option>
+                                    <option value="omitir">Omitir si existe</option>
+                                    <option value="crear">Crear siempre uno nuevo</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">Ganancia predeterminada (%)</label>
+                                <input type="number" id="ganancia-default" class="input-dark" value="30" min="0" max="500">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview -->
+                    <div class="mt-6">
+                        <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Vista Previa</h4>
+                        <div id="preview-excel" class="bg-[#09090b] border border-[#27272a] rounded-xl overflow-hidden max-h-64 overflow-y-auto">
+                            <p class="text-gray-600 text-sm text-center py-8">Cargá un Excel para ver la previsualización</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mt-6">
+                        <p class="text-xs text-gray-500">
+                            <i class="fas fa-info-circle mr-1"></i> Columnas esperadas: Código, Descripción, Precio Compra, Ganancia % (opcional)
+                        </p>
+                        <button onclick="importarExcel()" id="btnImportarExcel" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg transition flex items-center gap-2" disabled>
+                            <i class="fas fa-file-import"></i> Importar Artículos
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Template Download -->
+                <div class="bg-blue-900/20 border border-blue-800/30 rounded-xl p-4">
+                    <h4 class="text-sm font-bold text-blue-400 flex items-center gap-2 mb-2">
+                        <i class="fas fa-download"></i> Descargar Plantilla
+                    </h4>
+                    <p class="text-xs text-gray-400 mb-3">Descargá la plantilla Excel con el formato correcto para importar artículos.</p>
+                    <button onclick="descargarPlantilla()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition text-sm">
+                        <i class="fas fa-download mr-2"></i> Descargar template.xlsx
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- MODAL ARTÍCULO -->
+<div id="modal-articulo" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#18181b] border border-[#27272a] rounded-2xl w-full max-w-lg">
+        <div class="p-6 border-b border-[#27272a] flex items-center justify-between">
+            <h3 class="text-xl font-bold" id="modal-art-titulo">Nuevo Artículo</h3>
+            <button onclick="cerrarModalArticulo()" class="text-gray-500 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Código *</label>
+                    <input id="art-codigo" type="text" class="input-dark" placeholder="Código único">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Categoría</label>
+                    <select id="art-categoria" class="input-dark">
+                        <option value="">Sin categoría</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Descripción *</label>
+                <input id="art-descripcion" type="text" class="input-dark" placeholder="Nombre del artículo">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Precio Compra $</label>
+                    <input id="art-compra" type="number" class="input-dark" placeholder="0" oninput="calcularPrecioVenta()">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Ganancia %</label>
+                    <input id="art-ganancia" type="number" class="input-dark" value="30" oninput="calcularPrecioVenta()">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Precio Venta $</label>
+                    <input id="art-venta" type="number" class="input-dark" placeholder="0" oninput="calcularGanancia()">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Stock Actual</label>
+                    <input id="art-stock" type="number" class="input-dark" value="0" min="0">
+                </div>
+            </div>
+            <div>
+                <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Marca</label>
+                <input id="art-marca" type="text" class="input-dark" placeholder="Marca (opcional)">
+            </div>
+        </div>
+        <div class="p-6 border-t border-[#27272a] flex gap-3">
+            <button onclick="cerrarModalArticulo()" class="flex-1 bg-[#27272a] hover:bg-[#3f3f46] text-white font-bold py-3 rounded-lg transition">Cancelar</button>
+            <button onclick="guardarArticulo()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CATEGORÍA -->
+<div id="modal-categoria" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#18181b] border border-[#27272a] rounded-2xl w-full max-w-md">
+        <div class="p-6 border-b border-[#27272a] flex items-center justify-between">
+            <h3 class="text-lg font-bold">Nueva Categoría</h3>
+            <button onclick="cerrarModalCategoria()" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Nombre de Categoría *</label>
+                <input id="cat-nombre" type="text" class="input-dark" placeholder="Ej: Neumáticos, Lubricantes, etc.">
+            </div>
+        </div>
+        <div class="p-6 border-t border-[#27272a] flex gap-3">
+            <button onclick="cerrarModalCategoria()" class="flex-1 bg-[#27272a] hover:bg-[#3f3f46] text-white font-bold py-3 rounded-lg transition">Cancelar</button>
+            <button onclick="guardarCategoria()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let editandoId = null;
+    let categoriasCache = [];
+    let excelData = null;
+
+    // ── TABS ──────────────────────────────────────────────
+    function toggleAdministrar() {
+        const sub = document.getElementById('sub-administrar');
+        const icon = document.getElementById('icon-administrar');
+        sub.classList.toggle('hidden');
+        icon.classList.toggle('rotate-180');
+    }
+
+    function showTab(tab) {
+        document.querySelectorAll('.tab-btn').forEach((b, i) => {
+            b.classList.toggle('active', ['articulos','categorias','importar'][i] === tab);
+        });
+        document.getElementById('tab-articulos').classList.toggle('hidden', tab !== 'articulos');
+        document.getElementById('tab-categorias').classList.toggle('hidden', tab !== 'categorias');
+        document.getElementById('tab-importar').classList.toggle('hidden', tab !== 'importar');
+        if (tab === 'articulos') cargarArticulos();
+        if (tab === 'categorias') cargarCategorias();
+    }
+
+    // ── SIDEBAR ───────────────────────────────────────────
+    function openSidebar() {
+        document.getElementById('sidebar').classList.remove('-translate-x-full');
+        document.getElementById('sidebar-overlay').classList.remove('hidden');
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.add('-translate-x-full');
+        document.getElementById('sidebar-overlay').classList.add('hidden');
+    }
+
+    // ── ARTÍCULOS ─────────────────────────────────────────
+    async function cargarArticulos() {
+        try {
+            const buscar = document.getElementById('buscar-articulo').value;
+            const cat = document.getElementById('filtro-categoria').value;
+            const params = new URLSearchParams();
+            if (buscar) params.append('buscar', buscar);
+            if (cat) params.append('categoria', cat);
+            
+            const res = await fetch(`/api/v1/articulos?${params}`);
+            const data = await res.json();
+            
+            let total = 0, conStock = 0, sinStock = 0, valor = 0;
+            
+            const tbody = document.getElementById('tabla-articulos');
+            tbody.innerHTML = (data.data || data).map(a => {
+                const stock = a.stock_real || 0;
+                const compra = a.precio_costo || 0;
+                const venta = a.precio_venta || 0;
+                const ganancia = compra > 0 ? ((venta - compra) / compra * 100).toFixed(1) : 0;
+                
+                total++;
+                if (stock > 0) conStock++;
+                else sinStock++;
+                valor += stock * compra;
+                
+                return `<tr class="hover:bg-white/5">
+                    <td class="px-4 py-3 text-gray-400 font-mono text-xs">${a.codigo || '-'}</td>
+                    <td class="px-4 py-3 text-white font-semibold">${a.descripcion}</td>
+                    <td class="px-4 py-3 text-gray-400">${a.categoria || '-'}</td>
+                    <td class="px-4 py-3 text-right ${stock > 0 ? 'text-green-400' : 'text-red-400'}">${stock}</td>
+                    <td class="px-4 py-3 text-right text-gray-400 font-mono">$${compra.toLocaleString('es-AR')}</td>
+                    <td class="px-4 py-3 text-right text-blue-400 font-mono">${ganancia}%</td>
+                    <td class="px-4 py-3 text-right text-emerald-400 font-mono font-bold">$${venta.toLocaleString('es-AR')}</td>
+                    <td class="px-4 py-3 text-center">
+                        <button onclick="editarArticulo(${a.id})" class="text-blue-400 hover:text-blue-300 mr-2" title="Editar"><i class="fas fa-edit"></i></button>
+                        <button onclick="eliminarArticulo(${a.id})" class="text-red-400 hover:text-red-300" title="Eliminar"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`;
+            }).join('');
+            
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-con-stock').textContent = conStock;
+            document.getElementById('stat-sin-stock').textContent = sinStock;
+            document.getElementById('stat-valor').textContent = '$' + valor.toLocaleString('es-AR');
+            
+        } catch(e) { console.error(e); }
+    }
+
+    function abrirModalArticulo(id = null) {
+        editandoId = id;
+        document.getElementById('modal-art-titulo').textContent = id ? 'Editar Artículo' : 'Nuevo Artículo';
+        
+        if (id) {
+            document.getElementById('art-codigo').value = '';
+            document.getElementById('art-descripcion').value = '';
+            document.getElementById('art-compra').value = '0';
+            document.getElementById('art-ganancia').value = '30';
+            document.getElementById('art-venta').value = '0';
+            document.getElementById('art-stock').value = '0';
+            document.getElementById('art-marca').value = '';
+            document.getElementById('art-categoria').value = '';
+        } else {
+            document.getElementById('art-codigo').value = '';
+            document.getElementById('art-descripcion').value = '';
+            document.getElementById('art-compra').value = '0';
+            document.getElementById('art-ganancia').value = '30';
+            document.getElementById('art-venta').value = '0';
+            document.getElementById('art-stock').value = '0';
+            document.getElementById('art-marca').value = '';
+            document.getElementById('art-categoria').value = '';
+        }
+        
+        document.getElementById('modal-articulo').classList.remove('hidden');
+    }
+
+    function cerrarModalArticulo() {
+        document.getElementById('modal-articulo').classList.add('hidden');
+        editandoId = null;
+    }
+
+    function calcularPrecioVenta() {
+        const compra = parseFloat(document.getElementById('art-compra').value) || 0;
+        const ganancia = parseFloat(document.getElementById('art-ganancia').value) || 0;
+        const venta = compra * (1 + ganancia / 100);
+        document.getElementById('art-venta').value = Math.round(venta);
+    }
+
+    function calcularGanancia() {
+        const compra = parseFloat(document.getElementById('art-compra').value) || 0;
+        const venta = parseFloat(document.getElementById('art-venta').value) || 0;
+        if (compra > 0) {
+            const ganancia = ((venta - compra) / compra * 100).toFixed(1);
+            document.getElementById('art-ganancia').value = ganancia;
+        }
+    }
+
+    async function verificarCodigoDuplicado() {
+        const codigo = document.getElementById('art-codigo').value.trim();
+        if (!codigo) return;
+        try {
+            const res = await fetch(`/api/v1/articulos?buscar=${codigo}`);
+            const data = await res.json();
+            const articulos = data.data || data;
+            const duplicado = articulos.find(a => a.codigo === codigo && a.id !== editandoId);
+            if (duplicado) {
+                document.getElementById('art-codigo').classList.add('border-red-500');
+                Swal.fire({icon:'warning', title:'Código duplicado', text:`Ya existe: ${duplicado.descripcion}`, background:'#111', color:'#fff'});
+            } else {
+                document.getElementById('art-codigo').classList.remove('border-red-500');
+            }
+        } catch(e) {}
+    }
+
+    function setPublicar(valor) {
+        document.getElementById('art-publicar-web').value = valor;
+        const btnPublicar = document.getElementById('btn-publicar');
+        const btnNoPublicar = document.getElementById('btn-no-publicar');
+        if (valor) {
+            btnPublicar.className = 'bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-4 rounded-lg transition';
+            btnNoPublicar.className = 'bg-[#27272a] hover:bg-[#3f3f46] text-gray-400 text-xs font-bold py-2 px-4 rounded-lg transition';
+        } else {
+            btnPublicar.className = 'bg-[#27272a] hover:bg-[#3f3f46] text-gray-400 text-xs font-bold py-2 px-4 rounded-lg transition';
+            btnNoPublicar.className = 'bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-4 rounded-lg transition';
+        }
+    }
+
+    function previewFoto(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('foto-img').src = e.target.result;
+                document.getElementById('foto-preview').classList.remove('hidden');
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    async function guardarArticulo() {
+        const codigo = document.getElementById('art-codigo').value.trim();
+        const descripcion = document.getElementById('art-descripcion').value.trim();
+        
+        if (!descripcion) {
+            return Swal.fire({icon:'warning', title:'Falta descripción', background:'#111', color:'#fff'});
+        }
+
+        const payload = {
+            codigo: codigo,
+            descripcion: descripcion,
+            precio_costo: parseFloat(document.getElementById('art-compra').value) || 0,
+            precio_venta: parseFloat(document.getElementById('art-venta').value) || 0,
+            stock_real: parseInt(document.getElementById('art-stock').value) || 0,
+            stock_local: parseInt(document.getElementById('art-stock').value) || 0,
+            marca: document.getElementById('art-marca').value.trim(),
+            categoria: document.getElementById('art-categoria').value,
+            proveedor: document.getElementById('art-proveedor').value.trim(),
+            publicar_web: document.getElementById('art-publicar-web').value === 'true'
+        };
+
+        // Manejar foto si se subió
+        const fotoInput = document.getElementById('art-foto');
+        if (fotoInput.files && fotoInput.files[0]) {
+            payload.foto_base64 = await toBase64(fotoInput.files[0]);
+        }
+
+        try {
+            const url = editandoId ? `/api/v1/articulos/${editandoId}` : '/api/v1/articulos';
+            const method = editandoId ? 'PUT' : 'POST';
+            
+            const res = await fetch(url, {
+                method,
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) throw new Error();
+
+            await Swal.fire({
+                icon:'success',
+                title: editandoId ? 'Artículo actualizado' : 'Artículo creado',
+                background:'#111', color:'#fff',
+                timer: 1500, showConfirmButton: false
+            });
+
+            cerrarModalArticulo();
+            cargarArticulos();
+        } catch(e) {
+            Swal.fire({icon:'error', title:'Error', background:'#111', color:'#fff'});
+        }
+    }
+
+    function toBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    async function editarArticulo(id) {
+        try {
+            const res = await fetch(`/api/v1/articulos/${id}`);
+            const a = await res.json();
+            
+            editandoId = id;
+            document.getElementById('modal-art-titulo').textContent = 'Editar Artículo';
+            document.getElementById('art-codigo').value = a.codigo || '';
+            document.getElementById('art-descripcion').value = a.descripcion;
+            document.getElementById('art-compra').value = a.precio_costo || 0;
+            document.getElementById('art-stock').value = a.stock_real || 0;
+            document.getElementById('art-marca').value = a.marca || '';
+            document.getElementById('art-categoria').value = a.categoria || '';
+            document.getElementById('art-proveedor').value = a.proveedor || '';
+            
+            const compra = a.precio_costo || 0;
+            const venta = a.precio_venta || 0;
+            const ganancia = compra > 0 ? ((venta - compra) / compra * 100).toFixed(1) : 30;
+            document.getElementById('art-ganancia').value = ganancia;
+            document.getElementById('art-venta').value = venta;
+            
+            setPublicar(a.publicar_web !== false);
+            
+            if (a.foto_url) {
+                document.getElementById('foto-img').src = a.foto_url;
+                document.getElementById('foto-preview').classList.remove('hidden');
+            } else {
+                document.getElementById('foto-preview').classList.add('hidden');
+            }
+            
+            document.getElementById('modal-articulo').classList.remove('hidden');
+        } catch(e) {}
+    }
+
+    async function eliminarArticulo(id) {
+        const result = await Swal.fire({
+            icon:'warning',
+            title:'¿Eliminar artículo?',
+            text:'Esta acción no se puede deshacer',
+            background:'#111', color:'#fff',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280'
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            await fetch(`/api/v1/articulos/${id}`, {method: 'DELETE'});
+            await Swal.fire({icon:'success', title:'Eliminado', background:'#111', color:'#fff', timer: 1500, showConfirmButton: false});
+            cargarArticulos();
+        } catch(e) {
+            Swal.fire({icon:'error', title:'Error', background:'#111', color:'#fff'});
+        }
+    }
+
+    // ── CATEGORÍAS ─────────────────────────────────────────
+    async function cargarCategorias() {
+        try {
+            const res = await fetch('/api/v1/categorias');
+            const data = await res.json();
+            categoriasCache = data.data || data;
+            
+            const tbody = document.getElementById('tabla-categorias');
+            tbody.innerHTML = categoriasCache.map(c => `<tr class="hover:bg-white/5">
+                <td class="px-4 py-3 text-white font-semibold">${c.nombre}</td>
+                <td class="px-4 py-3 text-center text-gray-400">${c.articulos_count || 0}</td>
+                <td class="px-4 py-3 text-center">
+                    <button onclick="eliminarCategoria(${c.id})" class="text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`).join('');
+            
+            // Poblar selects
+            const selArt = document.getElementById('art-categoria');
+            selArt.innerHTML = '<option value="">Sin categoría</option>' + 
+                categoriasCache.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join('');
+            
+            const selFiltro = document.getElementById('filtro-categoria');
+            selFiltro.innerHTML = '<option value="">Todas las categorías</option>' + 
+                categoriasCache.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join('');
+            
+        } catch(e) {}
+    }
+
+    function abrirModalCategoria() {
+        document.getElementById('cat-nombre').value = '';
+        document.getElementById('modal-categoria').classList.remove('hidden');
+    }
+
+    function cerrarModalCategoria() {
+        document.getElementById('modal-categoria').classList.add('hidden');
+    }
+
+    async function guardarCategoria() {
+        const nombre = document.getElementById('cat-nombre').value.trim();
+        if (!nombre) return Swal.fire({icon:'warning', title:'Ingresá el nombre', background:'#111', color:'#fff'});
+
+        try {
+            await fetch('/api/v1/categorias', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({nombre})
+            });
+            cerrarModalCategoria();
+            cargarCategorias();
+        } catch(e) {
+            Swal.fire({icon:'error', title:'Error', background:'#111', color:'#fff'});
+        }
+    }
+
+    async function eliminarCategoria(id) {
+        const result = await Swal.fire({
+            icon:'warning',
+            title:'¿Eliminar categoría?',
+            text:'Los artículos no se eliminarán',
+            background:'#111', color:'#fff',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626'
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            await fetch(`/api/v1/categorias/${id}`, {method: 'DELETE'});
+            cargarCategorias();
+        } catch(e) {}
+    }
+
+    // ── IMPORTAR EXCEL ─────────────────────────────────────
+    function handleExcelFile(input) {
+        const file = input.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                excelData = workbook;
+                
+                document.getElementById('excelFileName').textContent = file.name;
+                document.getElementById('excelFileSheets').textContent = workbook.SheetNames.join(', ');
+                document.getElementById('fileExcelInfo').classList.remove('hidden');
+                document.getElementById('btnImportarExcel').disabled = false;
+                
+                renderPreviewExcel(workbook);
+            } catch(err) {
+                Swal.fire({icon:'error', title:'Error', text:'No se pudo leer el archivo', background:'#111', color:'#fff'});
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function clearExcelFile() {
+        excelData = null;
+        document.getElementById('fileExcel').value = '';
+        document.getElementById('fileExcelInfo').classList.add('hidden');
+        document.getElementById('btnImportarExcel').disabled = true;
+        document.getElementById('preview-excel').innerHTML = '<p class="text-gray-600 text-sm text-center py-8">Cargá un Excel para ver la previsualización</p>';
+    }
+
+    function renderPreviewExcel(workbook) {
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(sheet, {header: 1});
+        
+        const preview = document.getElementById('preview-excel');
+        
+        if (data.length < 2) {
+            preview.innerHTML = '<p class="text-yellow-500 text-sm text-center py-8">El archivo está vacío</p>';
+            return;
+        }
+        
+        const headers = data[0].map(h => String(h).toLowerCase());
+        const rows = data.slice(1, 6);
+        
+        let html = `<table class="w-full text-xs">
+            <thead class="bg-[#27272a]">
+                <tr class="text-gray-400 uppercase">
+                    ${headers.map(h => `<th class="px-2 py-2 text-left">${h}</th>`).join('')}
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-[#27272a]">
+                ${rows.map(row => `<tr class="hover:bg-white/5">
+                    ${row.map(cell => `<td class="px-2 py-2 text-gray-300">${cell || ''}</td>`).join('')}
+                </tr>`).join('')}
+            </tbody>
+        </table>`;
+        
+        preview.innerHTML = html + `<p class="text-xs text-gray-500 mt-2 p-2">Mostrando ${Math.min(5, rows.length)} de ${data.length - 1} filas</p>`;
+    }
+
+    async function importarExcel() {
+        if (!excelData) return;
+        
+        const sheet = excelData.Sheets[excelData.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(sheet);
+        
+        if (data.length === 0) {
+            return Swal.fire({icon:'warning', title:'Archivo vacío', background:'#111', color:'#fff'});
+        }
+        
+        const opcStock = document.getElementById('opc-actualizar-stock').value;
+        const opcExistente = document.getElementById('opc-existente').value;
+        const gananciaDefault = parseFloat(document.getElementById('ganancia-default').value) || 30;
+        
+        const btn = document.getElementById('btnImportarExcel');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Importando...';
+        
+        try {
+            const res = await fetch('/api/v1/articulos/importar-excel', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    articulos: data,
+                    opc_stock: opcStock,
+                    opc_existente: opcExistente,
+                    ganancia_default: gananciaDefault
+                })
+            });
+            
+            const result = await res.json();
+            
+            await Swal.fire({
+                icon:'success',
+                title:'Importación completada',
+                html: `<p>Nuevos: ${result.nuevos}</p><p>Actualizados: ${result.actualizados}</p><p>Errors: ${result.errores}</p>`,
+                background:'#111', color:'#fff'
+            });
+            
+            clearExcelFile();
+            showTab('articulos');
+            
+        } catch(e) {
+            Swal.fire({icon:'error', title:'Error', text:'No se pudo importar', background:'#111', color:'#fff'});
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-file-import mr-2"></i> Importar Artículos';
+        }
+    }
+
+    function descargarPlantilla() {
+        const data = [
+            ['CODIGO', 'DESCRIPCION', 'PRECIO_COMPRA', 'GANANCIA_PORCENTAJE', 'STOCK', 'MARCA', 'CATEGORIA'],
+            ['NEU001', 'Neumático 185/65R15', 45000, 30, 10, 'Pirelli', 'Neumáticos'],
+            ['NEU002', 'Neumático 205/55R16', 52000, 30, 5, 'Michelin', 'Neumáticos'],
+        ];
+        
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Artículos');
+        XLSX.writeFile(wb, 'template_articulos.xlsx');
+    }
+
+    // ── INIT ──────────────────────────────────────────────
+    cargarArticulos();
+    cargarCategorias();
+</script>
+</body>
+</html>

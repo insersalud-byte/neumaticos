@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login | GiordaOS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body class="bg-[#020817] text-white min-h-screen flex items-center justify-center">
+  <div class="w-full max-w-sm">
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-black">GIORDA<span class="text-blue-500">OS</span></h1>
+      <p class="text-xs text-gray-500 mt-2 uppercase tracking-widest">Sistema de Gestión</p>
+    </div>
+    <div class="bg-[#0f172a] border border-blue-900/20 rounded-2xl p-8">
+      <form id="loginForm" onsubmit="login(event)">
+        <div class="mb-4">
+          <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Usuario</label>
+          <div class="relative">
+            <i class="fas fa-user absolute left-3 top-3 text-gray-600 text-sm"></i>
+            <input id="username" type="text" placeholder="Tu usuario" autofocus
+              class="w-full bg-[#020817] border border-[#1e3a5f] text-white rounded-lg pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition"/>
+          </div>
+        </div>
+        <div class="mb-6">
+          <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Contraseña</label>
+          <div class="relative">
+            <i class="fas fa-lock absolute left-3 top-3 text-gray-600 text-sm"></i>
+            <input id="password" type="password" placeholder="Tu contraseña"
+              class="w-full bg-[#020817] border border-[#1e3a5f] text-white rounded-lg pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition"/>
+          </div>
+        </div>
+        <button type="submit" id="btnLogin"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition text-sm">
+          <i class="fas fa-sign-in-alt"></i> INGRESAR
+        </button>
+        <p id="errorMsg" class="text-red-400 text-xs text-center mt-3 hidden"></p>
+      </form>
+    </div>
+    <p class="text-center text-[10px] text-gray-700 mt-6">GiordaOS v1.0 &middot; Giorda Neumáticos</p>
+  </div>
+
+  <script>
+    function login(e) {
+      e.preventDefault();
+      window.location.href = '/admin/pos-mostrador.html';
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pedidos & Historial | GiordaOS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 12px; border-radius: 8px;
+      color: #6b7280; font-size: 13px; font-weight: 500;
+      transition: all 0.15s; margin: 1px 8px;
+      text-decoration: none;
+    }
+    .sidebar-link:hover { background: #111113; color: #e5e7eb; }
+    .sidebar-link.active { background: #18181b; color: #fff; border-left: 3px solid #dc2626; padding-left: 9px; }
+    .sidebar-section-title {
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em;
+      color: #374151; padding: 14px 20px 4px; font-weight: 800;
+    }
+  </style>
+</head>
+<body class="bg-[#020817] text-white min-h-screen flex">
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-50 w-64 bg-[#050505] border-r border-[#1f1f22] flex flex-col flex-shrink-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+
+    <!-- LOGO -->
+    <div class="h-16 flex items-center justify-between px-6 border-b border-[#1f1f22]">
+      <h1 class="text-xl font-black italic tracking-tighter text-white flex items-center gap-2 select-none">
+        <div class="bg-red-600 text-white w-8 h-8 flex items-center justify-center rounded-lg shadow-red-900/50 shadow-lg">
+          <i class="fas fa-tire"></i>
+        </div>
+        <span>GIORDA<span class="text-red-600">OS</span></span>
+      </h1>
+      <button class="md:hidden text-gray-500 hover:text-white" onclick="document.getElementById('sidebar').classList.add('-translate-x-full')">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- NAV -->
+    <nav class="flex-1 overflow-y-auto py-2 space-y-0.5">
+      <div class="sidebar-section-title">Mostrador &amp; Ventas</div>
+    <a href="pos-mostrador.html" class="sidebar-link">
+      <i class="fas fa-cash-register w-6 text-center text-green-500"></i>
+      <span>Punto de Venta</span>
+    </a>
+    <a href="pedidos-demo.html" class="sidebar-link active">
+      <i class="fas fa-globe w-6 text-center text-blue-400"></i>
+      <span>Cotizacion - Pedidos</span>
+    </a>
+      <div class="sidebar-section-title">Planta &amp; Taller</div>
+    <a href="recepcion-taller.html" class="sidebar-link">
+      <i class="fas fa-clipboard-list w-6 text-center text-orange-400"></i>
+      <span>Recepción Vehículos</span>
+    </a>
+    <a href="taller-control.html" class="sidebar-link">
+      <i class="fas fa-wrench w-6 text-center text-gray-400"></i>
+      <span>Tablero Mecánicos</span>
+    </a>
+    <a href="turnos-demo.html" class="sidebar-link">
+      <i class="fas fa-calendar-alt w-6 text-center text-purple-400"></i>
+      <span>Agenda de Turnos</span>
+    </a>
+      <div class="sidebar-section-title flex items-center gap-2">Back Office <i class="fas fa-lock text-[9px] text-red-900"></i></div>
+    <a href="inventario.html" class="sidebar-link">
+      <i class="fas fa-boxes w-6 text-center text-yellow-500"></i>
+      <span>Inventario &amp; Stock</span>
+    </a>
+    <a href="catalogo-servicios.html" class="sidebar-link">
+      <i class="fas fa-list-ul w-6 text-center text-cyan-400"></i>
+      <span>Servicios &amp; MO</span>
+    </a>
+    <a href="stock-gestion.html" class="sidebar-link">
+      <i class="fas fa-layer-group w-6 text-center text-amber-400"></i>
+      <span>Stock Gestión</span>
+    </a>
+    <a href="importar-facturas.html" class="sidebar-link">
+      <i class="fas fa-file-invoice-dollar w-6 text-center text-emerald-400"></i>
+      <span>Compras (Proveedores)</span>
+    </a>
+    <a href="finanzas-dashboard.html" class="sidebar-link">
+      <i class="fas fa-chart-pie w-6 text-center text-red-500"></i>
+      <span>Finanzas &amp; Caja</span>
+    </a>
+    <a href="cuenta-corriente.html" class="sidebar-link">
+      <i class="fas fa-users w-6 text-center text-blue-500"></i>
+      <span>Cuentas Corrientes</span>
+    </a>
+    <a href="sueldos.html" class="sidebar-link">
+      <i class="fas fa-id-card w-6 text-center text-pink-400"></i>
+      <span>Sueldos</span>
+    </a>
+    <a href="coeficientes-tarjetas.html" class="sidebar-link">
+      <i class="fas fa-credit-card w-6 text-center text-green-400"></i>
+      <span>Planes Tarjetas</span>
+    </a>
+    <a href="backup.html" class="sidebar-link">
+      <i class="fas fa-database w-6 text-center text-gray-400"></i>
+      <span>Backup &amp; Restore</span>
+    </a>
+    </nav>
+
+    <!-- FOOTER -->
+    <div class="p-4 border-t border-[#1f1f22] bg-[#0a0a0c]">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-gray-800 to-black border border-gray-700 flex items-center justify-center text-white font-bold text-sm">S</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-bold text-white truncate">Sergio Giorda</p>
+          <p class="text-[10px] text-gray-600 truncate">gerencia</p>
+        </div>
+        <button onclick="logout()" class="text-gray-600 hover:text-red-500 transition" title="Salir">
+          <i class="fas fa-power-off text-sm"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="ml-60 flex-1 p-8">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-2xl font-bold">Cotizaciones & Pedidos</h1>
+        <p class="text-xs text-gray-500 mt-1">Historial de operaciones del día.</p>
+      </div>
+      <a href="pos-mostrador.html"
+        class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl flex items-center gap-2 transition text-sm">
+        <i class="fas fa-cash-register"></i> IR A CAJA
+      </a>
+    </div>
+
+    <!-- Métricas -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div class="bg-[#0f172a] border border-blue-900/20 rounded-2xl p-5">
+        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Ventas Cerradas</p>
+        <p class="text-3xl font-black text-white" id="metVentas">0</p>
+      </div>
+      <div class="bg-[#0f172a] border border-blue-900/20 rounded-2xl p-5">
+        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Total Facturado</p>
+        <p class="text-3xl font-black text-blue-400" id="metFacturado">$0</p>
+      </div>
+      <div class="bg-[#0f172a] border border-blue-900/20 rounded-2xl p-5">
+        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Cotizaciones</p>
+        <p class="text-3xl font-black text-yellow-400" id="metCots">0</p>
+      </div>
+      <div class="bg-[#0f172a] border border-blue-900/20 rounded-2xl p-5">
+        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Pendiente Cobro</p>
+        <p class="text-3xl font-black text-red-400" id="metDeuda">$0</p>
+      </div>
+    </div>
+
+    <!-- Tabla historial -->
+    <div class="bg-[#0f172a] border border-blue-900/20 rounded-2xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-sm">Historial de Operaciones</h3>
+        <button onclick="cargarHistorial()" class="text-xs text-blue-400 hover:text-blue-300"><i class="fas fa-sync-alt mr-1"></i> Refrescar</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-[10px] text-gray-500 uppercase tracking-wider border-b border-blue-900/20">
+              <th class="pb-3 text-left">Fecha</th>
+              <th class="pb-3 text-left">Cliente</th>
+              <th class="pb-3 text-left">Patente / Modelo</th>
+              <th class="pb-3 text-left">Items</th>
+              <th class="pb-3 text-right">Total</th>
+              <th class="pb-3 text-center">Estado</th>
+              <th class="pb-3 text-center">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tablaHistorial">
+            <tr><td colspan="7" class="py-8 text-center text-gray-600">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function logout() { document.cookie='becubical_session=; max-age=0; path=/'; window.location.href='../login.html'; }
+    const currency = new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',minimumFractionDigits:0});
+
+    async function cargarHistorial() {
+      try {
+        const res = await fetch('/api/v1/operaciones');
+        const data = await res.json();
+        const tbody = document.getElementById('tablaHistorial');
+        tbody.innerHTML = '';
+
+        let ventas = 0, facturado = 0, cots = 0, deuda = 0;
+
+        if (!data.length) {
+          tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-gray-600">Sin operaciones registradas</td></tr>';
+          return;
+        }
+
+        data.forEach(v => {
+          if (v.es_cotizacion) { cots++; }
+          else { ventas++; facturado += v.total_venta; }
+          deuda += v.monto_debe || 0;
+
+          const fecha = v.fecha_creacion ? new Date(v.fecha_creacion).toLocaleDateString('es-AR') : '-';
+          const items = (v.items || []).slice(0, 3).map(i => i.descripcion || '').join(', ');
+          const estado = v.es_cotizacion
+            ? '<span class="text-[10px] bg-yellow-900/30 text-yellow-400 border border-yellow-800 px-2 py-0.5 rounded-full font-bold">Cotización</span>'
+            : '<span class="text-[10px] bg-green-900/30 text-green-400 border border-green-800 px-2 py-0.5 rounded-full font-bold">Pagada</span>';
+
+          tbody.innerHTML += `
+            <tr class="border-b border-blue-900/10 hover:bg-blue-900/10 transition">
+              <td class="py-3 text-gray-400 text-xs">${fecha}</td>
+              <td class="py-3 text-white font-bold uppercase text-xs">${v.cliente_nombre || 'Anon'}</td>
+              <td class="py-3"><span class="text-blue-400 font-mono font-bold text-xs">${v.vehiculo_patente || '-'}</span> <span class="text-gray-500 text-xs">${v.vehiculo_modelo || ''}</span></td>
+              <td class="py-3 text-gray-400 text-xs max-w-[200px] truncate">${items || '-'}</td>
+              <td class="py-3 text-right font-mono text-blue-300 font-bold text-xs">${currency.format(v.total_venta)}</td>
+              <td class="py-3 text-center">${estado}</td>
+              <td class="py-3 text-center">
+                <button onclick="enviarWhatsApp(${v.id}, '${(v.cliente_telefono||'').replace(/\D/g,'')}')" class="text-green-500 hover:text-green-400 text-xs mr-2" title="Enviar por WhatsApp"><i class="fab fa-whatsapp"></i></button>
+                <a href="/api/v1/reportes/presupuesto/${v.id}" target="_blank" class="text-red-400 hover:text-red-300 text-xs mr-2"><i class="fas fa-file-pdf"></i></a>
+                <button onclick="eliminarVenta(${v.id}, ${v.es_cotizacion ? 'true' : 'false'})" class="text-gray-500 hover:text-red-400 text-xs" title="Eliminar"><i class="fas fa-trash"></i></button>
+              </td>
+            </tr>`;
+        });
+
+        document.getElementById('metVentas').textContent = ventas;
+        document.getElementById('metFacturado').textContent = currency.format(facturado);
+        document.getElementById('metCots').textContent = cots;
+        document.getElementById('metDeuda').textContent = currency.format(deuda);
+      } catch(e) {
+        document.getElementById('tablaHistorial').innerHTML = '<tr><td colspan="7" class="py-8 text-center text-red-500">Error al cargar datos</td></tr>';
+      }
+    }
+
+    async function eliminarVenta(id, esCotizacion) {
+      const titulo = esCotizacion ? '¿Eliminar esta cotización?' : '¿Eliminar esta venta?';
+      const result = await Swal.fire({
+        title: titulo,
+        text: 'Esta acción no se puede deshacer',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        background: '#0f172a',
+        color: '#fff',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+      });
+      if (!result.isConfirmed) return;
+      try {
+        const r = await fetch(`/api/v1/operaciones/${id}`, { method: 'DELETE' });
+        if (r.ok) {
+          await Swal.fire({icon:'success', title:'Eliminado', text:'Registro eliminado', background:'#0f172a', color:'#fff', timer:2000, showConfirmButton:false});
+          cargarHistorial();
+        } else {
+          throw new Error('Error');
+        }
+      } catch(e) { Swal.fire('Error', 'No se pudo eliminar', 'error'); }
+    }
+
+    async function enviarWhatsApp(id, telefono) {
+      const tel = telefono.replace(/\D/g, '');
+      const num = tel ? `54${tel}` : '';
+      
+      if (!tel || num === '54') {
+        Swal.fire({ icon: 'info', title: 'Sin teléfono', text: 'Esta cotización no tiene teléfono registrado', background: '#0f172a', color: '#fff' });
+        return;
+      }
+      
+      Swal.fire({ title: 'Descargando PDF...', text: 'Preparando archivo', background: '#0f172a', color: '#fff', showConfirmButton: false, allowOutsideClick: false });
+      
+      try {
+        // Descargar el PDF
+        const pdfUrl = `/api/v1/reportes/presupuesto/${id}`;
+        const response = await fetch(pdfUrl);
+        const blob = await response.blob();
+        
+        // Crear enlace de descarga
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Cotizacion_${id}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        Swal.close();
+        
+        // Abrir WhatsApp con mensaje
+        const mensaje = encodeURIComponent(
+          `¡Hola! Te enviamos tu cotización de Giorda Neumáticos.\n\n` +
+          `Encontrás el PDF adjunto en tus descargas.\n\n` +
+          `¿Tenés alguna consulta? Estamos para ayudarte.`
+        );
+        
+        Swal.fire({
+          title: 'PDF descargado',
+          text: 'El archivo está en tu carpeta de descargas. Adjuntalo en WhatsApp.',
+          icon: 'success',
+          showCancelButton: true,
+          confirmButtonColor: '#25D366',
+          cancelButtonColor: '#6b7280',
+          background: '#0f172a',
+          color: '#fff',
+          confirmButtonText: '<i class="fab fa-whatsapp mr-1"></i> Abrir WhatsApp',
+          cancelButtonText: 'Cerrar'
+        }).then(result => {
+          if (result.isConfirmed) {
+            window.open(`https://wa.me/${num}?text=${mensaje}`, '_blank');
+          }
+        });
+        
+      } catch(e) {
+        Swal.close();
+        // Fallback: abrir PDF y WhatsApp
+        window.open(`/api/v1/reportes/presupuesto/${id}`, '_blank');
+        const mensaje = encodeURIComponent(`¡Hola! Te enviamos tu cotización de Giorda Neumáticos. ¿Tenés alguna consulta?`);
+        window.open(`https://wa.me/${num}?text=${mensaje}`, '_blank');
+      }
+    }
+
+    cargarHistorial();
+  </script>
+</body>
+</html>

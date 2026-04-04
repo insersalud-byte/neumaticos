@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Importador | GiordaOS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-black text-white min-h-screen">
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-[#050505] border-r border-[#1f1f22] flex flex-col">
+      <div class="h-16 flex items-center px-5 border-b border-[#1f1f22]">
+        <span class="text-xl font-black text-white tracking-tight">Giorda<span class="text-emerald-500">OS</span></span>
+      </div>
+      <nav class="flex-1 overflow-y-auto p-3 space-y-1">
+        <a href="pedidos-demo.html" class="sidebar-link"><i class="fas fa-tachometer-alt w-5 text-center text-blue-400"></i> Tablero General</a>
+        <a href="pos-mostrador.html" class="sidebar-link"><i class="fas fa-cash-register w-5 text-center text-green-400"></i> POS Mostrador</a>
+        
+        <div class="menu-group">
+          <button onclick="toggleMenu('productos')" class="sidebar-link w-full text-left justify-between">
+            <span class="flex items-center gap-2"><i class="fas fa-boxes w-5 text-center text-emerald-400"></i> Productos</span>
+            <i class="fas fa-chevron-down text-xs transition-transform" id="icon-productos"></i>
+          </button>
+          <div id="sub-productos" class="pl-6 space-y-1 hidden">
+            <a href="articulos.html" class="sidebar-link text-xs py-1.5"><i class="fas fa-list w-4 text-center text-gray-500"></i> Administrar</a>
+            <a href="categorias.html" class="sidebar-link text-xs py-1.5"><i class="fas fa-tags w-4 text-center text-gray-500"></i> Categorías</a>
+            <a href="ajuste-precios.html" class="sidebar-link text-xs py-1.5"><i class="fas fa-percentage w-4 text-center text-gray-500"></i> Ajuste precios</a>
+            <a href="importador.html" class="sidebar-link text-xs py-1.5 active"><i class="fas fa-file-import w-4 text-center text-gray-500"></i> Importador</a>
+          </div>
+        </div>
+        
+        <a href="catalogo-servicios.html" class="sidebar-link"><i class="fas fa-tools w-5 text-center text-yellow-400"></i> Servicios & MO</a>
+        <a href="stock-gestion.html" class="sidebar-link"><i class="fas fa-warehouse w-5 text-center text-purple-400"></i> Stock Gestión</a>
+        <a href="importar-facturas.html" class="sidebar-link"><i class="fas fa-file-invoice-dollar w-5 text-center text-orange-400"></i> Compras (Prov.)</a>
+        <a href="finanzas-dashboard.html" class="sidebar-link"><i class="fas fa-chart-line w-5 text-center text-emerald-400"></i> Finanzas & Caja</a>
+        <a href="cuenta-corriente.html" class="sidebar-link"><i class="fas fa-users w-5 text-center text-cyan-400"></i> Cuentas Corrientes</a>
+        <a href="sueldos.html" class="sidebar-link"><i class="fas fa-id-card w-5 text-center text-pink-400"></i> Sueldos</a>
+      </nav>
+      <script>
+        function toggleMenu(id) {
+          const submenu = document.getElementById('sub-' + id);
+          const icon = document.getElementById('icon-' + id);
+          submenu.classList.toggle('hidden');
+          icon.classList.toggle('rotate-180');
+        }
+      </script>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 overflow-y-auto p-8">
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h1 class="text-2xl font-bold">Importador de Productos</h1>
+          <p class="text-xs text-gray-500 mt-1">Importar productos desde archivo Excel (.xlsx)</p>
+        </div>
+      </div>
+
+      <!-- Instrucciones -->
+      <div class="bg-[#0f172a] border border-emerald-900/30 rounded-2xl p-6 mb-6">
+        <h3 class="font-bold text-white mb-4"><i class="fas fa-info-circle text-emerald-400 mr-2"></i> Instrucciones</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-400">
+          <div>
+            <p class="font-bold text-emerald-400 mb-2">Formato del archivo Excel:</p>
+            <ul class="space-y-1 text-xs">
+              <li>• <strong>codigo</strong> - Código/SKU del producto</li>
+              <li>• <strong>descripcion</strong> - Descripción del producto</li>
+              <li>• <strong>marca</strong> - Marca del producto</li>
+              <li>• <strong>medida</strong> - Medida (ej: 185/65 R15)</li>
+              <li>• <strong>precio_costo</strong> - Precio de costo</li>
+              <li>• <strong>precio_venta</strong> - Precio de venta final</li>
+              <li>• <strong>stock</strong> - Cantidad en stock</li>
+              <li>• <strong>categoria</strong> - Nombre de la categoría</li>
+            </ul>
+          </div>
+          <div>
+            <p class="font-bold text-emerald-400 mb-2">Notas:</p>
+            <ul class="space-y-1 text-xs">
+              <li>• La primera fila debe contener los encabezados</li>
+              <li>• Los códigos duplicados actualizarán el producto existente</li>
+              <li>• Si la categoría no existe, se creará automáticamente</li>
+              <li>• Formatos soportados: .xlsx, .xls</li>
+            </ul>
+            <a href="#" onclick="descargarPlantilla()" class="mt-4 inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 text-xs">
+              <i class="fas fa-download"></i> Descargar plantilla
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload -->
+      <div class="bg-[#0f172a] border border-emerald-900/30 rounded-2xl p-6 mb-6">
+        <div class="flex items-center justify-center w-full">
+          <div id="dropZone" class="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-emerald-900/50 rounded-xl cursor-pointer hover:border-emerald-500 transition">
+            <i class="fas fa-cloud-upload-alt text-4xl text-gray-600 mb-4"></i>
+            <p class="text-sm text-gray-400 mb-1">Arrastrá el archivo aquí o</p>
+            <label class="text-emerald-400 hover:text-emerald-300 cursor-pointer font-bold">seleccioná un archivo
+              <input type="file" id="fileInput" accept=".xlsx,.xls" class="hidden" onchange="handleFile(this.files[0])"/>
+            </label>
+            <p class="text-xs text-gray-600 mt-2">Máximo 10MB</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div id="previewSection" class="hidden bg-[#0f172a] border border-emerald-900/30 rounded-2xl overflow-hidden mb-6">
+        <div class="p-4 border-b border-emerald-900/20 flex items-center justify-between">
+          <div>
+            <h3 class="font-bold text-white">Vista Previa</h3>
+            <p class="text-xs text-gray-500" id="fileInfo"></p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="importarProductos()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-2">
+              <i class="fas fa-upload"></i> IMPORTAR
+            </button>
+          </div>
+        </div>
+        <div id="previewTable" class="max-h-80 overflow-auto"></div>
+      </div>
+
+      <!-- Resultado -->
+      <div id="resultadoSection" class="hidden bg-[#0f172a] border border-emerald-900/30 rounded-2xl p-6">
+        <h3 class="font-bold text-white mb-4"><i class="fas fa-check-circle text-emerald-400 mr-2"></i> Resultado de la Importación</h3>
+        <div class="grid grid-cols-3 gap-4 mb-4">
+          <div class="bg-[#020817] rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-emerald-400" id="resTotal">0</p>
+            <p class="text-xs text-gray-500 uppercase">Total</p>
+          </div>
+          <div class="bg-[#020817] rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-blue-400" id="resNuevos">0</p>
+            <p class="text-xs text-gray-500 uppercase">Nuevos</p>
+          </div>
+          <div class="bg-[#020817] rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-yellow-400" id="resActualizados">0</p>
+            <p class="text-xs text-gray-500 uppercase">Actualizados</p>
+          </div>
+        </div>
+        <div id="erroresList" class="hidden">
+          <p class="text-sm text-red-400 font-bold mb-2">Errores:</p>
+          <div id="erroresContent" class="bg-[#020817] rounded-lg p-3 max-h-40 overflow-auto text-xs text-red-300"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <style>
+    .sidebar-link { display:flex; align-items:center; gap:10px; padding:7px 12px; border-radius:8px; color:#6b7280; font-size:13px; font-weight:500; transition:all .15s; text-decoration:none; }
+    .sidebar-link:hover { background:#111113; color:#e5e7eb; }
+    .sidebar-link.active { background:#18181b; color:#fff; border-left:3px solid #10b981; padding-left:9px; }
+  </style>
+
+  <script>
+    let excelData = [];
+
+    const dropZone = document.getElementById('dropZone');
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-emerald-500', 'bg-emerald-900/10');
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('border-emerald-500', 'bg-emerald-900/10');
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-emerald-500', 'bg-emerald-900/10');
+      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+
+    async function handleFile(file) {
+      if (!file) return;
+      if (!file.name.match(/\.(xlsx|xls)$/i)) {
+        return Swal.fire('Error','Seleccioná un archivo Excel (.xlsx o .xls)','error');
+      }
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      try {
+        const res = await fetch('/api/v1/articulos/importar-excel', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        
+        if (data.error) {
+          return Swal.fire('Error', data.error, 'error');
+        }
+        
+        excelData = data.productos || [];
+        document.getElementById('fileInfo').textContent = `${file.name} - ${excelData.length} productos`;
+        renderPreview();
+        document.getElementById('previewSection').classList.remove('hidden');
+        document.getElementById('resultadoSection').classList.add('hidden');
+        
+      } catch(e) {
+        Swal.fire('Error','No se pudo procesar el archivo','error');
+      }
+    }
+
+    function renderPreview() {
+      const table = document.getElementById('previewTable');
+      if (!excelData.length) {
+        table.innerHTML = '<p class="p-4 text-gray-500">Sin datos para mostrar</p>';
+        return;
+      }
+      
+      table.innerHTML = `
+        <table class="w-full text-xs">
+          <thead class="bg-[#020817] sticky top-0">
+            <tr class="text-gray-500 uppercase">
+              <th class="px-3 py-2 text-left">Código</th>
+              <th class="px-3 py-2 text-left">Descripción</th>
+              <th class="px-3 py-2 text-right">Costo</th>
+              <th class="px-3 py-2 text-right">Venta</th>
+              <th class="px-3 py-2 text-right">Stock</th>
+              <th class="px-3 py-2 text-left">Categoría</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${excelData.slice(0, 50).map((p, i) => `
+              <tr class="border-t border-[#1f1f22] hover:bg-emerald-900/10">
+                <td class="px-3 py-2">${p.codigo || 'N/A'}</td>
+                <td class="px-3 py-2 truncate max-w-[200px]">${p.descripcion || ''}</td>
+                <td class="px-3 py-2 text-right">$${Number(p.precio_costo || 0).toLocaleString('es-AR')}</td>
+                <td class="px-3 py-2 text-right text-emerald-400">$${Number(p.precio_venta || 0).toLocaleString('es-AR')}</td>
+                <td class="px-3 py-2 text-right">${p.stock || 0}</td>
+                <td class="px-3 py-2">${p.categoria || 'Sin categoría'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        ${excelData.length > 50 ? `<p class="text-xs text-gray-500 p-2 text-center">Mostrando 50 de ${excelData.length} productos</p>` : ''}
+      `;
+    }
+
+    async function importarProductos() {
+      if (!excelData.length) return;
+      
+      const result = await Swal.fire({
+        icon: 'warning',
+        title: '¿Importar productos?',
+        text: `Se importarán ${excelData.length} productos`,
+        background: '#111', color: '#fff',
+        showCancelButton: true,
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#374151',
+        confirmButtonText: 'Sí, importar',
+        cancelButtonText: 'Cancelar'
+      });
+      
+      if (!result.isConfirmed) return;
+      
+      try {
+        const res = await fetch('/api/v1/articulos/importar-excel', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({productos: excelData, confirmar: true})
+        });
+        const data = await res.json();
+        
+        document.getElementById('resTotal').textContent = data.total || 0;
+        document.getElementById('resNuevos').textContent = data.nuevos || 0;
+        document.getElementById('resActualizados').textContent = data.actualizados || 0;
+        
+        if (data.errores && data.errores.length) {
+          document.getElementById('erroresList').classList.remove('hidden');
+          document.getElementById('erroresContent').innerHTML = data.errores.join('<br>');
+        } else {
+          document.getElementById('erroresList').classList.add('hidden');
+        }
+        
+        document.getElementById('previewSection').classList.add('hidden');
+        document.getElementById('resultadoSection').classList.remove('hidden');
+        
+      } catch(e) {
+        Swal.fire('Error','No se pudo completar la importación','error');
+      }
+    }
+
+    function descargarPlantilla() {
+      const headers = ['codigo', 'descripcion', 'marca', 'medida', 'precio_costo', 'precio_venta', 'stock', 'categoria'];
+      const sample = [
+        headers.join('\t'),
+        'SKU001\tCubierta 185/65 R15 Michelin\tMichelin\t185/65 R15\t50000\t75000\t10\tCubiertas',
+        'SKU002\tCubierta 205/55 R16 Bridgestone\tBridgestone\t205/55 R16\t60000\t90000\t5\tCubiertas'
+      ];
+      const blob = new Blob([sample.join('\n')], {type: 'text/plain'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'plantilla_importacion.txt';
+      a.click();
+    }
+
+    toggleMenu('productos');
+  </script>
+</body>
+</html>

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Servicios | Giorda Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body{font-family:'Inter',sans-serif;background:#000;color:#fff}
+        .sidebar-link{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:8px;color:#9ca3af;font-size:14px;font-weight:500;transition:all .2s;cursor:pointer;text-decoration:none}
+        .sidebar-link:hover{background:#1a1a1a;color:#fff}
+        .sidebar-link.active{background:#1a1a1a;color:#fff;border-left:3px solid #dc2626;padding-left:13px}
+        .custom-scrollbar::-webkit-scrollbar{width:4px}
+        .custom-scrollbar::-webkit-scrollbar-track{background:transparent}
+        .custom-scrollbar::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+        .glass-header{background:rgba(5,5,5,0.95);backdrop-filter:blur(20px);border-bottom:1px solid #1f1f22}
+    </style>
+</head>
+<body class="bg-black text-white flex h-screen overflow-hidden">
+
+<aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-50 w-64 bg-[#050505] border-r border-[#1f1f22] flex flex-col flex-shrink-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl">
+    <div class="h-16 flex items-center px-5 border-b border-[#1f1f22] flex-shrink-0">
+        <span class="text-xl font-black text-white tracking-tight">Giorda<span class="text-red-600">OS</span></span>
+        <button onclick="document.getElementById('sidebar').classList.add('-translate-x-full')" class="ml-auto md:hidden text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+    </div>
+    <nav class="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+        <a href="pedidos-demo.html" class="sidebar-link"><i class="fas fa-tachometer-alt w-5 text-center text-blue-400"></i> Tablero General</a>
+        <a href="pos-mostrador.html" class="sidebar-link"><i class="fas fa-cash-register w-5 text-center text-green-400"></i> POS Mostrador</a>
+        <a href="catalogo-servicios.html" class="sidebar-link active"><i class="fas fa-tools w-5 text-center text-yellow-400"></i> Servicios & MO</a>
+        <a href="stock-gestion.html" class="sidebar-link"><i class="fas fa-boxes w-5 text-center text-purple-400"></i> Stock Gestión</a>
+        <a href="importar-facturas.html" class="sidebar-link"><i class="fas fa-file-invoice-dollar w-5 text-center text-orange-400"></i> Compras (Prov.)</a>
+        <a href="finanzas-dashboard.html" class="sidebar-link"><i class="fas fa-chart-line w-5 text-center text-emerald-400"></i> Finanzas & Caja</a>
+        <a href="cuenta-corriente.html" class="sidebar-link"><i class="fas fa-users w-5 text-center text-cyan-400"></i> Cuentas Corrientes</a>
+        <a href="sueldos.html" class="sidebar-link"><i class="fas fa-id-card w-5 text-center text-pink-400"></i> Sueldos</a>
+        <a href="coeficientes-tarjetas.html" class="sidebar-link"><i class="fas fa-credit-card w-5 text-center text-pink-400"></i> Planes Tarjetas</a>
+        <a href="taller-control.html" class="sidebar-link"><i class="fas fa-wrench w-5 text-center text-red-400"></i> Tablero Mecánicos</a>
+        <a href="turnos-demo.html" class="sidebar-link"><i class="fas fa-calendar-alt w-5 text-center text-indigo-400"></i> Agenda de Turnos</a>
+        <a href="recepcion-taller.html" class="sidebar-link"><i class="fas fa-file-alt w-5 text-center text-gray-400"></i> Recepción Vehículos</a>
+        <a href="inventario.html" class="sidebar-link"><i class="fas fa-user-friends w-5 text-center text-teal-400"></i> Inventario</a>
+        <a href="pos-mostrador.html" class="sidebar-link"><i class="fas fa-cog w-5 text-center text-gray-400"></i> Configuración</a>
+    </nav>
+    <div class="p-4 border-t border-[#1f1f22] flex-shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-red-700 flex items-center justify-center text-xs font-bold">S</div>
+            <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-white truncate">Sergio Admin</p><p class="text-xs text-gray-500">GERENCIA</p></div>
+            <a href="/logout" class="text-gray-500 hover:text-red-500"><i class="fas fa-sign-out-alt"></i></a>
+        </div>
+    </div>
+</aside>
+
+<div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden" onclick="closeSidebar()"></div>
+
+<div class="flex-1 flex flex-col overflow-hidden">
+    <header class="glass-header md:hidden flex items-center justify-between px-4 h-14 flex-shrink-0">
+        <button onclick="openSidebar()" class="text-gray-400 hover:text-white"><i class="fas fa-bars text-xl"></i></button>
+        <span class="text-lg font-black">Giorda<span class="text-red-600">OS</span></span>
+        <div class="w-8"></div>
+    </header>
+
+    <main class="flex-1 overflow-x-hidden overflow-y-auto bg-black p-4 md:p-8 pb-24 md:pb-8 relative custom-scrollbar">
+        <div class="max-w-5xl mx-auto">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h2 class="text-3xl font-black text-white tracking-tight">Catálogo de Servicios</h2>
+                    <p class="text-gray-500 mt-1">Gestiona la mano de obra y servicios intangibles.</p>
+                </div>
+                <div class="flex gap-3">
+                    <input type="file" id="inputImportar" accept=".csv,.txt" class="hidden" onchange="procesarArchivo(this)">
+                    <button onclick="document.getElementById('inputImportar').click()" id="btnImportar"
+                        class="bg-gray-700 hover:bg-gray-600 text-white px-5 py-2.5 rounded-lg font-bold shadow-lg transition flex items-center gap-2">
+                        <i class="fas fa-file-excel text-green-400"></i> Importar Excel
+                    </button>
+                    <button onclick="abrirModal()"
+                        class="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-lg transition flex items-center gap-2">
+                        <i class="fas fa-plus"></i> Nuevo Servicio
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-[#111] rounded-2xl border border-gray-800 overflow-hidden shadow-xl">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-800 bg-[#1a1a1a]">
+                            <th class="p-5 text-left text-gray-500 font-semibold uppercase text-xs tracking-wider">#</th>
+                            <th class="p-5 text-left text-gray-500 font-semibold uppercase text-xs tracking-wider">Nombre</th>
+                            <th class="p-5 text-left text-gray-500 font-semibold uppercase text-xs tracking-wider">Descripción</th>
+                            <th class="p-5 text-right text-gray-500 font-semibold uppercase text-xs tracking-wider">Precio Sugerido</th>
+                            <th class="p-5 text-center text-gray-500 font-semibold uppercase text-xs tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-servicios" class="divide-y divide-gray-800/60">
+                        <tr><td colspan="5" class="p-12 text-center text-gray-500"><i class="fas fa-circle-notch fa-spin text-2xl mb-3 block"></i>Cargando servicios...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- MODAL -->
+<div id="modalServicio" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div class="bg-[#111] border border-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        <div class="bg-[#1a1a1a] px-6 py-4 border-b border-gray-800 flex justify-between items-center">
+            <h3 id="modal-titulo" class="text-lg font-bold text-white">Nuevo Servicio</h3>
+            <button onclick="cerrarModal()" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="p-6 space-y-4">
+            <input type="hidden" id="idServicio">
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre *</label>
+                <input type="text" id="nombreServicio" placeholder="Ej: Balanceo + Alineación"
+                    class="w-full bg-gray-900 border border-gray-700 text-white px-4 py-2.5 rounded-lg focus:border-red-600 focus:outline-none text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Descripción</label>
+                <textarea id="descripcionServicio" rows="3"
+                    class="w-full bg-gray-900 border border-gray-700 text-white px-4 py-2.5 rounded-lg focus:border-red-600 focus:outline-none text-sm resize-none"></textarea>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Precio Sugerido ($)</label>
+                <input type="number" id="precioServicio" placeholder="0"
+                    class="w-full bg-gray-900 border border-gray-700 text-white px-4 py-2.5 rounded-lg focus:border-red-600 focus:outline-none text-sm">
+            </div>
+        </div>
+        <div class="px-6 pb-6 flex gap-3">
+            <button onclick="cerrarModal()" class="flex-1 bg-[#222] hover:bg-[#333] text-white py-2.5 rounded-lg text-sm">Cancelar</button>
+            <button onclick="guardarServicio()" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg text-sm font-bold">GUARDAR</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const currency = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+    let serviciosGlobales = [];
+
+    function procesarArchivo(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const btn = document.getElementById('btnImportar');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Leyendo...';
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const text = e.target.result;
+            const lines = text.split('\n').filter(l => l.trim());
+            const lista = [];
+            for (const line of lines) {
+                const parts = line.split(/[,;]/).map(p => p.trim().replace(/^"|"$/g, ''));
+                if (parts.length >= 2) {
+                    const nombre = parts[0];
+                    const precio = parseFloat(parts[1]) || 0;
+                    const descripcion = parts[2] || '';
+                    if (nombre && nombre.toLowerCase() !== 'nombre') {
+                        lista.push({ nombre, precio_sugerido: precio, descripcion });
+                    }
+                }
+            }
+            if (!lista.length) {
+                Swal.fire({ icon: 'warning', title: 'Sin datos válidos', text: 'Verificá el formato del archivo.', background: '#111', color: '#fff' });
+                input.value = ''; btn.disabled = false; btn.innerHTML = originalText; return;
+            }
+            const confirm = await Swal.fire({
+                icon: 'question', title: `Importar ${lista.length} servicios`,
+                showCancelButton: true, confirmButtonText: 'Importar', cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#dc2626', background: '#111', color: '#fff'
+            });
+            if (confirm.isConfirmed) await subirServiciosMasivos(lista);
+            input.value = ''; btn.disabled = false; btn.innerHTML = originalText;
+        };
+        reader.readAsText(file);
+    }
+
+    async function subirServiciosMasivos(lista) {
+        let ok = 0, err = 0;
+        for (const s of lista) {
+            try {
+                const res = await fetch('/api/v1/operaciones/servicios', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(s)
+                });
+                if (res.ok) ok++; else err++;
+            } catch { err++; }
+        }
+        cargarServicios();
+        Swal.fire({ icon: ok > 0 ? 'success' : 'error', title: 'Importación completada',
+            text: `${ok} creados${err > 0 ? ` | ${err} errores` : ''}`,
+            background: '#111', color: '#fff', confirmButtonColor: '#dc2626' });
+    }
+
+    async function cargarServicios() {
+        const tbody = document.getElementById('tabla-servicios');
+        tbody.innerHTML = '<tr><td colspan="5" class="p-12 text-center text-gray-500"><i class="fas fa-circle-notch fa-spin text-2xl mb-3 block"></i>Cargando...</td></tr>';
+        try {
+            const res = await fetch('/api/v1/operaciones/servicios');
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            serviciosGlobales = data.data || data || [];
+            tbody.innerHTML = '';
+            if (!serviciosGlobales.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-12 text-center text-gray-500 italic">No hay servicios aún.</td></tr>';
+                return;
+            }
+            serviciosGlobales.forEach(s => {
+                tbody.innerHTML += `
+                <tr class="hover:bg-[#181818] transition">
+                    <td class="p-5 text-gray-600 font-mono text-xs">#${s.id}</td>
+                    <td class="p-5 font-bold text-white">${s.nombre || ''}</td>
+                    <td class="p-5 text-gray-400 text-sm">${s.descripcion || '<span class="italic text-gray-700">Sin descripción</span>'}</td>
+                    <td class="p-5 text-right font-bold text-green-400 font-mono">${s.precio_sugerido ? currency.format(s.precio_sugerido) : '<span class="text-gray-600 italic font-normal">No definido</span>'}</td>
+                    <td class="p-5 text-center">
+                        <div class="flex justify-center gap-2">
+                            <button onclick="prepararEdicion(${s.id})" class="bg-[#222] hover:bg-blue-900 text-blue-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition"><i class="fas fa-edit mr-1"></i>Editar</button>
+                            <button onclick="eliminarServicio(${s.id})" class="bg-[#222] hover:bg-red-900 text-red-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition"><i class="fas fa-trash mr-1"></i>Eliminar</button>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+        } catch {
+            tbody.innerHTML = '<tr><td colspan="5" class="p-12 text-center text-red-500">Error al cargar servicios.</td></tr>';
+        }
+    }
+
+    function abrirModal() {
+        document.getElementById('idServicio').value = '';
+        document.getElementById('nombreServicio').value = '';
+        document.getElementById('descripcionServicio').value = '';
+        document.getElementById('precioServicio').value = '';
+        document.getElementById('modal-titulo').textContent = 'Nuevo Servicio';
+        toggleModal(true);
+    }
+
+    function prepararEdicion(id) {
+        const s = serviciosGlobales.find(x => x.id === id);
+        if (!s) return;
+        document.getElementById('idServicio').value = s.id;
+        document.getElementById('nombreServicio').value = s.nombre || '';
+        document.getElementById('descripcionServicio').value = s.descripcion || '';
+        document.getElementById('precioServicio').value = s.precio_sugerido || '';
+        document.getElementById('modal-titulo').textContent = 'Editar Servicio';
+        toggleModal(true);
+    }
+
+    function cerrarModal() { toggleModal(false); }
+
+    function toggleModal(show) {
+        const m = document.getElementById('modalServicio');
+        if (show) { m.classList.remove('hidden'); m.classList.add('flex'); }
+        else { m.classList.add('hidden'); m.classList.remove('flex'); }
+    }
+
+    async function guardarServicio() {
+        const id = document.getElementById('idServicio').value;
+        const payload = {
+            nombre: document.getElementById('nombreServicio').value.trim(),
+            descripcion: document.getElementById('descripcionServicio').value.trim(),
+            precio_sugerido: parseFloat(document.getElementById('precioServicio').value) || null
+        };
+        if (!payload.nombre) { Swal.fire({ icon: 'warning', title: 'Falta el nombre', background: '#111', color: '#fff' }); return; }
+        try {
+            const url = id ? `/api/v1/operaciones/servicios/${id}` : '/api/v1/operaciones/servicios';
+            const res = await fetch(url, { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!res.ok) throw new Error();
+            cerrarModal(); cargarServicios();
+            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000, background: '#111', color: '#fff', iconColor: '#16a34a' });
+            Toast.fire({ icon: 'success', title: id ? 'Servicio actualizado' : 'Servicio creado' });
+        } catch { Swal.fire({ icon: 'error', title: 'Error al guardar', background: '#111', color: '#fff' }); }
+    }
+
+    async function eliminarServicio(id) {
+        const result = await Swal.fire({ icon: 'warning', title: '¿Eliminar servicio?', text: 'Esta acción no se puede deshacer.',
+            showCancelButton: true, confirmButtonText: 'Eliminar', cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#dc2626', background: '#111', color: '#fff' });
+        if (!result.isConfirmed) return;
+        try {
+            await fetch(`/api/v1/operaciones/servicios/${id}`, { method: 'DELETE' });
+            cargarServicios();
+            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000, background: '#111', color: '#fff', iconColor: '#dc2626' });
+            Toast.fire({ icon: 'success', title: 'Servicio eliminado' });
+        } catch { Swal.fire({ icon: 'error', title: 'Error al eliminar', background: '#111', color: '#fff' }); }
+    }
+
+    function openSidebar() { document.getElementById('sidebar').classList.remove('-translate-x-full'); document.getElementById('sidebar-overlay').classList.remove('hidden'); }
+    function closeSidebar() { document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('sidebar-overlay').classList.add('hidden'); }
+
+    cargarServicios();
+</script>
+</body>
+</html>

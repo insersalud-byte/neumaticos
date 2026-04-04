@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Finanzas Gerencia | Giorda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body{font-family:'Inter',sans-serif;background:#000;color:#fff}
+        .sidebar-link{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:8px;color:#9ca3af;font-size:14px;font-weight:500;transition:all .2s;cursor:pointer;text-decoration:none}
+        .sidebar-link:hover{background:#1a1a1a;color:#fff}
+        .sidebar-link.active{background:#1a1a1a;color:#fff;border-left:3px solid #dc2626;padding-left:13px}
+        .custom-scrollbar::-webkit-scrollbar{width:4px}
+        .custom-scrollbar::-webkit-scrollbar-track{background:transparent}
+        .custom-scrollbar::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+        .glass-header{background:rgba(5,5,5,0.95);backdrop-filter:blur(20px);border-bottom:1px solid #1f1f22}
+    </style>
+</head>
+<body class="bg-black text-white flex h-screen overflow-hidden">
+
+<aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-50 w-64 bg-[#050505] border-r border-[#1f1f22] flex flex-col flex-shrink-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl">
+    <div class="h-16 flex items-center px-5 border-b border-[#1f1f22] flex-shrink-0">
+        <span class="text-xl font-black text-white tracking-tight">Giorda<span class="text-red-600">OS</span></span>
+        <button onclick="document.getElementById('sidebar').classList.add('-translate-x-full')" class="ml-auto md:hidden text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+    </div>
+    <nav class="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+        <a href="pedidos-demo.html" class="sidebar-link"><i class="fas fa-tachometer-alt w-5 text-center text-blue-400"></i> Tablero General</a>
+        <a href="pos-mostrador.html" class="sidebar-link"><i class="fas fa-cash-register w-5 text-center text-green-400"></i> POS Mostrador</a>
+        <a href="catalogo-servicios.html" class="sidebar-link"><i class="fas fa-tools w-5 text-center text-yellow-400"></i> Servicios & MO</a>
+        <a href="stock-gestion.html" class="sidebar-link"><i class="fas fa-boxes w-5 text-center text-purple-400"></i> Stock Gestión</a>
+        <a href="importar-facturas.html" class="sidebar-link"><i class="fas fa-file-invoice-dollar w-5 text-center text-orange-400"></i> Compras (Prov.)</a>
+        <a href="finanzas-dashboard.html" class="sidebar-link active"><i class="fas fa-chart-line w-5 text-center text-emerald-400"></i> Finanzas & Caja</a>
+        <a href="cuenta-corriente.html" class="sidebar-link"><i class="fas fa-users w-5 text-center text-cyan-400"></i> Cuentas Corrientes</a>
+        <a href="sueldos.html" class="sidebar-link"><i class="fas fa-id-card w-5 text-center text-pink-400"></i> Sueldos</a>
+        <a href="coeficientes-tarjetas.html" class="sidebar-link"><i class="fas fa-credit-card w-5 text-center text-pink-400"></i> Planes Tarjetas</a>
+        <a href="taller-control.html" class="sidebar-link"><i class="fas fa-wrench w-5 text-center text-red-400"></i> Tablero Mecánicos</a>
+        <a href="turnos-demo.html" class="sidebar-link"><i class="fas fa-calendar-alt w-5 text-center text-indigo-400"></i> Agenda de Turnos</a>
+        <a href="recepcion-taller.html" class="sidebar-link"><i class="fas fa-file-alt w-5 text-center text-gray-400"></i> Recepción Vehículos</a>
+        <a href="inventario.html" class="sidebar-link"><i class="fas fa-user-friends w-5 text-center text-teal-400"></i> Inventario</a>
+        <a href="pos-mostrador.html" class="sidebar-link"><i class="fas fa-cog w-5 text-center text-gray-400"></i> Configuración</a>
+    </nav>
+    <div class="p-4 border-t border-[#1f1f22] flex-shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-red-700 flex items-center justify-center text-xs font-bold">S</div>
+            <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-white truncate">Sergio Admin</p><p class="text-xs text-gray-500">GERENCIA</p></div>
+            <a href="/logout" class="text-gray-500 hover:text-red-500"><i class="fas fa-sign-out-alt"></i></a>
+        </div>
+    </div>
+</aside>
+
+<div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden" onclick="closeSidebar()"></div>
+
+<div class="flex-1 flex flex-col overflow-hidden">
+    <header class="glass-header md:hidden flex items-center justify-between px-4 h-14 flex-shrink-0">
+        <button onclick="openSidebar()" class="text-gray-400 hover:text-white"><i class="fas fa-bars text-xl"></i></button>
+        <span class="text-lg font-black">Giorda<span class="text-red-600">OS</span></span>
+        <div class="w-8"></div>
+    </header>
+
+    <main class="flex-1 overflow-x-hidden overflow-y-auto bg-black p-4 md:p-8 pb-24 md:pb-8 relative custom-scrollbar">
+        <div class="max-w-7xl mx-auto pb-20 md:pb-0">
+
+            <div class="bg-[#18181b] border border-[#27272a] p-5 md:p-6 rounded-2xl shadow-2xl mb-6 md:mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                <div class="w-full lg:w-auto">
+                    <h2 class="text-2xl md:text-3xl font-black text-white italic tracking-tighter">TABLERO GERENCIAL</h2>
+                    <p class="text-gray-500 text-sm mt-1">Control financiero y balances globales.</p>
+                </div>
+                <div class="w-full lg:w-auto bg-[#09090b] p-4 rounded-xl border border-[#27272a] flex flex-col md:flex-row items-stretch md:items-end gap-3">
+                    <div class="grid grid-cols-2 gap-3 w-full md:w-auto">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1 ml-1">Desde</label>
+                            <input type="date" id="fDesde" class="w-full bg-black border border-[#27272a] text-white p-2.5 rounded-lg text-sm focus:border-red-600 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1 ml-1">Hasta</label>
+                            <input type="date" id="fHasta" class="w-full bg-black border border-[#27272a] text-white p-2.5 rounded-lg text-sm focus:border-red-600 outline-none">
+                        </div>
+                    </div>
+                    <button onclick="descargarBalance()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-5 rounded-lg transition flex items-center justify-center gap-2 text-sm whitespace-nowrap">
+                        <i class="fas fa-download"></i> DESCARGAR
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="bg-[#18181b] border border-[#27272a] rounded-xl p-5">
+                    <p class="text-xs text-gray-500 uppercase font-bold mb-2">Ingresos Totales (Histórico)</p>
+                    <p id="kpi-total" class="text-2xl font-black text-white">$ --</p>
+                </div>
+                <div class="bg-[#18181b] border border-[#27272a] rounded-xl p-5">
+                    <p class="text-xs text-gray-500 uppercase font-bold mb-2">Origen de Fondos E-commerce</p>
+                    <p id="kpi-web" class="text-2xl font-black text-blue-400">$ --</p>
+                </div>
+                <div class="bg-[#18181b] border border-[#27272a] rounded-xl p-5">
+                    <p class="text-xs text-gray-500 uppercase font-bold mb-2">Taller</p>
+                    <p id="kpi-taller" class="text-2xl font-black text-green-400">$ --</p>
+                </div>
+                <div class="bg-[#18181b] border border-[#27272a] rounded-xl p-5">
+                    <p class="text-xs text-gray-500 uppercase font-bold mb-2">Ticket Promedio</p>
+                    <p id="kpi-ticket" class="text-2xl font-black text-yellow-400">$ --</p>
+                    <p id="kpi-ops" class="text-xs text-gray-600 mt-1"></p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-[#18181b] border border-[#27272a] rounded-xl p-5">
+                    <h3 class="text-sm font-bold text-gray-400 uppercase mb-4">Composición del Ingreso</h3>
+                    <div class="relative" style="height:260px">
+                        <canvas id="graficoComposicion"></canvas>
+                        <div id="grafico-placeholder" class="absolute inset-0 flex items-center justify-center text-gray-600 text-sm">
+                            <i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando datos...
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-[#18181b] border border-[#27272a] rounded-xl p-5 flex flex-col justify-center items-center text-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-red-900/30 flex items-center justify-center">
+                        <i class="fas fa-shield-alt text-red-500 text-xl"></i>
+                    </div>
+                    <h3 class="font-bold text-white">Zona Segura</h3>
+                    <p class="text-gray-500 text-sm">Solo usuarios con perfil Gerencia tienen acceso a este módulo y a la descarga de balances contables.</p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<script>
+    const currency = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
+
+    const hoy = new Date();
+    const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    const toLocalStr = d => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth()+1).padStart(2,'0');
+        const dd = String(d.getDate()).padStart(2,'0');
+        return `${y}-${m}-${dd}`;
+    };
+    document.getElementById('fDesde').value = toLocalStr(primerDia);
+    document.getElementById('fHasta').value = toLocalStr(hoy);
+
+    let graficoInstance = null;
+
+    function descargarBalance() {
+        const d = document.getElementById('fDesde').value;
+        const h = document.getElementById('fHasta').value;
+        if (!d || !h) return alert('Seleccioná fechas válidas');
+        window.open(`/api/v1/reportes/cierre-taller?fecha_desde=${d}&fecha_hasta=${h}`, '_blank');
+    }
+
+    async function cargarFinanzas() {
+        try {
+            const res = await fetch('/api/v1/operaciones/admin/finanzas/resumen');
+            if (!res.ok) throw new Error('Error fetching data');
+            const data = await res.json();
+
+            document.getElementById('kpi-total').innerText = currency.format(data.ingresos_total || 0);
+            document.getElementById('kpi-web').innerText = currency.format(data.ingresos_web || 0);
+            document.getElementById('kpi-taller').innerText = currency.format(data.ingresos_taller || 0);
+            document.getElementById('kpi-ticket').innerText = currency.format(data.ticket_promedio || 0);
+            document.getElementById('kpi-ops').innerText = `${data.operaciones_totales || 0} Operaciones cerradas`;
+
+            const webPct = data.ingresos_total > 0 ? Math.round((data.ingresos_web / data.ingresos_total) * 100) : 50;
+            const tallerPct = 100 - webPct;
+
+            document.getElementById('grafico-placeholder').style.display = 'none';
+            if (graficoInstance) graficoInstance.destroy();
+            graficoInstance = new Chart(document.getElementById('graficoComposicion'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Web / Ecommerce', 'Taller'],
+                    datasets: [{ data: [webPct, tallerPct], backgroundColor: ['#3b82f6', '#dc2626'] }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#9ca3af', padding: 20, font: { color: '#9ca3af' } }
+                        }
+                    }
+                }
+            });
+
+        } catch (e) { console.warn('Finanzas error:', e); }
+    }
+
+    function openSidebar() { document.getElementById('sidebar').classList.remove('-translate-x-full'); document.getElementById('sidebar-overlay').classList.remove('hidden'); }
+    function closeSidebar() { document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('sidebar-overlay').classList.add('hidden'); }
+
+    cargarFinanzas();
+</script>
+</body>
+</html>

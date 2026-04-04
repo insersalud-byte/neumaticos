@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Recepción Vehículos | GiordaOS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 12px; border-radius: 8px;
+      color: #6b7280; font-size: 13px; font-weight: 500;
+      transition: all 0.15s; margin: 1px 8px;
+      text-decoration: none;
+    }
+    .sidebar-link:hover { background: #111113; color: #e5e7eb; }
+    .sidebar-link.active { background: #18181b; color: #fff; border-left: 3px solid #dc2626; padding-left: 9px; }
+    .sidebar-section-title {
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em;
+      color: #374151; padding: 14px 20px 4px; font-weight: 800;
+    }
+  </style>
+</head>
+<body class="bg-[#020817] text-white min-h-screen flex">
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-50 w-64 bg-[#050505] border-r border-[#1f1f22] flex flex-col flex-shrink-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+
+    <!-- LOGO -->
+    <div class="h-16 flex items-center justify-between px-6 border-b border-[#1f1f22]">
+      <h1 class="text-xl font-black italic tracking-tighter text-white flex items-center gap-2 select-none">
+        <div class="bg-red-600 text-white w-8 h-8 flex items-center justify-center rounded-lg shadow-red-900/50 shadow-lg">
+          <i class="fas fa-tire"></i>
+        </div>
+        <span>GIORDA<span class="text-red-600">OS</span></span>
+      </h1>
+      <button class="md:hidden text-gray-500 hover:text-white" onclick="document.getElementById('sidebar').classList.add('-translate-x-full')">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- NAV -->
+    <nav class="flex-1 overflow-y-auto py-2 space-y-0.5">
+      <div class="sidebar-section-title">Mostrador &amp; Ventas</div>
+    <a href="pos-mostrador.html" class="sidebar-link">
+      <i class="fas fa-cash-register w-6 text-center text-green-500"></i>
+      <span>Punto de Venta</span>
+    </a>
+    <a href="pedidos-demo.html" class="sidebar-link">
+      <i class="fas fa-globe w-6 text-center text-blue-400"></i>
+      <span>Cotizacion - Pedidos</span>
+    </a>
+      <div class="sidebar-section-title">Planta &amp; Taller</div>
+    <a href="taller-control.html" class="sidebar-link">
+      <i class="fas fa-wrench w-6 text-center text-gray-400"></i>
+      <span>Tablero Mecánicos</span>
+    </a>
+    <a href="turnos-demo.html" class="sidebar-link">
+      <i class="fas fa-calendar-alt w-6 text-center text-purple-400"></i>
+      <span>Agenda de Turnos</span>
+    </a>
+      <div class="sidebar-section-title flex items-center gap-2">Back Office <i class="fas fa-lock text-[9px] text-red-900"></i></div>
+    <a href="inventario.html" class="sidebar-link">
+      <i class="fas fa-boxes w-6 text-center text-yellow-500"></i>
+      <span>Inventario &amp; Stock</span>
+    </a>
+    <a href="catalogo-servicios.html" class="sidebar-link">
+      <i class="fas fa-list-ul w-6 text-center text-cyan-400"></i>
+      <span>Servicios &amp; MO</span>
+    </a>
+    <a href="stock-gestion.html" class="sidebar-link">
+      <i class="fas fa-layer-group w-6 text-center text-amber-400"></i>
+      <span>Stock Gestión</span>
+    </a>
+    <a href="importar-facturas.html" class="sidebar-link">
+      <i class="fas fa-file-invoice-dollar w-6 text-center text-emerald-400"></i>
+      <span>Compras (Proveedores)</span>
+    </a>
+    <a href="finanzas-dashboard.html" class="sidebar-link">
+      <i class="fas fa-chart-pie w-6 text-center text-red-500"></i>
+      <span>Finanzas &amp; Caja</span>
+    </a>
+    <a href="cuenta-corriente.html" class="sidebar-link">
+      <i class="fas fa-users w-6 text-center text-blue-500"></i>
+      <span>Cuentas Corrientes</span>
+    </a>
+    <a href="sueldos.html" class="sidebar-link">
+      <i class="fas fa-id-card w-6 text-center text-pink-400"></i>
+      <span>Sueldos</span>
+    </a>
+    <a href="coeficientes-tarjetas.html" class="sidebar-link">
+      <i class="fas fa-credit-card w-6 text-center text-green-400"></i>
+      <span>Planes Tarjetas</span>
+    </a>
+    <a href="backup.html" class="sidebar-link">
+      <i class="fas fa-database w-6 text-center text-gray-400"></i>
+      <span>Backup &amp; Restore</span>
+    </a>
+    </nav>
+
+    <!-- FOOTER -->
+    <div class="p-4 border-t border-[#1f1f22] bg-[#0a0a0c]">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-gray-800 to-black border border-gray-700 flex items-center justify-center text-white font-bold text-sm">S</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-bold text-white truncate">Sergio Giorda</p>
+          <p class="text-[10px] text-gray-600 truncate">gerencia</p>
+        </div>
+        <button onclick="logout()" class="text-gray-600 hover:text-red-500 transition" title="Salir">
+          <i class="fas fa-power-off text-sm"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="ml-60 flex-1 p-8">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-2xl font-bold">Recepción de Vehículos</h1>
+        <p class="text-xs text-gray-500 mt-1">Gestión de ingresos y agenda diaria.</p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="abrirModalNuevo()"
+          class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-2 transition">
+          <i class="fas fa-plus"></i> NUEVO INGRESO
+        </button>
+        <div class="bg-[#0f172a] border border-blue-900/20 text-gray-300 font-bold px-5 py-2.5 rounded-xl flex items-center gap-2">
+          <i class="fas fa-calendar text-blue-400"></i>
+          <span id="fecha-hoy"></span>
+        </div>
+      </div>
+    </div>
+
+    <div id="grilla" class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+    <div id="empty" class="hidden text-center py-20 text-gray-600">
+      <i class="fas fa-car text-4xl mb-3 block opacity-20"></i>
+      <p>Sin vehículos registrados hoy</p>
+    </div>
+  </main>
+
+  <!-- Modal nuevo ingreso -->
+  <div id="modalNuevo" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#0f172a] border border-blue-900/30 rounded-2xl w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="font-bold text-white text-lg">Nuevo Ingreso</h3>
+        <button onclick="cerrarModal()" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Patente</label>
+          <input id="n_patente" type="text" placeholder="AA123BB" oninput="buscarPatente(this.value)"
+            class="w-full bg-[#020817] border border-[#1e3a5f] text-blue-300 font-mono rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 uppercase transition"/>
+          <div id="dropPatente" class="hidden bg-[#0f172a] border border-blue-900/50 rounded-lg mt-1 max-h-40 overflow-y-auto"></div>
+        </div>
+        <div>
+          <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Cliente</label>
+          <input id="n_cliente" type="text" placeholder="Nombre del cliente" oninput="buscarCliente(this.value)"
+            class="w-full bg-[#020817] border border-[#1e3a5f] text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition"/>
+          <div id="dropCliente" class="hidden bg-[#0f172a] border border-blue-900/50 rounded-lg mt-1 max-h-40 overflow-y-auto"></div>
+        </div>
+        <div>
+          <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Modelo Vehículo</label>
+          <input id="n_modelo" type="text" placeholder="Ej: Toyota Hilux 2022"
+            class="w-full bg-[#020817] border border-[#1e3a5f] text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition"/>
+        </div>
+        <div>
+          <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1"><i class="fab fa-whatsapp text-green-500 mr-1"></i>WhatsApp (contacto)</label>
+          <input id="n_whatsapp" type="tel" placeholder="351-1234567 (opcional)"
+            class="w-full bg-[#020817] border border-[#1e3a5f] text-green-400 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition"/>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button onclick="cerrarModal()" class="flex-1 border border-blue-900/30 text-gray-400 hover:text-white py-2.5 rounded-xl text-sm font-semibold transition">Cancelar</button>
+        <button onclick="guardarIngreso()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 transition">
+          <i class="fas fa-plus"></i> REGISTRAR
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function logout() { document.cookie='becubical_session=; max-age=0; path=/'; window.location.href='../login.html'; }
+    const now = new Date();
+    document.getElementById('fecha-hoy').textContent = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
+
+    const estadoConfig = {
+      PENDIENTE: { label:'PENDIENTE', color:'border-l-yellow-500', badge:'bg-yellow-900/30 text-yellow-400 border-yellow-800' },
+      ADENTRO:   { label:'ADENTRO',   color:'border-l-blue-500',   badge:'bg-blue-900/30 text-blue-400 border-blue-800' },
+      LISTO:     { label:'LISTO',     color:'border-l-green-500',  badge:'bg-green-900/30 text-green-400 border-green-800' },
+    };
+
+    // ─── BÚSQUEDA DE PATENTE ────────────────────────────────
+    let timerPatente;
+    function buscarPatente(val) {
+      clearTimeout(timerPatente);
+      if (val.length < 2) { document.getElementById('dropPatente').classList.add('hidden'); return; }
+      timerPatente = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/v1/operaciones/vehiculos/buscar?q=${encodeURIComponent(val)}`);
+          const vehiculos = await res.json();
+          const drop = document.getElementById('dropPatente');
+          if (!vehiculos.length) { drop.classList.add('hidden'); return; }
+          drop.innerHTML = vehiculos.map(v => `
+            <div class="px-3 py-2 hover:bg-blue-900/30 cursor-pointer border-b border-blue-900/20 last:border-0"
+                 onclick="seleccionarPatente('${v.patente}', '${(v.modelo || '').replace(/'/g, "\\'")}', '${(v.cliente_nombre || '').replace(/'/g, "\\'")}')">
+              <p class="text-blue-300 font-mono font-bold text-sm">${v.patente}</p>
+              <p class="text-gray-400 text-xs">${v.modelo || 'Sin modelo'}</p>
+              <p class="text-gray-500 text-xs">${v.cliente_nombre || 'Cliente no registrado'}</p>
+            </div>
+          `).join('');
+          drop.classList.remove('hidden');
+        } catch(e) { document.getElementById('dropPatente').classList.add('hidden'); }
+      }, 300);
+    }
+
+    function seleccionarPatente(patente, modelo, cliente) {
+      document.getElementById('n_patente').value = patente;
+      document.getElementById('n_modelo').value = modelo;
+      if (cliente) document.getElementById('n_cliente').value = cliente;
+      document.getElementById('dropPatente').classList.add('hidden');
+    }
+
+    // ─── BÚSQUEDA DE CLIENTE ────────────────────────────────
+    let timerCliente;
+    function buscarCliente(val) {
+      clearTimeout(timerCliente);
+      if (val.length < 2) { document.getElementById('dropCliente').classList.add('hidden'); return; }
+      timerCliente = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/v1/crm/clientes/buscar?q=${encodeURIComponent(val)}`);
+          const data = await res.json();
+          const clientes = data.data || [];
+          const drop = document.getElementById('dropCliente');
+          if (!clientes.length) { drop.classList.add('hidden'); return; }
+          drop.innerHTML = clientes.map(c => `
+            <div class="px-3 py-2 hover:bg-blue-900/30 cursor-pointer border-b border-blue-900/20 last:border-0"
+                 onclick="seleccionarCliente('${(c.nombre || '').replace(/'/g, "\\'")}', '${(c.telefono || '').replace(/'/g, "\\'")}')">
+              <p class="text-white font-semibold text-sm">${c.nombre}</p>
+              <p class="text-gray-400 text-xs">${c.telefono || 'Sin teléfono'}</p>
+            </div>
+          `).join('');
+          drop.classList.remove('hidden');
+        } catch(e) { document.getElementById('dropCliente').classList.add('hidden'); }
+      }, 300);
+    }
+
+    function seleccionarCliente(nombre, telefono) {
+      document.getElementById('n_cliente').value = nombre;
+      if (telefono) document.getElementById('n_whatsapp').value = telefono;
+      document.getElementById('dropCliente').classList.add('hidden');
+    }
+
+    // Cerrar dropdowns al hacer click afuera
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#n_patente') && !e.target.closest('#dropPatente')) 
+        document.getElementById('dropPatente').classList.add('hidden');
+      if (!e.target.closest('#n_cliente') && !e.target.closest('#dropCliente')) 
+        document.getElementById('dropCliente').classList.add('hidden');
+    });
+
+    async function cargarIngresos() {
+      try {
+        const res = await fetch('/api/v1/taller/ingresos/hoy');
+        const data = await res.json();
+        const grilla = document.getElementById('grilla');
+        const empty = document.getElementById('empty');
+        grilla.innerHTML = '';
+        // Solo mostrar PENDIENTE
+        const pendientes = data.filter(v => v.estado === 'PENDIENTE');
+        if (!pendientes.length) { empty.classList.remove('hidden'); return; }
+        empty.classList.add('hidden');
+        pendientes.forEach(v => {
+          const hora = new Date(v.fecha_ingreso).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+          const div = document.createElement('div');
+          div.className = `bg-[#0f172a] border border-yellow-600/30 border-l-4 border-l-yellow-500 rounded-2xl p-5 hover:border-yellow-600 transition`;
+          div.innerHTML = `
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <p class="text-xs text-gray-500 uppercase tracking-wider">Hora Llegada</p>
+                <p class="text-2xl font-black text-white">${hora}</p>
+              </div>
+              <span class="text-[10px] bg-yellow-900/30 text-yellow-400 border border-yellow-800 px-2 py-0.5 rounded-full font-bold">PENDIENTE</span>
+            </div>
+            <p class="text-base font-bold text-white uppercase mb-1">${v.vehiculo_modelo||'VEHÍCULO'}</p>
+            ${v.vehiculo_patente ? `<span class="text-xs bg-blue-900/20 text-blue-300 border border-blue-800 px-2 py-0.5 rounded font-mono">${v.vehiculo_patente}</span>` : ''}
+            <p class="text-xs text-gray-500 mt-2 flex items-center gap-1"><i class="fas fa-user text-[10px]"></i> ${v.cliente_nombre||'Cliente Mostrador'}</p>
+            ${v.cliente_telefono ? `<p class="text-xs text-green-400 flex items-center gap-1"><i class="fab fa-whatsapp text-[10px]"></i> ${v.cliente_telefono}</p>` : ''}
+            ${v.venta_ref_id ? `<p class="text-xs text-blue-500 mt-1 font-mono">Ref: #${v.venta_ref_id}</p>` : ''}
+            <div class="mt-4">
+              <button onclick="pasarAdentro(${v.id})" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
+                <i class="fas fa-arrow-right"></i> PASAR ADENTRO
+              </button>
+            </div>`;
+          grilla.appendChild(div);
+        });
+      } catch(e) {
+        document.getElementById('grilla').innerHTML = '<p class="text-red-500 text-sm col-span-4">Error al cargar datos</p>';
+      }
+    }
+
+    async function pasarAdentro(id) {
+      try {
+        await fetch(`/api/v1/taller/ingresos/${id}/estado`, {
+          method: 'PATCH',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({estado: 'ADENTRO'})
+        });
+        window.location.href = 'taller-control.html';
+      } catch(e) {
+        Swal.fire('Error', 'No se pudo actualizar', 'error');
+      }
+    }
+
+    function abrirModalNuevo() { document.getElementById('modalNuevo').classList.remove('hidden'); }
+    function cerrarModal() {
+      document.getElementById('modalNuevo').classList.add('hidden');
+      ['n_modelo','n_patente','n_cliente','n_whatsapp'].forEach(id => document.getElementById(id).value='');
+      document.getElementById('dropPatente').classList.add('hidden');
+      document.getElementById('dropCliente').classList.add('hidden');
+    }
+
+    async function guardarIngreso() {
+      const modelo = document.getElementById('n_modelo').value;
+      const cliente = document.getElementById('n_cliente').value;
+      if (!cliente) return Swal.fire('Faltan datos','Completá el cliente','warning');
+      try {
+        const res = await fetch('/api/v1/taller/ingresos', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            vehiculo_modelo: modelo, 
+            vehiculo_patente: document.getElementById('n_patente').value.toUpperCase(),
+            cliente_nombre: cliente, 
+            cliente_telefono: document.getElementById('n_whatsapp').value,
+            estado:'PENDIENTE'
+          })
+        });
+        if (res.ok) { 
+          cerrarModal(); 
+          window.location.href = 'taller-control.html';
+        }
+      } catch(e) { Swal.fire('Error','No se pudo registrar','error'); }
+    }
+
+    cargarIngresos();
+    setInterval(cargarIngresos, 30000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Backup & Restore | GiordaOS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 12px; border-radius: 8px;
+      color: #6b7280; font-size: 13px; font-weight: 500;
+      transition: all 0.15s; margin: 1px 8px;
+      text-decoration: none;
+    }
+    .sidebar-link:hover { background: #111113; color: #e5e7eb; }
+    .sidebar-link.active { background: #18181b; color: #fff; border-left: 3px solid #dc2626; padding-left: 9px; }
+    .sidebar-section-title {
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em;
+      color: #374151; padding: 14px 20px 4px; font-weight: 800;
+    }
+  </style>
+</head>
+<body class="bg-[#020817] text-white min-h-screen flex">
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-50 w-64 bg-[#050505] border-r border-[#1f1f22] flex flex-col flex-shrink-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+    <div class="h-16 flex items-center justify-between px-6 border-b border-[#1f1f22]">
+      <h1 class="text-xl font-black italic tracking-tighter text-white flex items-center gap-2">
+        <div class="bg-red-600 text-white w-8 h-8 flex items-center justify-center rounded-lg">
+          <i class="fas fa-tire"></i>
+        </div>
+        <span>GIORDA<span class="text-red-600">OS</span></span>
+      </h1>
+      <button class="md:hidden text-gray-500" onclick="document.getElementById('sidebar').classList.add('-translate-x-full')">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <nav class="flex-1 overflow-y-auto py-2 space-y-0.5">
+      <div class="sidebar-section-title">Mostrador &amp; Ventas</div>
+      <a href="pos-mostrador.html" class="sidebar-link"><i class="fas fa-cash-register w-6 text-center text-green-500"></i><span>Punto de Venta</span></a>
+      <a href="pedidos-demo.html" class="sidebar-link"><i class="fas fa-globe w-6 text-center text-blue-400"></i><span>Cotizacion - Pedidos</span></a>
+      <div class="sidebar-section-title">Planta &amp; Taller</div>
+      <a href="recepcion-taller.html" class="sidebar-link"><i class="fas fa-clipboard-list w-6 text-center text-orange-400"></i><span>Recepción Vehículos</span></a>
+      <a href="taller-control.html" class="sidebar-link"><i class="fas fa-wrench w-6 text-center text-gray-400"></i><span>Tablero Mecánicos</span></a>
+      <a href="turnos-demo.html" class="sidebar-link"><i class="fas fa-calendar-alt w-6 text-center text-purple-400"></i><span>Agenda de Turnos</span></a>
+      <div class="sidebar-section-title flex items-center gap-2">Back Office <i class="fas fa-lock text-[9px] text-red-900"></i></div>
+      <a href="inventario.html" class="sidebar-link"><i class="fas fa-boxes w-6 text-center text-yellow-500"></i><span>Inventario &amp; Stock</span></a>
+      <a href="catalogo-servicios.html" class="sidebar-link"><i class="fas fa-list-ul w-6 text-center text-cyan-400"></i><span>Servicios &amp; MO</span></a>
+      <a href="stock-gestion.html" class="sidebar-link"><i class="fas fa-layer-group w-6 text-center text-amber-400"></i><span>Stock Gestión</span></a>
+      <a href="importar-facturas.html" class="sidebar-link"><i class="fas fa-file-invoice-dollar w-6 text-center text-emerald-400"></i><span>Compras (Proveedores)</span></a>
+      <a href="finanzas-dashboard.html" class="sidebar-link"><i class="fas fa-chart-pie w-6 text-center text-red-500"></i><span>Finanzas &amp; Caja</span></a>
+      <a href="cuenta-corriente.html" class="sidebar-link"><i class="fas fa-users w-6 text-center text-blue-500"></i><span>Cuentas Corrientes</span></a>
+      <a href="sueldos.html" class="sidebar-link"><i class="fas fa-id-card w-6 text-center text-pink-400"></i><span>Sueldos</span></a>
+      <a href="coeficientes-tarjetas.html" class="sidebar-link"><i class="fas fa-credit-card w-6 text-center text-green-400"></i><span>Planes Tarjetas</span></a>
+      <a href="backup.html" class="sidebar-link active"><i class="fas fa-database w-6 text-center text-gray-400"></i><span>Backup & Restore</span></a>
+    </nav>
+    <div class="p-4 border-t border-[#1f1f22] bg-[#0a0a0c]">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-gray-800 to-black border border-gray-700 flex items-center justify-center font-bold text-sm">S</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-bold text-white truncate">Sergio Giorda</p>
+          <p class="text-[10px] text-gray-600 truncate">gerencia</p>
+        </div>
+        <button onclick="logout()" class="text-gray-600 hover:text-red-500"><i class="fas fa-power-off text-sm"></i></button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="ml-60 flex-1 p-8">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-2xl font-bold">Backup &amp; Restore</h1>
+        <p class="text-xs text-gray-500 mt-1">Gestión de copias de seguridad de la base de datos.</p>
+      </div>
+      <button onclick="hacerBackup()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2.5 rounded-xl flex items-center gap-2 transition">
+        <i class="fas fa-download"></i> HACER BACKUP
+      </button>
+    </div>
+
+    <!-- Info -->
+    <div class="bg-[#0f172a] border border-blue-900/20 rounded-2xl p-5 mb-6">
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 bg-blue-900/30 rounded-xl flex items-center justify-center">
+          <i class="fas fa-info-circle text-blue-400 text-xl"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-white mb-1">¿Cómo funciona?</h3>
+          <p class="text-sm text-gray-400">El backup crea una copia exacta de la base de datos. Los archivos se guardan en una carpeta segura. Ante cualquier problema, podés restaurar desde cualquier backup anterior.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-3 gap-4 mb-8">
+      <div class="bg-[#0f172a] border border-blue-900/20 rounded-2xl p-5 text-center">
+        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Total Backups</p>
+        <p class="text-3xl font-black text-white" id="statTotal">0</p>
+      </div>
+      <div class="bg-[#0f172a] border border-blue-900/20 rounded-2xl p-5 text-center">
+        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Último Backup</p>
+        <p class="text-lg font-bold text-green-400" id="statUltimo">-</p>
+      </div>
+      <div class="bg-[#0f172a] border border-blue-900/20 rounded-2xl p-5 text-center">
+        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Espacio Usado</p>
+        <p class="text-lg font-bold text-blue-400" id="statEspacio">-</p>
+      </div>
+    </div>
+
+    <!-- Lista de backups -->
+    <div class="bg-[#0f172a] border border-blue-900/20 rounded-2xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-sm">Backups Disponibles</h3>
+        <button onclick="cargarBackups()" class="text-xs text-blue-400 hover:text-blue-300"><i class="fas fa-sync-alt mr-1"></i> Actualizar</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-[10px] text-gray-500 uppercase tracking-wider border-b border-blue-900/20">
+              <th class="pb-3 text-left">Archivo</th>
+              <th class="pb-3 text-left">Fecha</th>
+              <th class="pb-3 text-right">Tamaño</th>
+              <th class="pb-3 text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tablaBackups">
+            <tr><td colspan="4" class="py-8 text-center text-gray-600"><i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function logout() { window.location.href = '../login.html'; }
+
+    async function cargarBackups() {
+      try {
+        const res = await fetch('/api/v1/backup/listar');
+        const data = await res.json();
+        
+        document.getElementById('statTotal').textContent = data.length;
+        document.getElementById('statUltimo').textContent = data.length ? data[0].fecha : '-';
+        
+        let espacio = 0;
+        data.forEach(b => espacio += b.tamano);
+        document.getElementById('statEspacio').textContent = formatBytes(espacio);
+
+        const tbody = document.getElementById('tablaBackups');
+        if (!data.length) {
+          tbody.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-gray-600">Sin backups disponibles</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.map(b => `
+          <tr class="border-b border-blue-900/10 hover:bg-blue-900/10 transition">
+            <td class="py-3 text-white font-mono text-xs"><i class="fas fa-file-archive text-gray-500 mr-2"></i>${b.nombre}</td>
+            <td class="py-3 text-gray-400 text-xs">${b.fecha}</td>
+            <td class="py-3 text-right text-gray-400 text-xs">${formatBytes(b.tamano)}</td>
+            <td class="py-3 text-center">
+              <button onclick="descargarBackup('${b.nombre}')" class="text-blue-400 hover:text-blue-300 mr-3" title="Descargar"><i class="fas fa-download"></i></button>
+              <button onclick="restaurarBackup('${b.nombre}')" class="text-yellow-400 hover:text-yellow-300" title="Restaurar"><i class="fas fa-undo"></i></button>
+            </td>
+          </tr>
+        `).join('');
+      } catch(e) {
+        document.getElementById('tablaBackups').innerHTML = '<tr><td colspan="4" class="py-8 text-center text-red-500">Error al cargar backups</td></tr>';
+      }
+    }
+
+    async function hacerBackup() {
+      try {
+        const result = await Swal.fire({
+          title: '¿Crear backup?',
+          text: 'Se creará una copia de seguridad de la base de datos.',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#16a34a',
+          cancelButtonColor: '#6b7280',
+          background: '#0f172a',
+          color: '#fff',
+          confirmButtonText: 'Sí, crear',
+          cancelButtonText: 'Cancelar'
+        });
+        if (!result.isConfirmed) return;
+
+        const res = await fetch('/api/v1/backup/crear', { method: 'POST' });
+        if (res.ok) {
+          await Swal.fire({icon:'success', title:'Backup creado', text:'Copia de seguridad guardada correctamente', background:'#0f172a', color:'#fff', timer:2500, showConfirmButton:false});
+          cargarBackups();
+        } else {
+          throw new Error('Error');
+        }
+      } catch(e) {
+        Swal.fire({icon:'error', title:'Error', text:'No se pudo crear el backup', background:'#0f172a', color:'#fff'});
+      }
+    }
+
+    async function restaurarBackup(nombre) {
+      const result = await Swal.fire({
+        title: '¿Restaurar backup?',
+        text: `Se reemplazarán todos los datos actuales con el backup: ${nombre}`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        background: '#0f172a',
+        color: '#fff',
+        confirmButtonText: 'Sí, restaurar',
+        cancelButtonText: 'Cancelar'
+      });
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await fetch('/api/v1/backup/restaurar', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({archivo: nombre})
+        });
+        if (res.ok) {
+          await Swal.fire({icon:'success', title:'Restaurado', text:'Datos restaurados correctamente. Recargá la página.', background:'#0f172a', color:'#fff', timer:3000, showConfirmButton:false});
+        } else {
+          throw new Error('Error');
+        }
+      } catch(e) {
+        Swal.fire({icon:'error', title:'Error', text:'No se pudo restaurar el backup', background:'#0f172a', color:'#fff'});
+      }
+    }
+
+    function descargarBackup(nombre) {
+      window.open(`/Backups_GiordaOS/${nombre}`, '_blank');
+    }
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    cargarBackups();
+  </script>
+</body>
+</html>

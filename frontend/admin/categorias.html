@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Categorías | GiordaOS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-black text-white min-h-screen">
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-[#050505] border-r border-[#1f1f22] flex flex-col">
+      <div class="h-16 flex items-center px-5 border-b border-[#1f1f22]">
+        <span class="text-xl font-black text-white tracking-tight">Giorda<span class="text-emerald-500">OS</span></span>
+      </div>
+      <nav class="flex-1 overflow-y-auto p-3 space-y-1">
+        <a href="pedidos-demo.html" class="sidebar-link"><i class="fas fa-tachometer-alt w-5 text-center text-blue-400"></i> Tablero General</a>
+        <a href="pos-mostrador.html" class="sidebar-link"><i class="fas fa-cash-register w-5 text-center text-green-400"></i> POS Mostrador</a>
+        
+        <!-- Productos Collapsible -->
+        <div class="menu-group">
+          <button onclick="toggleMenu('productos')" class="sidebar-link w-full text-left justify-between">
+            <span class="flex items-center gap-2"><i class="fas fa-boxes w-5 text-center text-emerald-400"></i> Productos</span>
+            <i class="fas fa-chevron-down text-xs transition-transform" id="icon-productos"></i>
+          </button>
+          <div id="sub-productos" class="pl-6 space-y-1 hidden">
+            <a href="articulos.html" class="sidebar-link text-xs py-1.5"><i class="fas fa-list w-4 text-center text-gray-500"></i> Administrar</a>
+            <a href="categorias.html" class="sidebar-link text-xs py-1.5 active"><i class="fas fa-tags w-4 text-center text-gray-500"></i> Categorías</a>
+            <a href="ajuste-precios.html" class="sidebar-link text-xs py-1.5"><i class="fas fa-percentage w-4 text-center text-gray-500"></i> Ajuste precios</a>
+            <a href="importador.html" class="sidebar-link text-xs py-1.5"><i class="fas fa-file-import w-4 text-center text-gray-500"></i> Importador</a>
+          </div>
+        </div>
+        
+        <a href="catalogo-servicios.html" class="sidebar-link"><i class="fas fa-tools w-5 text-center text-yellow-400"></i> Servicios & MO</a>
+        <a href="stock-gestion.html" class="sidebar-link"><i class="fas fa-warehouse w-5 text-center text-purple-400"></i> Stock Gestión</a>
+        <a href="importar-facturas.html" class="sidebar-link"><i class="fas fa-file-invoice-dollar w-5 text-center text-orange-400"></i> Compras (Prov.)</a>
+        <a href="finanzas-dashboard.html" class="sidebar-link"><i class="fas fa-chart-line w-5 text-center text-emerald-400"></i> Finanzas & Caja</a>
+        <a href="cuenta-corriente.html" class="sidebar-link"><i class="fas fa-users w-5 text-center text-cyan-400"></i> Cuentas Corrientes</a>
+        <a href="sueldos.html" class="sidebar-link"><i class="fas fa-id-card w-5 text-center text-pink-400"></i> Sueldos</a>
+      </nav>
+      <script>
+        function toggleMenu(id) {
+          const submenu = document.getElementById('sub-' + id);
+          const icon = document.getElementById('icon-' + id);
+          submenu.classList.toggle('hidden');
+          icon.classList.toggle('rotate-180');
+        }
+      </script>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 overflow-y-auto p-8">
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h1 class="text-2xl font-bold">Categorías</h1>
+          <p class="text-xs text-gray-500 mt-1">Gestión de categorías de productos.</p>
+        </div>
+        <button onclick="abrirModalCategoria()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-2">
+          <i class="fas fa-plus"></i> NUEVA CATEGORÍA
+        </button>
+      </div>
+
+      <div id="grilla-categorias" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      <div id="empty-categorias" class="hidden text-center py-20 text-gray-600">
+        <i class="fas fa-tags text-4xl mb-3 block opacity-20"></i>
+        <p>Sin categorías registradas</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Categoría -->
+  <div id="modalCategoria" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#0f172a] border border-emerald-900/30 rounded-2xl w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="font-bold text-white text-lg">Nueva Categoría</h3>
+        <button onclick="cerrarModalCategoria()" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Nombre</label>
+          <input id="cat_nombre" type="text" placeholder="Ej: Cubiertas"
+            class="w-full bg-[#020817] border border-[#1e3a5f] text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500"/>
+        </div>
+        <div>
+          <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Descripción</label>
+          <textarea id="cat_descripcion" placeholder="Descripción opcional"
+            class="w-full bg-[#020817] border border-[#1e3a5f] text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 h-20"></textarea>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button onclick="cerrarModalCategoria()" class="flex-1 border border-gray-700 text-gray-400 hover:text-white py-2.5 rounded-xl text-sm font-semibold">Cancelar</button>
+        <button onclick="guardarCategoria()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2">
+          <i class="fas fa-save"></i> GUARDAR
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Editar -->
+  <div id="modalEditarCategoria" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#0f172a] border border-emerald-900/30 rounded-2xl w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="font-bold text-white text-lg">Editar Categoría</h3>
+        <button onclick="cerrarModalEditarCategoria()" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+      </div>
+      <input type="hidden" id="edit_cat_id"/>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Nombre</label>
+          <input id="edit_cat_nombre" type="text"
+            class="w-full bg-[#020817] border border-[#1e3a5f] text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500"/>
+        </div>
+        <div>
+          <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Descripción</label>
+          <textarea id="edit_cat_descripcion"
+            class="w-full bg-[#020817] border border-[#1e3a5f] text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 h-20"></textarea>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button onclick="cerrarModalEditarCategoria()" class="flex-1 border border-gray-700 text-gray-400 hover:text-white py-2.5 rounded-xl text-sm font-semibold">Cancelar</button>
+        <button onclick="actualizarCategoria()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2">
+          <i class="fas fa-save"></i> ACTUALIZAR
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .sidebar-link { display:flex; align-items:center; gap:10px; padding:7px 12px; border-radius:8px; color:#6b7280; font-size:13px; font-weight:500; transition:all .15s; text-decoration:none; }
+    .sidebar-link:hover { background:#111113; color:#e5e7eb; }
+    .sidebar-link.active { background:#18181b; color:#fff; border-left:3px solid #10b981; padding-left:9px; }
+  </style>
+
+  <script>
+    async function cargarCategorias() {
+      try {
+        const res = await fetch('/api/v1/articulos/categorias');
+        const data = await res.json();
+        const grilla = document.getElementById('grilla-categorias');
+        grilla.innerHTML = '';
+        if (!data.length) { document.getElementById('empty-categorias').classList.remove('hidden'); return; }
+        document.getElementById('empty-categorias').classList.add('hidden');
+        data.forEach(cat => {
+          const div = document.createElement('div');
+          div.className = 'bg-[#0f172a] border border-emerald-900/20 rounded-xl p-4 hover:border-emerald-600 transition';
+          div.innerHTML = `
+            <div class="flex items-start justify-between">
+              <div class="flex-1 min-w-0">
+                <h3 class="text-lg font-bold text-white">${cat.nombre}</h3>
+                <p class="text-xs text-gray-500 mt-1">${cat.descripcion || 'Sin descripción'}</p>
+              </div>
+              <div class="flex gap-2 ml-2">
+                <button onclick="editarCategoria(${cat.id}, '${cat.nombre}', '${cat.descripcion || ''}')" class="text-blue-400 hover:text-blue-300 p-2"><i class="fas fa-edit"></i></button>
+                <button onclick="eliminarCategoria(${cat.id})" class="text-red-400 hover:text-red-300 p-2"><i class="fas fa-trash"></i></button>
+              </div>
+            </div>
+          `;
+          grilla.appendChild(div);
+        });
+      } catch(e) {
+        document.getElementById('grilla-categorias').innerHTML = '<p class="text-red-500 text-sm col-span-3">Error al cargar categorías</p>';
+      }
+    }
+
+    function abrirModalCategoria() { document.getElementById('modalCategoria').classList.remove('hidden'); }
+    function cerrarModalCategoria() {
+      document.getElementById('modalCategoria').classList.add('hidden');
+      document.getElementById('cat_nombre').value = '';
+      document.getElementById('cat_descripcion').value = '';
+    }
+
+    async function guardarCategoria() {
+      const nombre = document.getElementById('cat_nombre').value;
+      if (!nombre) return Swal.fire('Falta nombre','Ingresá el nombre de la categoría','warning');
+      try {
+        const res = await fetch('/api/v1/articulos/categorias', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({nombre, descripcion: document.getElementById('cat_descripcion').value})
+        });
+        if (res.ok) { cerrarModalCategoria(); cargarCategorias(); Swal.fire({icon:'success',title:'Categoría guardada',background:'#111',color:'#fff',timer:1500,showConfirmButton:false}); }
+      } catch(e) { Swal.fire('Error','No se pudo guardar','error'); }
+    }
+
+    function editarCategoria(id, nombre, descripcion) {
+      document.getElementById('edit_cat_id').value = id;
+      document.getElementById('edit_cat_nombre').value = nombre;
+      document.getElementById('edit_cat_descripcion').value = descripcion;
+      document.getElementById('modalEditarCategoria').classList.remove('hidden');
+    }
+    function cerrarModalEditarCategoria() { document.getElementById('modalEditarCategoria').classList.add('hidden'); }
+
+    async function actualizarCategoria() {
+      const id = document.getElementById('edit_cat_id').value;
+      const nombre = document.getElementById('edit_cat_nombre').value;
+      if (!nombre) return Swal.fire('Falta nombre','Ingresá el nombre','warning');
+      try {
+        const res = await fetch(`/api/v1/articulos/categorias/${id}`, {
+          method: 'PUT',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({nombre, descripcion: document.getElementById('edit_cat_descripcion').value})
+        });
+        if (res.ok) { cerrarModalEditarCategoria(); cargarCategorias(); Swal.fire({icon:'success',title:'Categoría actualizada',background:'#111',color:'#fff',timer:1500,showConfirmButton:false}); }
+      } catch(e) { Swal.fire('Error','No se pudo actualizar','error'); }
+    }
+
+    async function eliminarCategoria(id) {
+      const result = await Swal.fire({icon:'warning',title:'¿Eliminar categoría?',text:'Esta acción no se puede deshacer.',background:'#111',color:'#fff',showCancelButton:true,confirmButtonColor:'#dc2626',cancelButtonColor:'#374151',confirmButtonText:'Sí, eliminar',cancelButtonText:'Cancelar'});
+      if (!result.isConfirmed) return;
+      try {
+        const res = await fetch(`/api/v1/articulos/categorias/${id}`, { method: 'DELETE' });
+        if (res.ok) cargarCategorias();
+      } catch(e) { Swal.fire('Error','No se pudo eliminar','error'); }
+    }
+
+    cargarCategorias();
+  </script>
+</body>
+</html>

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sueldos | GiordaOS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 12px; border-radius: 8px;
+      color: #6b7280; font-size: 13px; font-weight: 500;
+      transition: all 0.15s; margin: 1px 8px;
+      text-decoration: none;
+    }
+    .sidebar-link:hover { background: #111113; color: #e5e7eb; }
+    .sidebar-link.active { background: #18181b; color: #fff; border-left: 3px solid #dc2626; padding-left: 9px; }
+    .sidebar-section-title {
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em;
+      color: #374151; padding: 14px 20px 4px; font-weight: 800;
+    }
+  </style>
+</head>
+<body class="bg-[#020817] text-white min-h-screen flex">
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-50 w-64 bg-[#050505] border-r border-[#1f1f22] flex flex-col flex-shrink-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+    <div class="h-16 flex items-center justify-between px-6 border-b border-[#1f1f22]">
+      <h1 class="text-xl font-black italic tracking-tighter text-white flex items-center gap-2 select-none">
+        <div class="bg-red-600 text-white w-8 h-8 flex items-center justify-center rounded-lg shadow-red-900/50 shadow-lg">
+          <i class="fas fa-tire"></i>
+        </div>
+        <span>GIORDA<span class="text-red-600">OS</span></span>
+      </h1>
+      <button class="md:hidden text-gray-500 hover:text-white" onclick="document.getElementById('sidebar').classList.add('-translate-x-full')">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <nav class="flex-1 overflow-y-auto py-2 space-y-0.5">
+      <div class="sidebar-section-title">Mostrador &amp; Ventas</div>
+    <a href="pos-mostrador.html" class="sidebar-link">
+      <i class="fas fa-cash-register w-6 text-center text-green-500"></i>
+      <span>Punto de Venta</span>
+    </a>
+    <a href="pedidos-demo.html" class="sidebar-link">
+      <i class="fas fa-globe w-6 text-center text-blue-400"></i>
+      <span>Cotizacion - Pedidos</span>
+    </a>
+      <div class="sidebar-section-title">Planta &amp; Taller</div>
+    <a href="recepcion-taller.html" class="sidebar-link">
+      <i class="fas fa-clipboard-list w-6 text-center text-orange-400"></i>
+      <span>Recepción Vehículos</span>
+    </a>
+    <a href="taller-control.html" class="sidebar-link">
+      <i class="fas fa-wrench w-6 text-center text-gray-400"></i>
+      <span>Tablero Mecánicos</span>
+    </a>
+    <a href="turnos-demo.html" class="sidebar-link">
+      <i class="fas fa-calendar-alt w-6 text-center text-purple-400"></i>
+      <span>Agenda de Turnos</span>
+    </a>
+      <div class="sidebar-section-title flex items-center gap-2">Back Office <i class="fas fa-lock text-[9px] text-red-900"></i></div>
+    <a href="inventario.html" class="sidebar-link">
+      <i class="fas fa-boxes w-6 text-center text-yellow-500"></i>
+      <span>Inventario &amp; Stock</span>
+    </a>
+    <a href="catalogo-servicios.html" class="sidebar-link">
+      <i class="fas fa-list-ul w-6 text-center text-cyan-400"></i>
+      <span>Servicios &amp; MO</span>
+    </a>
+    <a href="stock-gestion.html" class="sidebar-link">
+      <i class="fas fa-layer-group w-6 text-center text-amber-400"></i>
+      <span>Stock Gestión</span>
+    </a>
+    <a href="importar-facturas.html" class="sidebar-link">
+      <i class="fas fa-file-invoice-dollar w-6 text-center text-emerald-400"></i>
+      <span>Compras (Proveedores)</span>
+    </a>
+    <a href="finanzas-dashboard.html" class="sidebar-link">
+      <i class="fas fa-chart-pie w-6 text-center text-red-500"></i>
+      <span>Finanzas &amp; Caja</span>
+    </a>
+    <a href="cuenta-corriente.html" class="sidebar-link">
+      <i class="fas fa-users w-6 text-center text-blue-500"></i>
+      <span>Cuentas Corrientes</span>
+    </a>
+    <a href="sueldos.html" class="sidebar-link active">
+      <i class="fas fa-id-card w-6 text-center text-pink-400"></i>
+      <span>Sueldos</span>
+    </a>
+    <a href="coeficientes-tarjetas.html" class="sidebar-link">
+      <i class="fas fa-credit-card w-6 text-center text-green-400"></i>
+      <span>Planes Tarjetas</span>
+    </a>
+    <a href="backup.html" class="sidebar-link">
+      <i class="fas fa-database w-6 text-center text-gray-400"></i>
+      <span>Backup &amp; Restore</span>
+    </a>
+    </nav>
+    <div class="p-4 border-t border-[#1f1f22] bg-[#0a0a0c]">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-gray-800 to-black border border-gray-700 flex items-center justify-center text-white font-bold text-sm">S</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-bold text-white truncate">Sergio Giorda</p>
+          <p class="text-[10px] text-gray-600 truncate">gerencia</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="ml-60 flex-1 p-8">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-2xl font-bold">Sueldos</h1>
+        <p class="text-xs text-gray-500 mt-1">Gestión de sueldos y adelantos de empleados.</p>
+      </div>
+      <div class="flex gap-3 items-center">
+        <select id="mesSelector" onchange="cargarSueldos()" class="bg-[#0f172a] border border-blue-900/30 text-white rounded-lg px-3 py-2 text-sm">
+          <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+          <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+          <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+          <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+        </select>
+        <select id="anioSelector" onchange="cargarSueldos()" class="bg-[#0f172a] border border-blue-900/30 text-white rounded-lg px-3 py-2 text-sm"></select>
+        <button onclick="abrirModalEmpleado()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-2 transition">
+          <i class="fas fa-plus"></i> EMPLEADO
+        </button>
+      </div>
+    </div>
+
+    <div id="grilla-sueldos" class="grid grid-cols-1 xl:grid-cols-2 gap-6 max-w-5xl"></div>
+    <div id="empty-sueldos" class="hidden text-center py-20 text-gray-600">
+      <i class="fas fa-users-slash text-4xl mb-3 block opacity-20"></i>
+      <p>Sin empleados registrados</p>
+    </div>
+  </main>
+
+  <!-- Modal Empleado -->
+  <div id="modalEmpleado" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#0f172a] border border-blue-900/30 rounded-2xl w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="font-bold text-white text-lg">Nuevo Empleado</h3>
+        <button onclick="cerrarModalEmpleado()" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Nombre</label>
+          <input id="emp_nombre" type="text" placeholder="Nombre del empleado"
+            class="w-full bg-[#020817] border border-[#1e3a5f] text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition"/>
+        </div>
+        <div>
+          <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Teléfono</label>
+          <input id="emp_telefono" type="text" placeholder="Teléfono"
+            class="w-full bg-[#020817] border border-[#1e3a5f] text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition"/>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button onclick="cerrarModalEmpleado()" class="flex-1 border border-blue-900/30 text-gray-400 hover:text-white py-2.5 rounded-xl text-sm font-semibold transition">Cancelar</button>
+        <button onclick="guardarEmpleado()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 transition">
+          <i class="fas fa-save"></i> GUARDAR
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Adelanto -->
+  <div id="modalAdelanto" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#0f172a] border border-blue-900/30 rounded-2xl w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="font-bold text-white text-lg">Adelanto</h3>
+        <button onclick="cerrarModalAdelanto()" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+      </div>
+      <input type="hidden" id="adv_empleado_id"/>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Monto</label>
+          <input id="adv_monto" type="number" step="0.01" placeholder="0.00"
+            class="w-full bg-[#020817] border border-[#1e3a5f] text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition"/>
+        </div>
+        <div>
+          <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Descripción</label>
+          <input id="adv_descripcion" type="text" placeholder="Detalle del adelanto"
+            class="w-full bg-[#020817] border border-[#1e3a5f] text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition"/>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button onclick="cerrarModalAdelanto()" class="flex-1 border border-blue-900/30 text-gray-400 hover:text-white py-2.5 rounded-xl text-sm font-semibold transition">Cancelar</button>
+        <button onclick="guardarAdelanto()" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 transition">
+          <i class="fas fa-dollar-sign"></i> REGISTRAR
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    
+    function initSelectors() {
+      const hoy = new Date();
+      document.getElementById('mesSelector').value = hoy.getMonth() + 1;
+      const anioSel = document.getElementById('anioSelector');
+      anioSel.innerHTML = '';
+      for (let y = hoy.getFullYear() - 1; y <= hoy.getFullYear() + 1; y++) {
+        anioSel.innerHTML += `<option value="${y}"${y === hoy.getFullYear() ? ' selected' : ''}>${y}</option>`;
+      }
+    }
+
+    async function cargarSueldos() {
+      const mes = document.getElementById('mesSelector').value;
+      const anio = document.getElementById('anioSelector').value;
+      try {
+        const res = await fetch(`/api/v1/sueldos/sueldos?mes=${mes}&anio=${anio}`);
+        const data = await res.json();
+        const grilla = document.getElementById('grilla-sueldos');
+        grilla.innerHTML = '';
+        if (!data.length) {
+          document.getElementById('empty-sueldos').classList.remove('hidden');
+          return;
+        }
+        document.getElementById('empty-sueldos').classList.add('hidden');
+        data.forEach(emp => {
+          const saldoClass = emp.saldo >= 0 ? 'text-green-400' : 'text-red-400';
+          const saldoSigno = emp.saldo >= 0 ? '+' : '';
+          const div = document.createElement('div');
+          div.className = 'bg-[#0f172a] border border-blue-900/20 rounded-2xl p-5';
+          div.innerHTML = `
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <p class="text-lg font-bold text-white">${emp.nombre}</p>
+                <p class="text-xs text-gray-500">${meses[mes-1]} ${anio}</p>
+              </div>
+              <span class="text-[10px] border ${emp.pagado ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-yellow-900/30 text-yellow-400 border-yellow-800'} px-2 py-0.5 rounded-full font-bold">
+                ${emp.pagado ? 'PAGADO' : 'PENDIENTE'}
+              </span>
+            </div>
+            <div class="grid grid-cols-3 gap-3 mb-4">
+              <div class="bg-[#020817] rounded-lg p-3 text-center">
+                <p class="text-[10px] text-gray-500 uppercase">Sueldo</p>
+                <p class="text-sm font-bold text-white">$${Number(emp.monto_sueldo).toLocaleString('es-AR',{minimumFractionDigits:0})}</p>
+              </div>
+              <div class="bg-[#020817] rounded-lg p-3 text-center">
+                <p class="text-[10px] text-gray-500 uppercase">Adelantos</p>
+                <p class="text-sm font-bold text-red-400">-$${Number(emp.total_adelantos).toLocaleString('es-AR',{minimumFractionDigits:0})}</p>
+              </div>
+              <div class="bg-[#020817] rounded-lg p-3 text-center">
+                <p class="text-[10px] text-gray-500 uppercase">Saldo</p>
+                <p class="text-sm font-bold ${saldoClass}">${saldoSigno}$${Number(emp.saldo).toLocaleString('es-AR',{minimumFractionDigits:0})}</p>
+              </div>
+            </div>
+            ${emp.adelantos.length ? `<div class="mb-3"><p class="text-[10px] text-gray-500 uppercase mb-2">Adelantos:</p>` + emp.adelantos.map(a => `
+              <div class="flex items-center justify-between bg-[#020817] rounded-lg px-3 py-2 mb-1">
+                <span class="text-xs text-gray-400">${a.descripcion || 'Sin descripción'}</span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-red-400">-$${Number(a.monto).toLocaleString('es-AR',{minimumFractionDigits:0})}</span>
+                  <button onclick="eliminarAdelanto(${a.id})" class="text-red-500 hover:text-red-400"><i class="fas fa-trash text-xs"></i></button>
+                </div>
+              </div>
+            `).join('') + '</div>' : ''}
+            <div class="flex gap-2">
+              <button onclick="editarSueldo(${emp.empleado_id}, ${emp.monto_sueldo})" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-1 transition">
+                <i class="fas fa-edit"></i> SUELDO
+              </button>
+              <button onclick="abrirModalAdelanto(${emp.empleado_id})" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-1 transition">
+                <i class="fas fa-dollar-sign"></i> ADELANTO
+              </button>
+            </div>
+          `;
+          grilla.appendChild(div);
+        });
+      } catch(e) {
+        document.getElementById('grilla-sueldos').innerHTML = '<p class="text-red-500 text-sm col-span-3">Error al cargar sueldos</p>';
+      }
+    }
+
+    function abrirModalEmpleado() { document.getElementById('modalEmpleado').classList.remove('hidden'); }
+    function cerrarModalEmpleado() {
+      document.getElementById('modalEmpleado').classList.add('hidden');
+      document.getElementById('emp_nombre').value = '';
+      document.getElementById('emp_telefono').value = '';
+    }
+
+    async function guardarEmpleado() {
+      const nombre = document.getElementById('emp_nombre').value;
+      if (!nombre) return Swal.fire('Falta nombre','Ingresá el nombre del empleado','warning');
+      try {
+        const res = await fetch('/api/v1/sueldos/empleados', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({nombre, telefono: document.getElementById('emp_telefono').value})
+        });
+        if (res.ok) {
+          cerrarModalEmpleado();
+          cargarSueldos();
+          Swal.mixin({toast:true,position:'top-end',showConfirmButton:false,timer:2000,background:'#0f172a',color:'#fff'}).fire({icon:'success',title:'Empleado agregado'});
+        }
+      } catch(e) { Swal.fire('Error','No se pudo guardar','error'); }
+    }
+
+    function abrirModalAdelanto(empleadoId) {
+      document.getElementById('adv_empleado_id').value = empleadoId;
+      document.getElementById('adv_monto').value = '';
+      document.getElementById('adv_descripcion').value = '';
+      document.getElementById('modalAdelanto').classList.remove('hidden');
+    }
+    function cerrarModalAdelanto() { document.getElementById('modalAdelanto').classList.add('hidden'); }
+
+    async function guardarAdelanto() {
+      const empleadoId = document.getElementById('adv_empleado_id').value;
+      const monto = parseFloat(document.getElementById('adv_monto').value);
+      const descripcion = document.getElementById('adv_descripcion').value;
+      if (!monto || monto <= 0) return Swal.fire('Monto inválido','Ingresá un monto mayor a 0','warning');
+      const mes = document.getElementById('mesSelector').value;
+      const anio = document.getElementById('anioSelector').value;
+      try {
+        const res = await fetch('/api/v1/sueldos/adelantos', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({empleado_id: parseInt(empleadoId), monto, descripcion, mes: parseInt(mes), anio: parseInt(anio)})
+        });
+        if (res.ok) {
+          cerrarModalAdelanto();
+          cargarSueldos();
+          Swal.mixin({toast:true,position:'top-end',showConfirmButton:false,timer:2000,background:'#0f172a',color:'#fff'}).fire({icon:'success',title:'Adelanto registrado'});
+        }
+      } catch(e) { Swal.fire('Error','No se pudo registrar','error'); }
+    }
+
+    async function eliminarAdelanto(adelantoId) {
+      const result = await Swal.fire({
+        icon: 'warning',
+        title: '¿Eliminar adelanto?',
+        text: 'Esta acción no se puede deshacer.',
+        background: '#111', color: '#fff',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#374151',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+      });
+      if (!result.isConfirmed) return;
+      try {
+        const res = await fetch(`/api/v1/sueldos/adelantos/${adelantoId}`, { method: 'DELETE' });
+        if (res.ok) cargarSueldos();
+      } catch(e) { Swal.fire('Error','No se pudo eliminar','error'); }
+    }
+
+    async function editarSueldo(empleadoId, montoActual) {
+      const { value: monto } = await Swal.fire({
+        title: 'Monto del Sueldo',
+        input: 'number',
+        inputValue: montoActual || '',
+        background: '#111', color: '#fff',
+        confirmButtonColor: '#2563eb',
+        inputPlaceholder: 'Ingresá el monto',
+        showCancelButton: true,
+        cancelButtonColor: '#374151',
+        confirmButtonText: 'Guardar',
+        cancelButtonText: 'Cancelar'
+      });
+      if (monto === undefined) return;
+      const mes = document.getElementById('mesSelector').value;
+      const anio = document.getElementById('anioSelector').value;
+      try {
+        await fetch('/api/v1/sueldos/sueldos', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({empleado_id: empleadoId, monto_sueldo: parseFloat(monto), mes: parseInt(mes), anio: parseInt(anio)})
+        });
+        cargarSueldos();
+      } catch(e) { Swal.fire('Error','No se pudo guardar','error'); }
+    }
+
+    initSelectors();
+    cargarSueldos();
+  </script>
+</body>
+</html>

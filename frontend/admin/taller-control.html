@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tablero Mecánicos | GiordaOS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 12px; border-radius: 8px;
+      color: #6b7280; font-size: 13px; font-weight: 500;
+      transition: all 0.15s; margin: 1px 8px;
+      text-decoration: none;
+    }
+    .sidebar-link:hover { background: #111113; color: #e5e7eb; }
+    .sidebar-link.active { background: #18181b; color: #fff; border-left: 3px solid #dc2626; padding-left: 9px; }
+    .sidebar-section-title {
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em;
+      color: #374151; padding: 14px 20px 4px; font-weight: 800;
+    }
+    .input-dark { background:#09090b; border:1px solid #27272a; color:#fff; padding:8px 12px; border-radius:8px; font-size:14px; outline:none; }
+    .input-dark:focus { border-color:#3b82f6; }
+    .dropdown-item { padding:8px 12px; cursor:pointer; border-bottom:1px solid #27272a; }
+    .dropdown-item:hover { background:#1e3a5f; }
+  </style>
+</head>
+<body class="bg-[#020817] text-white min-h-screen flex">
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-50 w-64 bg-[#050505] border-r border-[#1f1f22] flex flex-col flex-shrink-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+    <div class="h-16 flex items-center justify-between px-6 border-b border-[#1f1f22]">
+      <h1 class="text-xl font-black italic tracking-tighter text-white flex items-center gap-2 select-none">
+        <div class="bg-red-600 text-white w-8 h-8 flex items-center justify-center rounded-lg shadow-red-900/50 shadow-lg">
+          <i class="fas fa-tire"></i>
+        </div>
+        <span>GIORDA<span class="text-red-600">OS</span></span>
+      </h1>
+      <button class="md:hidden text-gray-500 hover:text-white" onclick="document.getElementById('sidebar').classList.add('-translate-x-full')">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <nav class="flex-1 overflow-y-auto py-2 space-y-0.5">
+      <div class="sidebar-section-title">Mostrador &amp; Ventas</div>
+      <a href="pos-mostrador.html" class="sidebar-link"><i class="fas fa-cash-register w-6 text-center text-green-500"></i><span>Punto de Venta</span></a>
+      <a href="pedidos-demo.html" class="sidebar-link"><i class="fas fa-globe w-6 text-center text-blue-400"></i><span>Cotizacion - Pedidos</span></a>
+      <div class="sidebar-section-title">Planta &amp; Taller</div>
+      <a href="taller-control.html" class="sidebar-link active"><i class="fas fa-wrench w-6 text-center text-gray-400"></i><span>Tablero Mecánicos</span></a>
+      <a href="turnos-demo.html" class="sidebar-link"><i class="fas fa-calendar-alt w-6 text-center text-purple-400"></i><span>Agenda de Turnos</span></a>
+      <div class="sidebar-section-title flex items-center gap-2">Back Office</div>
+      <a href="articulos.html" class="sidebar-link"><i class="fas fa-boxes w-6 text-center text-emerald-400"></i><span>Artículos</span></a>
+      <a href="importar-facturas.html" class="sidebar-link"><i class="fas fa-file-invoice-dollar w-6 text-center text-orange-400"></i><span>Compras (Prov.)</span></a>
+      <a href="cuenta-corriente.html" class="sidebar-link"><i class="fas fa-users w-6 text-center text-blue-500"></i><span>Cuentas Corrientes</span></a>
+      <a href="sueldos.html" class="sidebar-link"><i class="fas fa-id-card w-6 text-center text-pink-400"></i><span>Sueldos</span></a>
+    </nav>
+    <div class="p-4 border-t border-[#1f1f22] bg-[#0a0a0c]">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-gray-800 to-black border border-gray-700 flex items-center justify-center text-white font-bold text-sm">S</div>
+        <div class="flex-1 min-w-0"><p class="text-xs font-bold text-white truncate">Sergio Giorda</p><p class="text-[10px] text-gray-600 truncate">gerencia</p></div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="flex-1 p-4 md:p-8 overflow-auto">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold italic">🔧 PLANTA DE TRABAJO</h1>
+        <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Vehículos en taller</p>
+      </div>
+      <button onclick="cargarOTs()" class="bg-[#0f172a] border border-blue-900/20 hover:border-blue-600 text-gray-300 px-4 py-2 rounded-xl flex items-center gap-2 text-sm transition">
+        <i class="fas fa-sync-alt"></i> Actualizar
+      </button>
+    </div>
+
+    <div id="grilla-ot" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    <div id="empty-ot" class="hidden text-center py-20 text-gray-600">
+      <i class="fas fa-wrench text-4xl mb-3 block opacity-20"></i>
+      <p>Sin vehículos en taller</p>
+    </div>
+  </main>
+
+  <!-- MODAL TRABAJO -->
+  <div id="modalTrabajo" class="hidden fixed inset-0 bg-black/80 z-50 overflow-auto">
+    <div class="max-w-4xl mx-auto my-4 bg-[#0f172a] border border-blue-900/30 rounded-2xl">
+      <!-- Header -->
+      <div class="p-4 border-b border-[#1f3a5f] flex items-center justify-between sticky top-0 bg-[#0f172a] rounded-t-2xl">
+        <div>
+          <h3 class="text-lg font-bold text-white">Trabajo #<span id="modal-id"></span></h3>
+          <p class="text-sm text-gray-400"><span id="modal-vehiculo"></span> - <span id="modal-patente" class="text-blue-400 font-mono"></span></p>
+          <p class="text-xs text-gray-500" id="modal-cliente"></p>
+        </div>
+        <button onclick="cerrarModal()" class="text-gray-500 hover:text-white text-2xl">&times;</button>
+      </div>
+      
+      <!-- Body -->
+      <div class="p-4 space-y-4">
+        <!-- Agregar Items -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div class="md:col-span-2">
+            <label class="text-xs text-gray-500 uppercase mb-1 block">Buscar Servicio / Artículo</label>
+            <input id="buscar-item" type="text" class="input-dark w-full" placeholder="Escribí para buscar..." oninput="buscarItems(this.value)">
+            <div id="dropItems" class="hidden bg-[#0a0a14] border border-blue-900/50 rounded-lg mt-1 max-h-48 overflow-y-auto"></div>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 uppercase mb-1 block">Item Libre</label>
+            <button onclick="agregarItemLibre()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition text-sm">
+              <i class="fas fa-plus mr-2"></i>Item Libre
+            </button>
+          </div>
+        </div>
+
+        <!-- Items Agregados -->
+        <div>
+          <h4 class="text-sm font-bold text-gray-400 uppercase mb-2">Items Agregados</h4>
+          <div class="bg-[#0a0a14] border border-[#1f3a5f] rounded-xl overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-[#1f3a5f]">
+                <tr class="text-xs text-gray-400 uppercase">
+                  <th class="px-3 py-2 text-left">Descripción</th>
+                  <th class="px-2 py-2 text-center w-16">Cant.</th>
+                  <th class="px-2 py-2 text-right w-28">Precio</th>
+                  <th class="px-2 py-2 text-right w-28">Subtotal</th>
+                  <th class="px-2 py-2 w-12"></th>
+                </tr>
+              </thead>
+              <tbody id="items-body" class="divide-y divide-[#1f3a5f]"></tbody>
+            </table>
+            <div id="items-vacio" class="text-center py-8 text-gray-600 text-sm">Sin items agregados</div>
+          </div>
+        </div>
+
+        <!-- Totales -->
+        <div class="flex justify-end">
+          <div class="bg-[#0a0a14] border border-green-900/30 rounded-xl p-4 w-64 space-y-2">
+            <div class="flex justify-between text-sm text-gray-400">
+              <span>Items</span>
+              <span id="count-items">0</span>
+            </div>
+            <div class="flex justify-between text-xl font-black text-white border-t border-[#27272a] pt-2">
+              <span>TOTAL</span>
+              <span id="total-trabajo" class="text-green-400">$0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="p-4 border-t border-[#1f3a5f] flex flex-wrap gap-3 sticky bottom-0 bg-[#0f172a] rounded-b-2xl">
+        <button onclick="volverTablero()" class="bg-[#27272a] hover:bg-[#3f3f46] text-white font-bold py-3 px-6 rounded-xl transition">
+          <i class="fas fa-arrow-left mr-2"></i>Volver
+        </button>
+        <button onclick="guardarItems()" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded-xl transition">
+          <i class="fas fa-save mr-2"></i>Guardar
+        </button>
+        <button onclick="enviarWhatsApp()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl transition">
+          <i class="fab fa-whatsapp mr-2"></i>Presupuesto
+        </button>
+        <button onclick="facturarTrabajo()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition">
+          <i class="fas fa-file-invoice mr-2"></i>Facturar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let ingresoActual = null;
+    let itemsTrabajo = [];
+
+    function currency(n) {
+      return '$' + (parseFloat(n) || 0).toLocaleString('es-AR');
+    }
+
+    async function cargarOTs() {
+      try {
+        const res = await fetch('/api/v1/taller/ingresos/hoy');
+        const data = await res.json();
+        const grilla = document.getElementById('grilla-ot');
+        const empty = document.getElementById('empty-ot');
+        grilla.innerHTML = '';
+        const activos = data.filter(v => v.estado === 'ADENTRO');
+        if (!activos.length) { empty.classList.remove('hidden'); return; }
+        empty.classList.add('hidden');
+        activos.forEach(v => {
+          const div = document.createElement('div');
+          div.className = 'bg-[#0f172a] border border-blue-600 rounded-2xl p-5 hover:border-blue-400 transition cursor-pointer';
+          div.onclick = () => abrirTrabajo(v);
+          div.innerHTML = `
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs text-gray-500 font-mono">#${v.id}</span>
+              <span class="text-[10px] bg-blue-900/30 text-blue-400 px-2 py-0.5 rounded font-bold uppercase">ADENTRO</span>
+            </div>
+            <p class="text-xl font-black text-white uppercase mb-1">${v.vehiculo_modelo||'VEHÍCULO'}</p>
+            <p class="text-blue-400 font-mono font-bold text-sm mb-3">${v.vehiculo_patente||'—'}</p>
+            <div class="flex items-center gap-2 text-xs text-gray-400">
+              <i class="fas fa-user"></i>
+              <span class="uppercase">${v.cliente_nombre || '—'}</span>
+            </div>
+            ${v.cliente_telefono ? `<div class="flex items-center gap-2 text-xs text-green-400 mt-1"><i class="fab fa-whatsapp"></i>${v.cliente_telefono}</div>` : ''}
+            <div class="mt-4 text-center text-xs text-blue-400">Click para trabajar</div>`;
+          grilla.appendChild(div);
+        });
+      } catch(e) {
+        document.getElementById('grilla-ot').innerHTML = '<p class="text-red-500 text-sm">Error al cargar</p>';
+      }
+    }
+
+    function abrirTrabajo(v) {
+      ingresoActual = v;
+      itemsTrabajo = [];
+      
+      document.getElementById('modal-id').textContent = v.id;
+      document.getElementById('modal-vehiculo').textContent = v.vehiculo_modelo || 'VEHÍCULO';
+      document.getElementById('modal-patente').textContent = v.vehiculo_patente || '';
+      document.getElementById('modal-cliente').textContent = `${v.cliente_nombre || 'Cliente'}${v.cliente_telefono ? ' - ' + v.cliente_telefono : ''}`;
+      
+      // Cargar items guardados
+      cargarItemsTrabajo(v.id);
+      
+      document.getElementById('modalTrabajo').classList.remove('hidden');
+    }
+
+    async function cargarItemsTrabajo(ingresoId) {
+      try {
+        const res = await fetch(`/api/v1/taller/ingresos/${ingresoId}/items`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.items) {
+            itemsTrabajo = JSON.parse(data.items);
+          }
+        }
+      } catch(e) {}
+      renderItems();
+    }
+
+    async function guardarItems() {
+      if (!ingresoActual) return;
+      try {
+        const res = await fetch(`/api/v1/taller/ingresos/${ingresoActual.id}/items`, {
+          method: 'PUT',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({items: JSON.stringify(itemsTrabajo)})
+        });
+        if (res.ok) {
+          await Swal.fire({icon:'success', title:'Guardado', text:'Items guardados correctamente', background:'#111', color:'#fff', timer:1500, showConfirmButton:false});
+        }
+      } catch(e) {
+        Swal.fire({icon:'error', title:'Error', text:'No se pudo guardar', background:'#111', color:'#fff'});
+      }
+    }
+
+    function cerrarModal() {
+      document.getElementById('modalTrabajo').classList.add('hidden');
+      ingresoActual = null;
+    }
+
+    function volverTablero() {
+      cerrarModal();
+      cargarOTs();
+    }
+
+    // ─── BÚSQUEDA ITEMS ──────────────────────────────
+    let timerBusqueda;
+    function buscarItems(val) {
+      clearTimeout(timerBusqueda);
+      if (val.length < 2) { document.getElementById('dropItems').classList.add('hidden'); return; }
+      timerBusqueda = setTimeout(async () => {
+        try {
+          const [rServ, rProd] = await Promise.all([
+            fetch(`/api/v1/operaciones/servicios/buscar?termino=${encodeURIComponent(val)}`),
+            fetch(`/api/v1/operaciones/admin/inventario?buscar=${encodeURIComponent(val)}`)
+          ]);
+          const servs = await rServ.json();
+          const prodData = await rProd.json();
+          const prods = Array.isArray(prodData) ? prodData : (prodData.data || []);
+          
+          const drop = document.getElementById('dropItems');
+          const items = [
+            ...servs.map(s => ({ ...s, _tipo: 'servicio', _label: s.nombre, _precio: s.precio_sugerido || s.precio })),
+            ...prods.map(p => ({ ...p, _tipo: 'producto', _label: p.descripcion, _precio: p.precio_venta || 0 }))
+          ];
+          
+          if (!items.length) { drop.classList.add('hidden'); return; }
+          
+          drop.innerHTML = items.slice(0, 10).map(x => `
+            <div class="dropdown-item flex items-center justify-between" onclick="agregarItem('${x._tipo}', '${x.id}', '${x._label.replace(/'/g, "\\'")}', ${x._precio})">
+              <div>
+                <span class="text-white font-semibold text-sm">${x._label}</span>
+                <span class="text-xs ${x._tipo === 'servicio' ? 'text-orange-400' : 'text-blue-400'} ml-2">${x._tipo}</span>
+              </div>
+              <span class="text-green-400 font-mono text-sm">${currency(x._precio)}</span>
+            </div>
+          `).join('');
+          drop.classList.remove('hidden');
+        } catch(e) { document.getElementById('dropItems').classList.add('hidden'); }
+      }, 300);
+    }
+
+    function agregarItem(tipo, id, nombre, precio) {
+      precio = parseFloat(precio) || 0;
+      itemsTrabajo.push({
+        tipo, id: parseInt(id), descripcion: nombre,
+        cantidad: 1, precio_unitario: precio
+      });
+      document.getElementById('dropItems').classList.add('hidden');
+      document.getElementById('buscar-item').value = '';
+      renderItems();
+    }
+
+    function agregarItemLibre() {
+      Swal.fire({
+        title: 'Item Libre',
+        html: `<input id="swal-desc" class="swal2-input" placeholder="Descripción">
+               <input id="swal-precio" type="number" class="swal2-input" placeholder="Precio" value="0">
+               <input id="swal-cant" type="number" class="swal2-input" placeholder="Cantidad" value="1" min="1">`,
+        background: '#0f172a', color: '#fff',
+        confirmButtonColor: '#3b82f6',
+        preConfirm: () => {
+          const desc = document.getElementById('swal-desc').value;
+          const precio = parseFloat(document.getElementById('swal-precio').value) || 0;
+          const cant = parseInt(document.getElementById('swal-cant').value) || 1;
+          if (!desc) { Swal.showValidationMessage('Descripción requerida'); return false; }
+          return { desc, precio, cant };
+        }
+      }).then(r => {
+        if (r.isConfirmed) {
+          itemsTrabajo.push({
+            tipo: 'libre', id: 0, descripcion: r.value.desc,
+            cantidad: r.value.cant, precio_unitario: r.value.precio
+          });
+          renderItems();
+        }
+      });
+    }
+
+    function renderItems() {
+      const tbody = document.getElementById('items-body');
+      const vacio = document.getElementById('items-vacio');
+      
+      if (!itemsTrabajo.length) {
+        tbody.innerHTML = '';
+        vacio.classList.remove('hidden');
+        document.getElementById('count-items').textContent = '0';
+        document.getElementById('total-trabajo').textContent = '$0';
+        return;
+      }
+      
+      vacio.classList.add('hidden');
+      
+      tbody.innerHTML = itemsTrabajo.map((item, idx) => `
+        <tr>
+          <td class="px-3 py-2">
+            <input type="text" class="bg-transparent border-none text-white text-sm w-full p-0" 
+                   value="${item.descripcion}" onchange="itemsTrabajo[${idx}].descripcion=this.value">
+          </td>
+          <td class="px-2 py-2">
+            <input type="number" class="bg-transparent border-none text-white text-sm w-full text-center p-0" 
+                   value="${item.cantidad}" min="1" onchange="itemsTrabajo[${idx}].cantidad=parseInt(this.value)||1;renderItems()">
+          </td>
+          <td class="px-2 py-2">
+            <input type="number" class="bg-transparent border-none text-green-400 text-sm w-full text-right p-0 font-mono" 
+                   value="${item.precio_unitario}" onchange="itemsTrabajo[${idx}].precio_unitario=parseFloat(this.value)||0;renderItems()">
+          </td>
+          <td class="px-2 py-2 text-right text-white font-mono">${currency(item.cantidad * item.precio_unitario)}</td>
+          <td class="px-2 py-2 text-center">
+            <button onclick="eliminarItem(${idx})" class="text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+      `).join('');
+      
+      const total = itemsTrabajo.reduce((s, i) => s + i.cantidad * i.precio_unitario, 0);
+      document.getElementById('count-items').textContent = itemsTrabajo.length;
+      document.getElementById('total-trabajo').textContent = currency(total);
+    }
+
+    function eliminarItem(idx) {
+      itemsTrabajo.splice(idx, 1);
+      renderItems();
+    }
+
+    function enviarWhatsApp() {
+      if (!ingresoActual || !itemsTrabajo.length) {
+        return Swal.fire({icon:'warning', title:'Sin items', text:'Agregá al menos un item', background:'#111', color:'#fff'});
+      }
+      
+      const cliente = ingresoActual.cliente_nombre || 'Cliente';
+      const telefono = ingresoActual.cliente_telefono || '';
+      const vehiculo = `${ingresoActual.vehiculo_modelo || ''} (${ingresoActual.vehiculo_patente || 'S/P'})`;
+      const total = itemsTrabajo.reduce((s, i) => s + i.cantidad * i.precio_unitario, 0);
+      
+      let msg = `*PRESUPUESTO - Giorda Neumáticos*\n\n`;
+      msg += `Cliente: ${cliente}\n`;
+      msg += `Vehículo: ${vehiculo}\n\n`;
+      msg += `*Detalle:*\n`;
+      itemsTrabajo.forEach(item => {
+        msg += `• ${item.cantidad}x ${item.descripcion} - ${currency(item.cantidad * item.precio_unitario)}\n`;
+      });
+      msg += `\n*TOTAL: ${currency(total)}*\n\n`;
+      msg += `Saludos!`;
+      
+      const telLimpio = telefono.replace(/\D/g, '');
+      const url = telLimpio ? `https://wa.me/${telLimpio}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+      window.open(url, '_blank');
+    }
+
+    async function facturarTrabajo() {
+      if (!ingresoActual || !itemsTrabajo.length) {
+        return Swal.fire({icon:'warning', title:'Sin items', text:'Agregá al menos un item', background:'#111', color:'#fff'});
+      }
+      
+      const total = itemsTrabajo.reduce((s, i) => s + i.cantidad * i.precio_unitario, 0);
+      const cliente = ingresoActual.cliente_nombre || 'Cliente Mostrador';
+      
+      let planesTarjeta = [];
+      try {
+        const r = await fetch('/api/v1/finanzas/coeficientes/28');
+        const data = await r.json();
+        planesTarjeta = Array.isArray(data) ? data : (data.data || []);
+      } catch(e) {}
+      
+      const planesOptions = planesTarjeta.map(p => `<option value="${p.id}" data-coef="${p.coeficiente}">${p.nombre} (x${p.cuotas})</option>`).join('');
+      
+      const { value: formValues } = await Swal.fire({
+        title: 'Facturar - ' + cliente,
+        html: `
+          <div class="text-left space-y-3">
+            <div class="bg-green-900/30 border border-green-800 rounded-xl p-3 text-center">
+              <p class="text-gray-400 text-xs uppercase">Total a Pagar</p>
+              <p class="text-2xl font-black text-green-400">${currency(total)}</p>
+            </div>
+            
+            <div>
+              <label class="block text-xs text-gray-400 uppercase mb-1 text-left">Método de Pago</label>
+              <select id="sw-metodo" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-600" onchange="actualizarMonto()">
+                <option value="efectivo">Efectivo</option>
+                <option value="tarjeta">Tarjeta</option>
+                <option value="cuenta_corriente">Cuenta Corriente</option>
+                <option value="transferencia">Transferencia</option>
+                <option value="cheque">Cheque</option>
+              </select>
+            </div>
+            
+            <div id="sw-div-plan" class="hidden">
+              <label class="block text-xs text-gray-400 uppercase mb-1 text-left">Plan de Tarjeta</label>
+              <select id="sw-plan" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-600" onchange="actualizarMonto()">
+                <option value="">Seleccionar plan...</option>
+                ${planesOptions}
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-xs text-gray-400 uppercase mb-1 text-left">Monto Abonado</label>
+              <input id="sw-monto" type="number" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-600" value="${total}">
+            </div>
+          </div>
+        `,
+        background: '#0f172a',
+        color: '#fff',
+        confirmButtonText: '<i class="fas fa-check mr-2"></i>Confirmar',
+        showCancelButton: true,
+        cancelButtonText: 'Cancelar',
+        width: '400px',
+        didOpen: () => {
+          window.actualizarMonto = function() {
+            const metodo = document.getElementById('sw-metodo').value;
+            const plan = document.getElementById('sw-plan');
+            const divPlan = document.getElementById('sw-div-plan');
+            const montoInput = document.getElementById('sw-monto');
+            if (metodo === 'tarjeta') {
+              divPlan.classList.remove('hidden');
+              if (plan.value) {
+                const coef = parseFloat(plan.options[plan.selectedIndex].dataset.coef || 1);
+                montoInput.value = (total * coef).toFixed(2);
+              }
+            } else {
+              divPlan.classList.add('hidden');
+              if (metodo === 'cuenta_corriente') {
+                montoInput.value = 0;
+              } else {
+                montoInput.value = total;
+              }
+            }
+          };
+        },
+        preConfirm: () => {
+          return {
+            metodo: document.getElementById('sw-metodo').value,
+            planId: document.getElementById('sw-plan').value,
+            monto: parseFloat(document.getElementById('sw-monto').value) || 0
+          };
+        }
+      });
+      
+      if (!formValues) return;
+      
+      const { metodo, planId, monto } = formValues;
+      
+      try {
+        const items = itemsTrabajo.map(item => ({
+          tipo: item.tipo === 'producto' ? 'producto' : item.tipo === 'servicio' ? 'servicio' : 'libre',
+          referencia_id: item.id || null,
+          descripcion: item.descripcion,
+          cantidad: item.cantidad,
+          precio_final: item.precio_unitario
+        }));
+        
+        const payload = {
+          items,
+          cliente_nombre: ingresoActual.cliente_nombre || 'Cliente Mostrador',
+          cliente_telefono: ingresoActual.cliente_telefono || '',
+          vehiculo_patente: ingresoActual.vehiculo_patente || '',
+          modelo_vehiculo: ingresoActual.vehiculo_modelo || '',
+          es_cotizacion: false,
+          metodo_pago: metodo,
+          monto_abonado: monto,
+          coeficiente_id: metodo === 'tarjeta' && planId ? parseInt(planId) : null
+        };
+        
+        const res = await fetch('/api/v1/operaciones/venta-mostrador', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        
+        if (!res.ok) throw new Error('Error al crear venta');
+        
+        await fetch(`/api/v1/taller/ingresos/${ingresoActual.id}/estado`, {
+          method: 'PATCH',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({estado: 'LISTO'})
+        });
+        
+        await Swal.fire({icon:'success', title:'¡Venta Confirmada!', text:'Total: ' + currency(total), background:'#111', color:'#fff', timer:2500, showConfirmButton:false});
+        cerrarModal();
+        cargarOTs();
+      } catch(e) {
+        console.error(e);
+        Swal.fire({icon:'error', title:'Error', text:'No se pudo facturar', background:'#111', color:'#fff'});
+      }
+    }
+
+    // Cerrar dropdown al click afuera
+    document.addEventListener('click', e => {
+      if (!e.target.closest('#buscar-item') && !e.target.closest('#dropItems')) {
+        document.getElementById('dropItems').classList.add('hidden');
+      }
+    });
+
+    cargarOTs();
+    setInterval(cargarOTs, 30000);
+  </script>
+</body>
+</html>
