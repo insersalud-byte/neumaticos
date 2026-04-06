@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, ForeignKey
 from sqlalchemy.sql import func
 from core.database import Base
+from datetime import datetime
 
 
 class Usuario(Base):
@@ -19,6 +20,7 @@ class Cliente(Base):
     telefono = Column(String, default="")
     dni_cuit = Column(String, default="")
     saldo_deudor = Column(Float, default=0)
+    fecha_creacion = Column(DateTime, default=datetime.utcnow)
 
 
 class Vehiculo(Base):

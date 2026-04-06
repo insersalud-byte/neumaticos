@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard | GiordaOS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *{font-family:'Inter',sans-serif}
+    input[type="date"]{background:#18181b;border:1px solid #27272a;color:white;padding:8px 12px;border-radius:8px;font-size:12px}
+    input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1);cursor:pointer}
+    .card{background:#0f0f0f;border:1px solid #1f1f22;border-radius:1rem}
+    .metric-card{background:linear-gradient(135deg,#18181b 0%,#0f0f0f 100%)}
+    .sidebar-link{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:#9ca3af;font-size:13px;font-weight:500;transition:all .15s;text-decoration:none}
+    .sidebar-link:hover{background:#1a1a1a;color:#fff}
+    .sidebar-link.active{background:#1a1a1a;color:#fff;border-left:3px solid #dc2626}
+  </style>
+</head>
+<body class="bg-black text-white min-h-screen flex">
+
+<aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-50 w-64 bg-[#050505] border-r border-[#1f1f22] flex flex-col transform -translate-x-full md:translate-x-0 transition-transform">
+  <div class="h-16 flex items-center px-5 border-b border-[#1f1f22]">
+    <h1 class="text-xl font-black text-white">GIORDA<span class="text-red-600">OS</span></h1>
+  </div>
+  <nav class="flex-1 overflow-y-auto p-3 space-y-1">
+    <a href="dashboard.html" class="sidebar-link active"><i class="fas fa-chart-line w-5 text-center text-green-400"></i> Dashboard</a>
+    <a href="pos-mostrador.html" class="sidebar-link"><i class="fas fa-cash-register w-5 text-center text-green-400"></i> Punto de Venta</a>
+    <a href="pedidos-demo.html" class="sidebar-link"><i class="fas fa-file-invoice w-5 text-center text-blue-400"></i> Pedidos</a>
+    <a href="inventario.html" class="sidebar-link"><i class="fas fa-boxes w-5 text-center text-yellow-400"></i> Inventario</a>
+    <a href="finanzas-dashboard.html" class="sidebar-link"><i class="fas fa-wallet w-5 text-center text-purple-400"></i> Finanzas</a>
+    <a href="backup.html" class="sidebar-link"><i class="fas fa-database w-5 text-center text-gray-400"></i> Backup</a>
+  </nav>
+  <div class="p-4 border-t border-[#1f1f22]">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full bg-red-700 flex items-center justify-center text-xs font-bold">S</div>
+      <div class="flex-1"><p class="text-sm font-semibold">Sergio</p><p class="text-xs text-gray-500">Administrador</p></div>
+    </div>
+  </div>
+</aside>
+
+<div class="flex-1 flex flex-col overflow-hidden">
+  <header class="h-14 bg-[#050505] border-b border-[#1f1f22] flex items-center justify-between px-6">
+    <h2 class="text-sm font-bold text-gray-400 uppercase tracking-widest">Dashboard</h2>
+    <div class="flex items-center gap-2">
+      <input type="date" id="fechaDesde"/>
+      <span class="text-gray-500 text-xs">hasta</span>
+      <input type="date" id="fechaHasta"/>
+      <button onclick="cargarDatos()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-xs font-bold">
+        <i class="fas fa-search mr-1"></i> Ver
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 overflow-y-auto p-6 bg-black">
+    <!-- KPIs -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="card p-4 metric-card">
+        <p class="text-xs text-gray-500 uppercase mb-1">Ventas</p>
+        <p id="kpi-ventas-cant" class="text-2xl font-black text-white">--</p>
+        <p id="kpi-ventas-total" class="text-sm text-green-400">$--</p>
+      </div>
+      <div class="card p-4 metric-card">
+        <p class="text-xs text-gray-500 uppercase mb-1">Compras</p>
+        <p id="kpi-compras-cant" class="text-2xl font-black text-white">--</p>
+        <p id="kpi-compras-total" class="text-sm text-orange-400">$--</p>
+      </div>
+      <div class="card p-4 metric-card">
+        <p class="text-xs text-gray-500 uppercase mb-1">Ganancia</p>
+        <p id="kpi-ganancia" class="text-2xl font-black text-green-400">$--</p>
+        <p id="kpi-margen" class="text-xs text-gray-500">--% margen</p>
+      </div>
+      <div class="card p-4 metric-card">
+        <p class="text-xs text-gray-500 uppercase mb-1">Ticket Promedio</p>
+        <p id="kpi-ticket" class="text-2xl font-black text-white">$--</p>
+        <p id="kpi-cotizaciones" class="text-xs text-gray-500">-- cotizaciones</p>
+      </div>
+      <div class="card p-4 metric-card">
+        <p class="text-xs text-gray-500 uppercase mb-1">Stock Bajo</p>
+        <p id="kpi-stock" class="text-2xl font-black text-yellow-400">--</p>
+        <p class="text-xs text-gray-500">productos</p>
+      </div>
+      <div class="card p-4 metric-card">
+        <p class="text-xs text-gray-500 uppercase mb-1">Deuda Total</p>
+        <p id="kpi-deuda" class="text-2xl font-black text-red-400">$--</p>
+        <p id="kpi-clientes" class="text-xs text-gray-500">-- clientes nuevos</p>
+      </div>
+    </div>
+
+    <!-- Gráfico -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div class="card p-5">
+        <h3 class="font-bold text-sm text-gray-400 uppercase mb-4">Ventas por Día</h3>
+        <canvas id="chartVentas" height="200"></canvas>
+      </div>
+      <div class="card p-5">
+        <h3 class="font-bold text-sm text-gray-400 uppercase mb-4">Métodos de Pago</h3>
+        <canvas id="chartMetodos" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- Rankings -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      <div class="card p-5">
+        <h3 class="font-bold text-sm text-gray-400 uppercase mb-4"><i class="fas fa-fire text-red-400 mr-2"></i>Mas Vendidos</h3>
+        <div id="topVendidos" class="space-y-2 max-h-48 overflow-y-auto"></div>
+      </div>
+      <div class="card p-5">
+        <h3 class="font-bold text-sm text-gray-400 uppercase mb-4"><i class="fas fa-shopping-cart text-orange-400 mr-2"></i>Mas Comprados</h3>
+        <div id="topComprados" class="space-y-2 max-h-48 overflow-y-auto"></div>
+      </div>
+      <div class="card p-5">
+        <h3 class="font-bold text-sm text-gray-400 uppercase mb-4"><i class="fas fa-tags text-purple-400 mr-2"></i>Categorias</h3>
+        <div id="categorias" class="space-y-2 max-h-48 overflow-y-auto"></div>
+      </div>
+      <div class="card p-5">
+        <h3 class="font-bold text-sm text-gray-400 uppercase mb-4"><i class="fas fa-users text-yellow-400 mr-2"></i>Top Clientes</h3>
+        <div id="topClientes" class="space-y-2 max-h-48 overflow-y-auto"></div>
+      </div>
+    </div>
+
+    <!-- Resumen mensual y otros datos -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="card p-5">
+        <h3 class="font-bold text-sm text-gray-400 uppercase mb-4"><i class="fas fa-calendar-alt text-blue-400 mr-2"></i>Resumen Mensual</h3>
+        <div id="resumenMensual" class="space-y-2 max-h-48 overflow-y-auto"></div>
+      </div>
+      <div class="card p-5 lg:col-span-2">
+        <h3 class="font-bold text-sm text-gray-400 uppercase mb-4"><i class="fas fa-chart-pie text-green-400 mr-2"></i>Resumen General</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div class="text-center p-3 rounded bg-[#18181b]">
+            <p class="text-xs text-gray-500">Margen</p>
+            <p id="kpi-margen2" class="text-3xl font-black text-blue-400">--</p>
+          </div>
+          <div class="text-center p-3 rounded bg-[#18181b]">
+            <p class="text-xs text-gray-500">Total Clientes</p>
+            <p id="kpi-total-clientes" class="text-3xl font-black text-cyan-400">--</p>
+          </div>
+          <div class="text-center p-3 rounded bg-[#18181b]">
+            <p class="text-xs text-gray-500">Cotizaciones</p>
+            <p id="kpi-cots" class="text-3xl font-black text-yellow-400">--</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+var chartVentas, chartMetodos;
+
+function currency(n) {
+  return new Intl.NumberFormat('es-AR', {style:'currency',currency:'ARS',minimumFractionDigits:0}).format(n || 0);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var hoy = new Date();
+  var hace30 = new Date();
+  hace30.setDate(hace30.getDate() - 30);
+  
+  document.getElementById('fechaDesde').value = hace30.toISOString().split('T')[0];
+  document.getElementById('fechaHasta').value = hoy.toISOString().split('T')[0];
+  
+  cargarDatos();
+});
+
+function cargarDatos() {
+  var desde = document.getElementById('fechaDesde').value;
+  var hasta = document.getElementById('fechaHasta').value;
+  
+  fetch('/api/v1/operaciones/dashboard/metricas?fecha_desde=' + desde + '&fecha_hasta=' + hasta)
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      // KPIs
+      document.getElementById('kpi-ventas-cant').textContent = d.ventas.cantidad;
+      document.getElementById('kpi-ventas-total').textContent = currency(d.ventas.total);
+      document.getElementById('kpi-compras-cant').textContent = d.compras.cantidad;
+      document.getElementById('kpi-compras-total').textContent = currency(d.compras.total);
+      document.getElementById('kpi-ganancia').textContent = currency(d.ganancia.bruta);
+      document.getElementById('kpi-margen').textContent = d.ganancia.margen.toFixed(1) + '% margen';
+      document.getElementById('kpi-ticket').textContent = currency(d.ventas.ticket_promedio);
+      document.getElementById('kpi-cotizaciones').textContent = d.ventas.cotizaciones + ' cotizaciones';
+      document.getElementById('kpi-stock').textContent = d.stock_bajo;
+      document.getElementById('kpi-clientes').textContent = d.clientes_nuevos;
+      document.getElementById('kpi-deuda').textContent = currency(d.deuda_total);
+      document.getElementById('kpi-margen2').textContent = d.ganancia.margen.toFixed(1) + '%';
+      document.getElementById('kpi-cots').textContent = d.ventas.cotizaciones;
+      document.getElementById('kpi-total-clientes').textContent = d.clientes_nuevos || '0';
+      
+      // Gráfico ventas
+      var ctx = document.getElementById('chartVentas').getContext('2d');
+      if (chartVentas) chartVentas.destroy();
+      chartVentas = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: d.ventas_por_dia.map(function(x) { return x.dia; }),
+          datasets: [{
+            label: 'Ventas',
+            data: d.ventas_por_dia.map(function(x) { return x.monto; }),
+            backgroundColor: '#22c55e'
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: {color: '#1f1f22'}, ticks: {color: '#6b7280'} },
+            y: { grid: {color: '#1f1f22'}, ticks: {color: '#6b7280', callback: function(v) { return '$' + (v/1000).toFixed(0) + 'k'; }} }
+          }
+        }
+      });
+      
+      // Gráfico métodos
+      var ctx2 = document.getElementById('chartMetodos').getContext('2d');
+      if (chartMetodos) chartMetodos.destroy();
+      chartMetodos = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: d.metodos_pago.map(function(x) { return x.metodo; }),
+          datasets: [{
+            data: d.metodos_pago.map(function(x) { return x.monto; }),
+            backgroundColor: ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6']
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'bottom', labels: { color: '#9ca3af', padding: 10 } } }
+        }
+      });
+      
+      // Top clientes
+      var html = '';
+      d.top_clientes.forEach(function(c, i) {
+        var medal = i===0?'bg-yellow-500':i===1?'bg-gray-400':i===2?'bg-amber-600':'bg-gray-700';
+        var pct = d.ventas.total > 0 ? ((c.monto / d.ventas.total) * 100).toFixed(1) : 0;
+        html += '<div class="flex items-center gap-2 p-2 rounded bg-[#18181b]"><span class="w-6 h-6 rounded-full ' + medal + ' flex items-center justify-center text-xs font-bold ' + (i<3?'text-black':'text-white') + '">' + (i+1) + '</span><div class="flex-1 min-w-0"><p class="text-sm truncate">' + c.nombre + '</p><p class="text-xs text-gray-500">' + pct + '% de ventas</p></div><span class="text-green-400 text-sm font-bold">' + currency(c.monto) + '</span></div>';
+      });
+      document.getElementById('topClientes').innerHTML = html || '<p class="text-gray-600 text-sm">Sin datos</p>';
+      
+      // Top vendidos (productos + servicios)
+      var htmlV = '';
+      var allSold = d.top_vendidos.concat(d.top_vendidos).slice(0, 10);
+      allSold.forEach(function(p, i) {
+        var medal = i===0?'bg-yellow-500':i===1?'bg-gray-400':i===2?'bg-amber-600':i<5?'bg-gray-600':'bg-gray-700';
+        var icon = p.tipo === 'servicio' ? '<i class="fas fa-wrench text-orange-400"></i>' : '<i class="fas fa-box text-blue-400"></i>';
+        htmlV += '<div class="flex items-center gap-2 p-2 rounded bg-[#18181b]"><span class="w-6 h-6 rounded-full ' + medal + ' flex items-center justify-center text-xs font-bold text-white">' + (i+1) + '</span><div class="flex-1 min-w-0 flex items-center gap-2"><span class="text-sm">' + icon + '</span><div><p class="text-sm truncate">' + p.nombre + '</p><p class="text-xs text-gray-500">' + p.cantidad + ' unidades</p></div></div><span class="text-green-400 text-sm font-bold">' + currency(p.monto) + '</span></div>';
+      });
+      
+      // Si no hay vendidos, mostrar todos los items de ventas
+      if (allSold.length === 0) {
+        htmlV = '<p class="text-gray-500 text-sm mb-2">Todos los items vendidos:</p>';
+        d.top_monto.forEach(function(p, i) {
+          var medal = i===0?'bg-yellow-500':i===1?'bg-gray-400':i===2?'bg-amber-600':'bg-gray-700';
+          htmlV += '<div class="flex items-center gap-2 p-2 rounded bg-[#18181b]"><span class="w-6 h-6 rounded-full ' + medal + ' flex items-center justify-center text-xs font-bold text-white">' + (i+1) + '</span><div class="flex-1 min-w-0"><p class="text-sm truncate">' + p.nombre + '</p><p class="text-xs text-gray-500">' + p.cantidad + ' unidades</p></div><span class="text-green-400 text-sm font-bold">' + currency(p.monto) + '</span></div>';
+        });
+      }
+      document.getElementById('topVendidos').innerHTML = htmlV || '<p class="text-gray-600 text-sm">Sin datos</p>';
+      
+      // Top comprados (de proveedores)
+      var htmlC = '';
+      d.top_comprados.forEach(function(p, i) {
+        var medal = i===0?'bg-orange-500':i===1?'bg-orange-400':i===2?'bg-orange-300':'bg-gray-700';
+        htmlC += '<div class="flex items-center gap-2 p-2 rounded bg-[#18181b]"><span class="w-6 h-6 rounded-full ' + medal + ' flex items-center justify-center text-xs font-bold text-white">' + (i+1) + '</span><div class="flex-1 min-w-0"><p class="text-sm truncate">' + p.nombre + '</p><p class="text-xs text-gray-500">' + p.cantidad + ' unidades compradas</p></div></div>';
+      });
+      if (htmlC === '') {
+        htmlC = '<p class="text-gray-600 text-sm">Sin compras registradas</p>';
+      }
+      document.getElementById('topComprados').innerHTML = htmlC;
+      
+      // Categorias
+      var htmlCat = '';
+      d.categorias.forEach(function(c, i) {
+        var pct = d.ventas.total > 0 ? ((c.monto / d.ventas.total) * 100).toFixed(1) : 0;
+        htmlCat += '<div class="p-2 rounded bg-[#18181b] mb-2"><div class="flex justify-between items-center mb-1"><span class="text-sm truncate">' + c.nombre + '</span><span class="text-purple-400 text-sm font-bold">' + currency(c.monto) + '</span></div><div class="w-full bg-gray-700 rounded-full h-2"><div class="bg-purple-500 h-2 rounded-full" style="width:' + pct + '%"></div></div><p class="text-xs text-gray-500 mt-1">' + pct + '% del total</p></div>';
+      });
+      document.getElementById('categorias').innerHTML = htmlCat || '<p class="text-gray-600 text-sm">Sin datos</p>';
+      
+      // Resumen mensual
+      var html2 = '';
+      d.resumen_mensual.forEach(function(m) {
+        html2 += '<div class="flex justify-between p-2 rounded bg-[#18181b]"><span class="text-sm font-semibold">' + m.mes + '</span><div class="text-right"><span class="text-green-400 text-sm font-bold block">' + currency(m.monto) + '</span><span class="text-gray-500 text-xs">' + m.ventas + ' ventas</span></div></div>';
+      });
+      document.getElementById('resumenMensual').innerHTML = html2 || '<p class="text-gray-600 text-sm">Sin datos</p>';
+      
+    })
+    .catch(function(e) {
+      alert('Error: ' + e.message);
+    });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black text-white p-10">
+  <h1 class="text-3xl mb-4">Dashboard Test</h1>
+  
+  <div class="flex gap-4 mb-6">
+    <input type="date" id="fechaDesde" class="bg-gray-800 text-white p-2 rounded"/>
+    <input type="date" id="fechaHasta" class="bg-gray-800 text-white p-2 rounded"/>
+    <button onclick="cargar()" class="bg-red-600 px-4 py-2 rounded">Cargar</button>
+  </div>
+  
+  <div id="resultado" class="bg-gray-900 p-6 rounded-lg">
+    <p>Presioná "Cargar" para ver los datos</p>
+  </div>
+
+  <script>
+    const hoy = new Date();
+    const hace30 = new Date();
+    hace30.setDate(hace30.getDate() - 30);
+    
+    document.getElementById('fechaDesde').value = hace30.toISOString().split('T')[0];
+    document.getElementById('fechaHasta').value = hoy.toISOString().split('T')[0];
+
+    function cargar() {
+      const desde = document.getElementById('fechaDesde').value;
+      const hasta = document.getElementById('fechaHasta').value;
+      
+      fetch(`/api/v1/operaciones/dashboard/metricas?fecha_desde=${desde}&fecha_hasta=${hasta}`)
+        .then(r => r.json())
+        .then(d => {
+          document.getElementById('resultado').innerHTML = `
+            <h2 class="text-2xl font-bold mb-4">Resultados</h2>
+            <p><strong>Ventas:</strong> ${d.ventas.cantidad}</p>
+            <p><strong>Total:</strong> $${d.ventas.total.toLocaleString()}</p>
+            <p><strong>Ticket promedio:</strong> $${d.ventas.ticket_promedio.toLocaleString()}</p>
+            <p><strong>Ganancia:</strong> $${d.ganancia.bruta.toLocaleString()}</p>
+            <p><strong>Top cliente:</strong> ${d.top_clientes[0] ? d.top_clientes[0].nombre : 'N/A'}</p>
+          `;
+        })
+        .catch(e => {
+          document.getElementById('resultado').innerHTML = '<p class="text-red-500">Error: ' + e.message + '</p>';
+        });
+    }
+    
+    cargar();
+  </script>
+</body>
+</html>

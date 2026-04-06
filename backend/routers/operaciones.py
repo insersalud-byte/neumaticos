@@ -12,6 +12,180 @@ from models.models import (
 router = APIRouter(prefix="/api/v1/operaciones", tags=["operaciones"])
 
 
+@router.get("/dashboard/metricas")
+def dashboard_metricas(
+    fecha_desde: str = None,
+    fecha_hasta: str = None,
+    db: Session = Depends(get_db)
+):
+    from datetime import datetime, timedelta
+    
+    hoy = datetime.now().date()
+    
+    if fecha_desde:
+        desde = datetime.strptime(fecha_desde, "%Y-%m-%d").date()
+    else:
+        desde = hoy - timedelta(days=30)
+    
+    if fecha_hasta:
+        hasta = datetime.strptime(fecha_hasta, "%Y-%m-%d").date()
+    else:
+        hasta = hoy
+    
+    # Ventas en rango (solo ventas, no cotizaciones)
+    ventas = db.query(Venta).filter(
+        Venta.es_cotizacion == False,
+        func.date(Venta.fecha_creacion) >= desde,
+        func.date(Venta.fecha_creacion) <= hasta
+    ).all()
+    
+    # Cotizaciones en rango
+    cotizaciones = db.query(Venta).filter(
+        Venta.es_cotizacion == True,
+        func.date(Venta.fecha_creacion) >= desde,
+        func.date(Venta.fecha_creacion) <= hasta
+    ).all()
+    
+    # Compras en rango
+    from models.models import CompraProveedor
+    compras = db.query(CompraProveedor).filter(
+        func.date(CompraProveedor.fecha) >= desde,
+        func.date(CompraProveedor.fecha) <= hasta
+    ).all()
+    
+    # Totales ventas
+    total_ventas = sum(v.total_venta or 0 for v in ventas)
+    costo_ventas = 0
+    productos_vendidos = {}
+    categorias_vendidas = {}
+    
+    for v in ventas:
+        items = json.loads(v.items) if v.items else []
+        for item in items:
+            ref_id = item.get("referencia_id")
+            desc = item.get("descripcion", "Sin nombre")
+            cant = item.get("cantidad", 0)
+            precio = item.get("precio_final", 0)
+            tipo = item.get("tipo", "")
+            
+            productos_vendidos[desc] = productos_vendidos.get(desc, {"cantidad": 0, "monto": 0, "tipo": tipo})
+            productos_vendidos[desc]["cantidad"] += cant
+            productos_vendidos[desc]["monto"] += precio * cant
+            
+            if ref_id and str(ref_id).isdigit() and tipo == "producto":
+                prod = db.query(Producto).filter(Producto.id == int(ref_id)).first()
+                if prod:
+                    costo_ventas += (prod.precio_costo or 0) * cant
+                    cat = prod.categoria or "Servicios"
+                    categorias_vendidas[cat] = categorias_vendidas.get(cat, 0) + precio * cant
+            elif tipo == "servicio":
+                cat = "Servicios"
+                categorias_vendidas[cat] = categorias_vendidas.get(cat, 0) + precio * cant
+            elif tipo == "libre":
+                cat = "Items Varios"
+                categorias_vendidas[cat] = categorias_vendidas.get(cat, 0) + precio * cant
+    
+    # Totales compras
+    total_compras = sum(c.total or 0 for c in compras)
+    
+    # Ganancia bruta
+    ganancia = total_ventas - costo_ventas
+    
+    # Ranking productos más vendidos (por cantidad)
+    top_vendidos = sorted(productos_vendidos.items(), key=lambda x: x[1]["cantidad"], reverse=True)[:10]
+    
+    # Ranking productos más vendidos (por monto)
+    top_monto = sorted(productos_vendidos.items(), key=lambda x: x[1]["monto"], reverse=True)[:10]
+    
+    # Compras más frecuentes (artículos más comprados)
+    productos_comprados = {}
+    for c in compras:
+        items_c = json.loads(c.items) if c.items else []
+        for item in items_c:
+            desc = item.get("descripcion", "Sin nombre")
+            cant = item.get("cantidad", 0)
+            productos_comprados[desc] = productos_comprados.get(desc, 0) + cant
+    
+    top_comprados = sorted(productos_comprados.items(), key=lambda x: x[1], reverse=True)[:10]
+    
+    # Ventas por día
+    ventas_por_dia = {}
+    delta = (hasta - desde).days + 1
+    for i in range(delta):
+        dia = desde + timedelta(days=i)
+        ventas_por_dia[dia.strftime("%Y-%m-%d")] = {"dia": dia.strftime("%d/%m"), "ventas": 0, "monto": 0}
+    
+    for v in ventas:
+        if v.fecha_creacion:
+            dia_key = v.fecha_creacion.strftime("%Y-%m-%d")
+            if dia_key in ventas_por_dia:
+                ventas_por_dia[dia_key]["ventas"] += 1
+                ventas_por_dia[dia_key]["monto"] += v.total_venta or 0
+    
+    ventas_por_dia_lista = list(ventas_por_dia.values())
+    
+    # Clientes nuevos en rango
+    clientes_nuevos = db.query(Cliente).filter(
+        func.date(Cliente.fecha_creacion) >= desde,
+        func.date(Cliente.fecha_creacion) <= hasta
+    ).count()
+    
+    # Top clientes por compras
+    clientes_compras = {}
+    for v in ventas:
+        nombre = v.cliente_nombre or "Anónimo"
+        clientes_compras[nombre] = clientes_compras.get(nombre, 0) + (v.total_venta or 0)
+    
+    top_clientes = sorted(clientes_compras.items(), key=lambda x: x[1], reverse=True)[:5]
+    
+    # Métodos de pago
+    metodos_pago = {}
+    for v in ventas:
+        metodo = v.metodo_pago or "No especificado"
+        metodos_pago[metodo] = metodos_pago.get(metodo, 0) + (v.total_venta or 0)
+    
+    # Stock bajo
+    stock_bajo = db.query(Producto).filter(
+        Producto.stock_real != None,
+        Producto.stock_real <= 5,
+        Producto.activo == True
+    ).count()
+    
+    # Deuda total
+    deuda_total = sum(v.monto_debe or 0 for v in db.query(Venta).filter(Venta.monto_debe > 0).all())
+    
+    # Resumen mensual (si el rango es mayor a 7 días)
+    resumen_mensual = []
+    if delta > 7:
+        meses = {}
+        for v in ventas:
+            if v.fecha_creacion:
+                mes_key = v.fecha_creacion.strftime("%Y-%m")
+                if mes_key not in meses:
+                    meses[mes_key] = {"mes": mes_key, "ventas": 0, "monto": 0}
+                meses[mes_key]["ventas"] += 1
+                meses[mes_key]["monto"] += v.total_venta or 0
+        resumen_mensual = sorted(meses.values(), key=lambda x: x["mes"])[:12]
+    
+    return {
+        "periodo": {"desde": desde.isoformat(), "hasta": hasta.isoformat()},
+        "ventas": {"cantidad": len(ventas), "total": total_ventas, "ticket_promedio": total_ventas / len(ventas) if ventas else 0, "cotizaciones": len(cotizaciones)},
+        "compras": {"cantidad": len(compras), "total": total_compras},
+        "ganancia": {"bruta": ganancia, "margen": (ganancia / total_ventas * 100) if total_ventas > 0 else 0},
+        "stock_bajo": stock_bajo,
+        "deuda_total": deuda_total,
+        "clientes_nuevos": clientes_nuevos,
+        "ventas_por_dia": ventas_por_dia_lista,
+        "resumen_mensual": resumen_mensual,
+        "top_vendidos": [{"nombre": p[0], "cantidad": p[1]["cantidad"], "monto": p[1]["monto"], "tipo": p[1].get("tipo", "producto")} for p in top_vendidos],
+        "top_monto": [{"nombre": p[0], "cantidad": p[1]["cantidad"], "monto": p[1]["monto"], "tipo": p[1].get("tipo", "producto")} for p in top_monto],
+        "top_comprados": [{"nombre": p[0], "cantidad": p[1]} for p in top_comprados],
+        "categorias": [{"nombre": c[0], "monto": c[1]} for c in sorted(categorias_vendidas.items(), key=lambda x: x[1], reverse=True)],
+        "top_clientes": [{"nombre": c[0], "monto": c[1]} for c in top_clientes],
+        "metodos_pago": [{"metodo": m[0], "monto": m[1]} for m in sorted(metodos_pago.items(), key=lambda x: x[1], reverse=True)],
+    }
+
+
 @router.get("")
 def listar_operaciones(db: Session = Depends(get_db)):
     ventas = db.query(Venta).order_by(Venta.fecha_creacion.desc()).limit(100).all()
@@ -652,3 +826,4 @@ def obtener_venta(venta_id: int, db: Session = Depends(get_db)):
         "observaciones": venta.observaciones,
         "enviar_a_taller": venta.enviar_a_taller,
     }
+
