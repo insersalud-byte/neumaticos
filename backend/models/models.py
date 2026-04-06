@@ -75,6 +75,7 @@ class Categoria(Base):
     nombre = Column(String, index=True)
     descripcion = Column(String, default="")
     fecha_creacion = Column(DateTime, server_default=func.now())
+    activo = Column(Boolean, default=True)
 
 
 class CoeficienteFinanciacion(Base):
