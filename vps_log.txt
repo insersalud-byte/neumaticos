@@ -1,0 +1,36 @@
+Welcome to Ubuntu 24.04.4 LTS (GNU/Linux 6.8.0-90-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Mon Apr  6 21:08:59 UTC 2026
+
+  System load:  0.0                Processes:             140
+  Usage of /:   14.0% of 95.82GB   Users logged in:       0
+  Memory usage: 21%                IPv4 address for eth0: 72.60.4.111
+  Swap usage:   0%                 IPv6 address for eth0: 2a02:4780:14:6a4::1
+
+ * Strictly confined Kubernetes makes edge and IoT secure. Learn how MicroK8s
+   just raised the bar for easy, resilient and secure K8s cluster deployment.
+
+   https://ubuntu.com/engage/secure-kubernetes-at-the-edge
+
+Expanded Security Maintenance for Applications is not enabled.
+
+2 updates can be applied immediately.
+2 of these updates are standard security updates.
+To see these additional updates run: apt list --upgradable
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+5 updates could not be installed automatically. For more details,
+see /var/log/unattended-upgrades/unattended-upgrades.log
+
+Last login: Mon Apr  6 20:16:36 2026 from 186.13.122.246
+cat /tmp/uvicorn.log | tail -50
+[?2004hroot@srv947061:~# cat /tmp/uvicorn.log | tail -50
+[?2004lcat: /tmp/uvicorn.log: No such file or directory
+[?2004hroot@srv947061:~# 

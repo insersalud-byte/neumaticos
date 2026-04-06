@@ -673,6 +673,8 @@ def venta_mostrador(data: dict, db: Session = Depends(get_db)):
 def crear_operacion(data: dict, db: Session = Depends(get_db)):
     """Crear cotización / venta desde el POS (POST /api/v1/operaciones)"""
     items = data.get("items", [])
+    if isinstance(items, str):
+        items = json.loads(items) if items else []
     subtotal = sum((i.get("cantidad", 0) * i.get("precio_final", 0)) for i in items)
     bonificacion = data.get("monto_bonificacion", 0)
     base = max(0, subtotal - bonificacion)
