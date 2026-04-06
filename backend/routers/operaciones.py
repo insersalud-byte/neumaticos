@@ -821,6 +821,9 @@ def obtener_venta(venta_id: int, db: Session = Depends(get_db)):
         "vehiculo_modelo": venta.vehiculo_modelo,
         "es_cotizacion": venta.es_cotizacion,
         "items": json.loads(venta.items) if venta.items else [],
+        "subtotal_neto": venta.subtotal_neto,
+        "monto_bonificacion": venta.monto_bonificacion,
+        "alicuota_iva": venta.alicuota_iva,
         "total_venta": venta.total_venta,
         "metodo_pago": venta.metodo_pago,
         "monto_abonado": venta.monto_abonado,
@@ -828,4 +831,35 @@ def obtener_venta(venta_id: int, db: Session = Depends(get_db)):
         "observaciones": venta.observaciones,
         "enviar_a_taller": venta.enviar_a_taller,
     }
+
+
+@router.put("/{venta_id}")
+def actualizar_venta(venta_id: int, data: dict, db: Session = Depends(get_db)):
+    venta = db.query(Venta).filter(Venta.id == venta_id).first()
+    if not venta:
+        raise HTTPException(status_code=404, detail="Operación no encontrada")
+    
+    if 'items' in data:
+        items = data.get('items', [])
+        if isinstance(items, str):
+            items = json.loads(items) if items else []
+        
+        subtotal = sum((i.get("cantidad", 0) * i.get("precio_final", 0)) for i in items)
+        bonificacion = data.get("monto_bonificacion", 0)
+        base = max(0, subtotal - bonificacion)
+        iva = data.get("alicuota_iva", 0)
+        total = base * (1 + iva)
+        
+        venta.items = json.dumps(items)
+        venta.subtotal_neto = subtotal
+        venta.monto_bonificacion = bonificacion
+        venta.alicuota_iva = iva
+        venta.total_venta = total
+    
+    if 'observaciones' in data:
+        venta.observaciones = data.get('observaciones', '')
+    
+    db.commit()
+    db.refresh(venta)
+    return {"id": venta.id, "message": "Cotización actualizada"}
 

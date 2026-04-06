@@ -21,6 +21,7 @@ class Cliente(Base):
     dni_cuit = Column(String, default="")
     saldo_deudor = Column(Float, default=0)
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
+    activo = Column(Boolean, default=True)
 
 
 class Vehiculo(Base):
@@ -29,6 +30,7 @@ class Vehiculo(Base):
     patente = Column(String, unique=True, index=True)
     modelo = Column(String, default="")
     cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=True)
+    activo = Column(Boolean, default=True)
 
 
 class Producto(Base):

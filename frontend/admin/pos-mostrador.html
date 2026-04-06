@@ -386,6 +386,100 @@
     </div>
   </div>
 
+  <!-- MODAL: Editar Cotización -->
+  <div id="modalEditCot" class="hidden fixed inset-0 bg-black/90 z-[60] flex items-start justify-center p-4 overflow-y-auto">
+    <div class="bg-[#09090b] border border-[#27272a] rounded-2xl w-full max-w-4xl my-8 flex flex-col">
+      <!-- Header -->
+      <div class="flex items-center justify-between p-5 border-b border-[#18181b]">
+        <div class="flex items-center gap-3">
+          <h3 class="font-bold text-white text-lg">Editar Cotización</h3>
+          <span id="editCotId" class="text-xs text-gray-500 mono">#—</span>
+        </div>
+        <button onclick="cerrarEditCot()" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+      </div>
+      
+      <!-- Cliente info (solo lectura) -->
+      <div class="p-5 border-b border-[#18181b]">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div>
+            <p class="text-[10px] text-gray-600 uppercase tracking-wider">Cliente</p>
+            <p id="editCliente" class="text-white font-semibold">—</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-gray-600 uppercase tracking-wider">Teléfono</p>
+            <p id="editTelefono" class="text-white">—</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-gray-600 uppercase tracking-wider">Patente</p>
+            <p id="editPatente" class="text-white mono">—</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-gray-600 uppercase tracking-wider">Fecha</p>
+            <p id="editFecha" class="text-white">—</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Agregar items -->
+      <div class="p-5 border-b border-[#18181b]">
+        <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold mb-3">Agregar Producto o Servicio</p>
+        <div class="relative">
+          <input id="editBusqueda" type="text" placeholder="Buscar por nombre, código o medida..." class="input-dark pr-10"
+            oninput="buscarProductoEdit(this.value)" autocomplete="off"/>
+          <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 text-xs"></i>
+          <div id="dropBusquedaEdit" class="autocomplete-box hidden"></div>
+        </div>
+      </div>
+      
+      <!-- Items actuales -->
+      <div class="p-5 border-b border-[#18181b]">
+        <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold mb-3">Items de la Cotización</p>
+        <div id="editItemsBody" class="space-y-2 max-h-64 overflow-y-auto"></div>
+      </div>
+      
+      <!-- Totales -->
+      <div class="p-5 border-b border-[#18181b]">
+        <div class="flex items-center justify-between text-sm">
+          <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+              <label class="text-gray-400">Bonif. %</label>
+              <input id="editBonif" type="number" min="0" max="100" value="0" class="input-dark w-20 text-right mono py-1 px-2 text-xs"
+                oninput="recalcularEdit()"/>
+            </div>
+            <div class="flex items-center gap-2">
+              <input id="editIva" type="checkbox" class="w-4 h-4 accent-red-600 cursor-pointer" onchange="recalcularEdit()"/>
+              <label for="editIva" class="text-gray-400 cursor-pointer">IVA (21%)</label>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-xs text-gray-500">Total</p>
+            <p id="editTotal" class="text-2xl font-black text-red-500 mono">$0</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Observaciones -->
+      <div class="p-5 border-b border-[#18181b]">
+        <textarea id="editObs" rows="2" placeholder="Observaciones..." class="input-dark text-xs resize-none w-full"></textarea>
+      </div>
+      
+      <!-- Acciones -->
+      <div class="p-5 flex items-center justify-between gap-4">
+        <button onclick="eliminarCotizacionEdit()" class="btn-ghost text-sm">
+          <i class="fas fa-trash mr-2 text-red-500"></i> Eliminar
+        </button>
+        <div class="flex items-center gap-3">
+          <button onclick="guardarCotizacionEdit()" class="btn-ghost text-sm">
+            <i class="fas fa-save mr-2 text-yellow-500"></i> Guardar Cambios
+          </button>
+          <button onclick="convertirEnFactura()" class="btn-red text-sm">
+            <i class="fas fa-file-invoice mr-2"></i> Convertir en Factura
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ─── STATE ───────────────────────────────────────────
     let carrito = [];
@@ -799,7 +893,7 @@
               <button onclick="verPdfCotizacion(${c.id})" class="bg-blue-600/30 hover:bg-blue-600/50 text-blue-400 py-1.5 px-3 rounded-lg transition text-xs" title="Ver PDF">
                 <i class="fas fa-file-pdf mr-1"></i> PDF
               </button>
-              <button onclick="recuperarCotizacion(${c.id})" class="btn-red text-xs py-1.5 px-3">Recuperar</button>
+              <button onclick="abrirEditCotizacion(${c.id})" class="btn-red text-xs py-1.5 px-3"><i class="fas fa-edit mr-1"></i> Editar</button>
               <button onclick="eliminarCotizacion(${c.id}, ${c.es_cotizacion ? 'true' : 'false'})" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 py-1.5 px-3 rounded-lg transition" title="Eliminar">
                 <i class="fas fa-trash text-xs"></i>
               </button>
@@ -930,6 +1024,261 @@
 
     // ─── INIT ─────────────────────────────────────────────
     cargarPlanes();
+
+    // ─── EDIT COTIZACION ─────────────────────────────────
+    let editCotizacionId = null;
+    let editCarrito = [];
+    let editSubtotal = 0;
+
+    async function abrirEditCotizacion(id) {
+      editCotizacionId = id;
+      document.getElementById('modalCots').classList.add('hidden');
+      document.getElementById('modalEditCot').classList.remove('hidden');
+      
+      try {
+        const r = await fetch(`/api/v1/operaciones/${id}`);
+        const cot = await r.json();
+        
+        // Llenar info
+        document.getElementById('editCotId').textContent = `#${id}`;
+        document.getElementById('editCliente').textContent = cot.cliente_nombre || 'Anónimo';
+        document.getElementById('editTelefono').textContent = cot.cliente_telefono || '—';
+        document.getElementById('editPatente').textContent = cot.vehiculo_patente || '—';
+        document.getElementById('editFecha').textContent = cot.fecha_creacion ? new Date(cot.fecha_creacion).toLocaleDateString('es-AR') : '—';
+        document.getElementById('editObs').value = cot.observaciones || '';
+        
+        // Cargar items
+        let items = [];
+        try { items = JSON.parse(cot.items || '[]'); } catch(e) {}
+        
+        editCarrito = items.map((item, idx) => ({
+          idx: idx,
+          id: item.referencia_id,
+          _tipo: item.tipo || 'libre',
+          descripcion: item.descripcion,
+          precio: item.precio_final,
+          qty: item.cantidad
+        }));
+        
+        renderEditItems();
+        recalcularEdit();
+        
+      } catch(e) {
+        Swal.fire('Error', 'No se pudo cargar la cotización', 'error');
+        cerrarEditCot();
+      }
+    }
+
+    function renderEditItems() {
+      const body = document.getElementById('editItemsBody');
+      if (!editCarrito.length) {
+        body.innerHTML = '<p class="text-gray-600 text-sm text-center py-4">Sin items</p>';
+        return;
+      }
+      
+      body.innerHTML = editCarrito.map((item, i) => {
+        const icon = item._tipo === 'servicio' ? 'fa-wrench text-orange-400' : (item._tipo === 'libre' ? 'fa-edit text-purple-400' : 'fa-box text-blue-400');
+        return `<div class="flex items-center gap-3 bg-[#0f0f0f] border border-[#27272a] rounded-lg p-3">
+          <i class="fas ${icon} text-xs"></i>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-white truncate">${item.descripcion}</p>
+            <p class="text-xs text-gray-600 mono">${currency(item.precio)} c/u</p>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="editCambiarQty(${i},-1)" class="w-6 h-6 rounded bg-[#18181b] text-gray-400 hover:text-white text-xs flex items-center justify-center">-</button>
+            <span class="mono text-sm w-6 text-center">${item.qty}</span>
+            <button onclick="editCambiarQty(${i},1)" class="w-6 h-6 rounded bg-[#18181b] text-gray-400 hover:text-white text-xs flex items-center justify-center">+</button>
+          </div>
+          <span class="mono text-sm text-white w-24 text-right">${currency(item.precio * item.qty)}</span>
+          <button onclick="editQuitarItem(${i})" class="text-gray-700 hover:text-red-500 ml-1"><i class="fas fa-times text-xs"></i></button>
+        </div>`;
+      }).join('');
+    }
+
+    function editCambiarQty(i, delta) {
+      editCarrito[i].qty = Math.max(1, editCarrito[i].qty + delta);
+      renderEditItems();
+      recalcularEdit();
+    }
+
+    function editQuitarItem(i) {
+      editCarrito.splice(i, 1);
+      renderEditItems();
+      recalcularEdit();
+    }
+
+    function recalcularEdit() {
+      editSubtotal = editCarrito.reduce((s, c) => s + c.precio * c.qty, 0);
+      const bonif = parseFloat(document.getElementById('editBonif').value) || 0;
+      const descuento = editSubtotal * (bonif / 100);
+      const base = editSubtotal - descuento;
+      const conIva = document.getElementById('editIva').checked;
+      const iva = conIva ? base * 0.21 : 0;
+      const total = base + iva;
+      document.getElementById('editTotal').textContent = currency(total);
+    }
+
+    function buscarProductoEdit(val) {
+      clearTimeout(window.timerProdEdit);
+      if (val.length < 2) { document.getElementById('dropBusquedaEdit').classList.add('hidden'); return; }
+      window.timerProdEdit = setTimeout(async () => {
+        try {
+          const [rProd, rServ] = await Promise.all([
+            fetch(`/api/v1/operaciones/admin/inventario?buscar=${encodeURIComponent(val)}`),
+            fetch(`/api/v1/operaciones/servicios/buscar?termino=${encodeURIComponent(val)}`)
+          ]);
+          const dataProd = await rProd.json();
+          const servs = await rServ.json();
+          const prods = Array.isArray(dataProd) ? dataProd : (dataProd.data || []);
+          const drop = document.getElementById('dropBusquedaEdit');
+          const all = [
+            ...prods.map(p => ({ ...p, _tipo: 'producto' })),
+            ...servs.map(s => ({ ...s, _tipo: 'servicio' }))
+          ];
+          if (!all.length) { drop.classList.add('hidden'); return; }
+          drop.innerHTML = all.map(x => {
+            const icon = x._tipo === 'servicio' ? 'fa-wrench text-orange-400' : 'fa-box text-blue-400';
+            const stock = x._tipo === 'producto' ? ` <span class="text-gray-600">(${x.stock ?? 0})</span>` : '';
+            return `<div class="autocomplete-item" onclick="agregarItemEdit(${JSON.stringify(x).replace(/"/g,'&quot;')})">
+              <i class="fas ${icon} text-[10px] mr-1"></i>
+              <span class="font-bold">${x.descripcion || x.nombre}</span>
+              <span class="mono text-green-400 ml-2 text-xs">${currency(x.precio_venta || x.precio)}</span>
+              ${stock}
+            </div>`;
+          }).join('');
+          drop.classList.remove('hidden');
+        } catch(e) {}
+      }, 300);
+    }
+
+    function agregarItemEdit(item) {
+      document.getElementById('dropBusquedaEdit').classList.add('hidden');
+      document.getElementById('editBusqueda').value = '';
+      const precio = item.precio_venta || item.precio || 0;
+      const existing = editCarrito.find(c => c.id === item.id && c._tipo === item._tipo);
+      if (existing) {
+        existing.qty++;
+      } else {
+        editCarrito.push({ id: item.id, _tipo: item._tipo, descripcion: item.descripcion || item.nombre, precio, qty: 1 });
+      }
+      renderEditItems();
+      recalcularEdit();
+    }
+
+    async function guardarCotizacionEdit() {
+      if (!editCarrito.length) return Swal.fire('Error', 'La cotización debe tener al menos un item', 'warning');
+      
+      const bonif = parseFloat(document.getElementById('editBonif').value) || 0;
+      const conIva = document.getElementById('editIva').checked;
+      const ivaVal = conIva ? 0.21 : 0;
+      
+      try {
+        const r = await fetch(`/api/v1/operaciones/${editCotizacionId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: editCarrito.map(c => ({
+              tipo: c._tipo,
+              referencia_id: c.id,
+              descripcion: c.descripcion,
+              cantidad: c.qty,
+              precio_final: c.precio
+            })),
+            monto_bonificacion: editSubtotal * (bonif / 100),
+            alicuota_iva: ivaVal,
+            observaciones: document.getElementById('editObs').value
+          })
+        });
+        
+        if (r.ok) {
+          Swal.fire({ icon: 'success', title: 'Guardado', text: 'Cotización actualizada', background: '#09090b', color: '#fff', timer: 2000, showConfirmButton: false });
+          cerrarEditCot();
+          abrirCotizaciones();
+        } else {
+          throw new Error('Error al guardar');
+        }
+      } catch(e) {
+        Swal.fire('Error', 'No se pudo guardar la cotización', 'error');
+      }
+    }
+
+    async function convertirEnFactura() {
+      if (!editCarrito.length) return Swal.fire('Error', 'La cotización debe tener al menos un item', 'warning');
+      
+      const result = await Swal.fire({
+        title: '¿Convertir en Factura?',
+        text: 'La cotización se convertirá en una venta confirmada.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        background: '#09090b',
+        color: '#fff',
+        confirmButtonText: 'Sí, convertir',
+        cancelButtonText: 'Cancelar'
+      });
+      
+      if (!result.isConfirmed) return;
+      
+      try {
+        const r = await fetch(`/api/v1/operaciones/cotizaciones/${editCotizacionId}/convertir`, { method: 'POST' });
+        
+        if (r.ok) {
+          const d = await r.json();
+          Swal.fire({ icon: 'success', title: '¡Convertida!', text: `Venta #${d.id} creada`, background: '#09090b', color: '#fff', confirmButtonColor: '#dc2626' });
+          cerrarEditCot();
+          abrirCotizaciones();
+        } else {
+          throw new Error('Error al convertir');
+        }
+      } catch(e) {
+        Swal.fire('Error', 'No se pudo convertir la cotización', 'error');
+      }
+    }
+
+    async function eliminarCotizacionEdit() {
+      const result = await Swal.fire({
+        title: '¿Eliminar esta cotización?',
+        text: 'Esta acción no se puede deshacer',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        background: '#09090b',
+        color: '#fff',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+      });
+      
+      if (!result.isConfirmed) return;
+      
+      try {
+        const r = await fetch(`/api/v1/operaciones/${editCotizacionId}`, { method: 'DELETE' });
+        if (r.ok) {
+          Swal.fire({ icon: 'success', title: 'Eliminada', timer: 2000, showConfirmButton: false, background: '#09090b', color: '#fff' });
+          cerrarEditCot();
+          abrirCotizaciones();
+        } else {
+          throw new Error('Error');
+        }
+      } catch(e) {
+        Swal.fire('Error', 'No se pudo eliminar', 'error');
+      }
+    }
+
+    function cerrarEditCot() {
+      document.getElementById('modalEditCot').classList.add('hidden');
+      editCotizacionId = null;
+      editCarrito = [];
+    }
+
+    // Cerrar dropdowns de edit al clickear fuera
+    document.addEventListener('click', (e) => {
+      const drop = document.getElementById('dropBusquedaEdit');
+      if (drop && !drop.classList.contains('hidden') && !drop.closest('div')?.contains(e.target) && e.target.id !== 'editBusqueda') {
+        drop.classList.add('hidden');
+      }
+    });
     
     // ─── CARGAR DESDE TALLER ─────────────────────────────
     const params = new URLSearchParams(window.location.search);

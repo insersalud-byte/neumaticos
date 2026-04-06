@@ -8,14 +8,16 @@ client.connect('72.60.4.111', username='root', password='TOMASagustina01@')
 
 channel = client.invoke_shell()
 
-channel.send('pip3 install --break-system-packages reportlab\n')
-time.sleep(30)
+# Kill all uvicorn processes
+channel.send('pkill -9 -f uvicorn || true\n')
+time.sleep(2)
 
+# Start server
 channel.send('cd /var/www/neumaticos/backend && nohup python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 > /tmp/uvicorn.log 2>&1 &\n')
 time.sleep(5)
 
-channel.send('pgrep -f uvicorn && echo "RUNNING" || (cat /tmp/uvicorn.log | tail -10 && echo "FAILED")\n')
-time.sleep(3)
+channel.send('pgrep -f uvicorn && echo "RUNNING" || echo "FAILED"\n')
+time.sleep(2)
 
 output = ''
 while channel.recv_ready():
