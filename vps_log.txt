@@ -4,11 +4,11 @@ Welcome to Ubuntu 24.04.4 LTS (GNU/Linux 6.8.0-90-generic x86_64)
  * Management:     https://landscape.canonical.com
  * Support:        https://ubuntu.com/pro
 
- System information as of Mon Apr  6 22:09:52 UTC 2026
+ System information as of Mon Apr  6 22:55:52 UTC 2026
 
-  System load:  0.1                Processes:             143
-  Usage of /:   14.0% of 95.82GB   Users logged in:       0
-  Memory usage: 22%                IPv4 address for eth0: 72.60.4.111
+  System load:  0.0                Processes:             142
+  Usage of /:   13.7% of 95.82GB   Users logged in:       0
+  Memory usage: 23%                IPv4 address for eth0: 72.60.4.111
   Swap usage:   0%                 IPv6 address for eth0: 2a02:4780:14:6a4::1
 
  * Strictly confined Kubernetes makes edge and IoT secure. Learn how MicroK8s
@@ -29,56 +29,36 @@ See https://ubuntu.com/esm or run: sudo pro status
 5 updates could not be installed automatically. For more details,
 see /var/log/unattended-upgrades/unattended-upgrades.log
 
-Last login: Mon Apr  6 22:08:25 2026 from 186.13.122.246
-[?2004hroot@srv947061:~# journalctl -u giorda.service -n 50 --no-pager 2>&1 | tail -60
-[?2004lApr 06 22:09:37 srv947061 uvicorn[16193]:     result = context.run(func, *args)
-Apr 06 22:09:37 srv947061 uvicorn[16193]:              ^^^^^^^^^^^^^^^^^^^^^^^^
-Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/routers/articulos.py", line 150, in crear_categoria
-Apr 06 22:09:37 srv947061 uvicorn[16193]:     existente = db.query(Categoria).filter(Categoria.nombre.ilike(nombre)).first()
-Apr 06 22:09:37 srv947061 uvicorn[16193]:                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/query.py", line 2728, in first
-Apr 06 22:09:37 srv947061 uvicorn[16193]:     return self.limit(1)._iter().first()  # type: ignore
-Apr 06 22:09:37 srv947061 uvicorn[16193]:            ^^^^^^^^^^^^^^^^^^^^^
-Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/query.py", line 2827, in _iter
-Apr 06 22:09:37 srv947061 uvicorn[16193]:     result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
-Apr 06 22:09:37 srv947061 uvicorn[16193]:                                                   ^^^^^^^^^^^^^^^^^^^^^
-Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2362, in execute
-Apr 06 22:09:37 srv947061 uvicorn[16193]:     return self._execute_internal(
-Apr 06 22:09:37 srv947061 uvicorn[16193]:            ^^^^^^^^^^^^^^^^^^^^^^^
-Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2247, in _execute_internal
-Apr 06 22:09:37 srv947061 uvicorn[16193]:     result: Result[Any] = compile_state_cls.orm_execute_statement(
-Apr 06 22:09:37 srv947061 uvicorn[16193]:                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/context.py", line 305, in orm_execute_statement
-Apr 06 22:09:37 srv947061 uvicorn[16193]:     result = conn.execute(
-Apr 06 22:09:37 srv947061 uvicorn[16193]:              ^^^^^^^^^^^^^
-Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1418, in execute
-Apr 06 22:09:37 srv947061 uvicorn[16193]:     return meth(
-Apr 06 22:09:37 srv947061 uvicorn[16193]:            ^^^^^
-Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 515, in _execute_on_connection
-Apr 06 22:09:37 srv947061 uvicorn[16193]:     return connection._execute_clauseelement(
-Apr 06 22:09:37 srv947061 uvicorn[16193]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1640, in _execute_clauseelement
-Apr 06 22:09:37 srv947061 uvicorn[16193]:     ret = self._execute_context(
-Apr 06 22:09:37 srv947061 uvicorn[16193]:           ^^^^^^^^^^^^^^^^^^^^^^
-Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
-Apr 06 22:09:37 srv947061 uvicorn[16193]:     return self._exec_single_context(
-Apr 06 22:09:37 srv947061 uvicorn[16193]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
-Apr 06 22:09:37 srv947061 uvicorn[16193]:     self._handle_dbapi_exception(
-Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
-Apr 06 22:09:37 srv947061 uvicorn[16193]:     raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
-Apr 06 22:09:37 srv947061 uvicorn[16193]:     self.dialect.do_execute(
-Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 941, in do_execute
-Apr 06 22:09:37 srv947061 uvicorn[16193]:     cursor.execute(statement, parameters)
-Apr 06 22:09:37 srv947061 uvicorn[16193]: sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column categorias.activo does not exist
-Apr 06 22:09:37 srv947061 uvicorn[16193]: LINE 1: ...rias.fecha_creacion AS categorias_fecha_creacion, categorias...
-Apr 06 22:09:37 srv947061 uvicorn[16193]:                                                              ^
-Apr 06 22:09:37 srv947061 uvicorn[16193]: [SQL: SELECT categorias.id AS categorias_id, categorias.nombre AS categorias_nombre, categorias.descripcion AS categorias_descripcion, categorias.fecha_creacion AS categorias_fecha_creacion, categorias.activo AS categorias_activo
-Apr 06 22:09:37 srv947061 uvicorn[16193]: FROM categorias
-Apr 06 22:09:37 srv947061 uvicorn[16193]: WHERE categorias.nombre ILIKE %(nombre_1)s
-Apr 06 22:09:37 srv947061 uvicorn[16193]:  LIMIT %(param_1)s]
-Apr 06 22:09:37 srv947061 uvicorn[16193]: [parameters: {'nombre_1': 'Test Categoria', 'param_1': 1}]
-Apr 06 22:09:37 srv947061 uvicorn[16193]: (Background on this error at: https://sqlalche.me/e/20/f405)
-Apr 06 22:09:44 srv947061 uvicorn[16193]: INFO:     186.13.122.246:37095 - "GET /api/v1/operaciones HTTP/1.1" 200 OK
+Last login: Mon Apr  6 22:52:47 2026 from 186.13.122.246
+[?2004hroot@srv947061:~# journalctl -u giorda.service -n 30 --no-pager 2>&1 | tail -40
+[?2004lApr 06 22:47:48 srv947061 uvicorn[21319]: INFO:     186.13.122.246:55079 - "GET /api/v1/articulos HTTP/1.1" 200 OK
+Apr 06 22:47:50 srv947061 uvicorn[21319]: INFO:     186.13.122.246:55079 - "GET /api/v1/categorias HTTP/1.1" 404 Not Found
+Apr 06 22:47:57 srv947061 uvicorn[21319]: INFO:     186.13.122.246:55147 - "POST /api/v1/categorias HTTP/1.1" 404 Not Found
+Apr 06 22:47:57 srv947061 uvicorn[21319]: INFO:     186.13.122.246:55147 - "GET /api/v1/categorias HTTP/1.1" 404 Not Found
+Apr 06 22:48:07 srv947061 uvicorn[21319]: INFO:     186.13.122.246:55193 - "GET /api/v1/articulos HTTP/1.1" 200 OK
+Apr 06 22:50:43 srv947061 uvicorn[21319]: INFO:     186.13.122.246:56397 - "GET /api/v1/articulos/categorias HTTP/1.1" 200 OK
+Apr 06 22:52:57 srv947061 systemd[1]: Stopping giorda.service - GiordaOS FastAPI...
+Apr 06 22:52:57 srv947061 uvicorn[21319]: INFO:     Shutting down
+Apr 06 22:52:57 srv947061 uvicorn[21319]: INFO:     Waiting for application shutdown.
+Apr 06 22:52:57 srv947061 uvicorn[21319]: INFO:     Application shutdown complete.
+Apr 06 22:52:57 srv947061 uvicorn[21319]: INFO:     Finished server process [21319]
+Apr 06 22:52:57 srv947061 systemd[1]: giorda.service: Deactivated successfully.
+Apr 06 22:52:57 srv947061 systemd[1]: Stopped giorda.service - GiordaOS FastAPI.
+Apr 06 22:52:57 srv947061 systemd[1]: giorda.service: Consumed 2.124s CPU time.
+Apr 06 22:52:57 srv947061 systemd[1]: Started giorda.service - GiordaOS FastAPI.
+Apr 06 22:52:58 srv947061 uvicorn[22729]: INFO:     Started server process [22729]
+Apr 06 22:52:58 srv947061 uvicorn[22729]: INFO:     Waiting for application startup.
+Apr 06 22:52:58 srv947061 uvicorn[22729]: INFO:     Application startup complete.
+Apr 06 22:52:58 srv947061 uvicorn[22729]: INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+Apr 06 22:54:37 srv947061 uvicorn[22729]: INFO:     186.13.122.246:58438 - "GET /api/v1/categorias HTTP/1.1" 404 Not Found
+Apr 06 22:54:37 srv947061 uvicorn[22729]: INFO:     186.13.122.246:58439 - "GET /api/v1/articulos HTTP/1.1" 200 OK
+Apr 06 22:54:37 srv947061 uvicorn[22729]: INFO:     186.13.122.246:58438 - "GET /api/v1/categorias HTTP/1.1" 404 Not Found
+Apr 06 22:54:37 srv947061 uvicorn[22729]: INFO:     186.13.122.246:58439 - "GET /api/v1/articulos HTTP/1.1" 200 OK
+Apr 06 22:54:44 srv947061 uvicorn[22729]: INFO:     186.13.122.246:58464 - "GET /api/v1/categorias HTTP/1.1" 404 Not Found
+Apr 06 22:54:50 srv947061 uvicorn[22729]: INFO:     186.13.122.246:58505 - "POST /api/v1/categorias HTTP/1.1" 404 Not Found
+Apr 06 22:54:50 srv947061 uvicorn[22729]: INFO:     186.13.122.246:58505 - "GET /api/v1/categorias HTTP/1.1" 404 Not Found
+Apr 06 22:54:53 srv947061 uvicorn[22729]: INFO:     186.13.122.246:58505 - "GET /api/v1/articulos HTTP/1.1" 200 OK
+Apr 06 22:54:59 srv947061 uvicorn[22729]: INFO:     186.13.122.246:58582 - "GET /admin/articulos.html HTTP/1.1" 304 Not Modified
+Apr 06 22:55:07 srv947061 uvicorn[22729]: INFO:     186.13.122.246:58583 - "GET /api/v1/articulos HTTP/1.1" 200 OK
+Apr 06 22:55:07 srv947061 uvicorn[22729]: INFO:     186.13.122.246:58654 - "GET /api/v1/categorias HTTP/1.1" 404 Not Found
 [?2004hroot@srv947061:~# 

@@ -439,9 +439,11 @@
         } catch(e) { console.error(e); }
     }
 
-    function abrirModalArticulo(id = null) {
+    async function abrirModalArticulo(id = null) {
         editandoId = id;
         document.getElementById('modal-art-titulo').textContent = id ? 'Editar Artículo' : 'Nuevo Artículo';
+        
+        await cargarCategorias();
         
         if (id) {
             document.getElementById('art-codigo').value = '';
@@ -602,7 +604,6 @@
             document.getElementById('art-compra').value = a.precio_costo || 0;
             document.getElementById('art-stock').value = a.stock_real || 0;
             document.getElementById('art-marca').value = a.marca || '';
-            document.getElementById('art-categoria').value = a.categoria || '';
             document.getElementById('art-proveedor').value = a.proveedor || '';
             
             const compra = a.precio_costo || 0;
@@ -619,6 +620,9 @@
             } else {
                 document.getElementById('foto-preview').classList.add('hidden');
             }
+            
+            await cargarCategorias();
+            document.getElementById('art-categoria').value = a.categoria || '';
             
             document.getElementById('modal-articulo').classList.remove('hidden');
         } catch(e) {}
