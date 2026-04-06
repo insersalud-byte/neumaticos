@@ -1,6 +1,13 @@
 {
   "buildCommand": "echo 'No build needed'",
   "outputDirectory": ".",
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/login.html",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
