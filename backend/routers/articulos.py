@@ -91,28 +91,49 @@ def importar_excel(data: dict, db: Session = Depends(get_db)):
     for art in articulos:
         try:
             codigo = art.get("codigo", "")
-            existente = db.query(Producto).filter(Producto.codigo == codigo).first() if codigo else None
+            descripcion = art.get("descripcion", "")
+            precio_costo = float(art.get("precio_costo", 0) or 0)
+            margen = float(art.get("margen", art.get("ganancia", ganancia_default)) or ganancia_default)
+            categoria = art.get("categoria", "")
+            
+            precio_venta = precio_costo * (1 + margen / 100)
+            
+            if codigo:
+                existente = db.query(Producto).filter(Producto.codigo == codigo).first()
+            elif descripcion:
+                existente = db.query(Producto).filter(Producto.descripcion == descripcion).first()
+            else:
+                existente = None
             
             if existente:
                 if opc_existente == "actualizar":
-                    existente.descripcion = art.get("descripcion", existente.descripcion)
-                    existente.marca = art.get("marca", existente.marca)
-                    existente.precio_costo = art.get("precio_costo", existente.precio_costo)
-                    if art.get("stock"):
-                        existente.stock_real = art.get("stock", 0)
+                    if art.get("descripcion"):
+                        existente.descripcion = descripcion
+                    if art.get("marca"):
+                        existente.marca = art.get("marca", "")
+                    existente.precio_costo = precio_costo
+                    existente.costo_base = precio_costo
+                    existente.precio_venta_contado = precio_venta
+                    existente.precio_venta_final = precio_venta
+                    if categoria:
+                        existente.categoria = categoria
+                    if art.get("stock") is not None:
+                        existente.stock_real = float(art.get("stock", 0))
+                        existente.stock_local = float(art.get("stock", 0))
                     actualizados += 1
             else:
                 nuevo = Producto(
                     codigo=codigo,
-                    descripcion=art.get("descripcion", ""),
+                    descripcion=descripcion,
                     marca=art.get("marca", ""),
-                    categoria=art.get("categoria", ""),
-                    precio_costo=art.get("precio_costo", 0),
-                    precio_venta_contado=art.get("precio_venta", 0),
-                    precio_venta_final=art.get("precio_venta", 0),
-                    costo_base=art.get("precio_costo", 0),
-                    stock_real=art.get("stock", 0),
-                    stock_local=art.get("stock", 0),
+                    modelo=art.get("modelo", ""),
+                    categoria=categoria,
+                    precio_costo=precio_costo,
+                    costo_base=precio_costo,
+                    precio_venta_contado=precio_venta,
+                    precio_venta_final=precio_venta,
+                    stock_real=float(art.get("stock", 0) or 0),
+                    stock_local=float(art.get("stock", 0) or 0),
                     activo=True,
                 )
                 db.add(nuevo)

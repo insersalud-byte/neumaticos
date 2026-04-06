@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Administrar Productos | GiordaOS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 12px; border-radius: 8px;
+      color: #6b7280; font-size: 13px; font-weight: 500;
+      transition: all 0.15s; margin: 1px 8px;
+      text-decoration: none;
+    }
+    .sidebar-link:hover { background: #111113; color: #e5e7eb; }
+    .sidebar-link.active { background: #18181b; color: #fff; border-left: 3px solid #dc2626; padding-left: 9px; }
+    .sidebar-section-title {
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em;
+      color: #374151; padding: 14px 20px 4px; font-weight: 800;
+    }
+    .input-dark { background: #09090b; border: 1px solid #27272a; color: #fff; border-radius: 8px; padding: 8px 12px; font-size: 13px; transition: border-color 0.15s; outline: none; width: 100%; }
+    .input-dark:focus { border-color: #dc2626; }
+    .btn-red { background: #dc2626; color: #fff; font-weight: 700; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; transition: background 0.15s; font-size: 13px; }
+    .btn-red:hover { background: #b91c1c; }
+    .btn-ghost { background: transparent; color: #71717a; font-weight: 600; padding: 10px 20px; border-radius: 8px; border: 1px solid #27272a; cursor: pointer; transition: all 0.15s; font-size: 13px; }
+    .btn-ghost:hover { border-color: #52525b; color: #e5e7eb; }
+    .card { background: #09090b; border: 1px solid #18181b; border-radius: 12px; }
+    .badge-cat { background: #1e3a5f; color: #93c5fd; border: 1px solid #3b82f6; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-[#000000] text-white min-h-screen flex">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-50 w-64 bg-[#050505] border-r border-[#1f1f22] flex flex-col flex-shrink-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+    <div class="h-16 flex items-center justify-between px-6 border-b border-[#1f1f22]">
+      <h1 class="text-xl font-black italic tracking-tighter text-white flex items-center gap-2">
+        <div class="bg-red-600 text-white w-8 h-8 flex items-center justify-center rounded-lg"><i class="fas fa-tire"></i></div>
+        <span>GIORDA<span class="text-red-600">OS</span></span>
+      </h1>
+      <button class="md:hidden text-gray-500 hover:text-white" onclick="document.getElementById('sidebar').classList.add('-translate-x-full')"><i class="fas fa-times"></i></button>
+    </div>
+    <nav class="flex-1 overflow-y-auto py-2 space-y-0.5">
+      <a href="dashboard.html" class="sidebar-link"><i class="fas fa-chart-line w-6 text-center text-green-400"></i><span>Dashboard</span></a>
+      <div class="sidebar-section-title">Mostrador &amp; Ventas</div>
+      <a href="pos-mostrador.html" class="sidebar-link"><i class="fas fa-cash-register w-6 text-center text-green-500"></i><span>Punto de Venta</span></a>
+      <a href="pedidos-demo.html" class="sidebar-link"><i class="fas fa-globe w-6 text-center text-blue-400"></i><span>Cotizacion - Pedidos</span></a>
+      <div class="sidebar-section-title">Planta &amp; Taller</div>
+      <a href="recepcion-taller.html" class="sidebar-link"><i class="fas fa-clipboard-list w-6 text-center text-orange-400"></i><span>Recepcion Vehiculos</span></a>
+      <a href="taller-control.html" class="sidebar-link"><i class="fas fa-wrench w-6 text-center text-gray-400"></i><span>Tablero Mecanicos</span></a>
+      <div class="sidebar-section-title">Back Office</div>
+      <a href="inventario.html" class="sidebar-link"><i class="fas fa-boxes w-6 text-center text-yellow-500"></i><span>Inventario & Stock</span></a>
+      <a href="productos.html" class="sidebar-link active"><i class="fas fa-cogs w-6 text-center text-orange-500"></i><span>Administrar Productos</span></a>
+      <a href="catalogo-servicios.html" class="sidebar-link"><i class="fas fa-list-ul w-6 text-center text-cyan-400"></i><span>Servicios & MO</span></a>
+      <a href="importar-facturas.html" class="sidebar-link"><i class="fas fa-file-invoice-dollar w-6 text-center text-emerald-400"></i><span>Compras</span></a>
+    </nav>
+    <div class="p-4 border-t border-[#1f1f22] bg-[#0a0a0c]">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-gray-800 to-black border border-gray-700 flex items-center justify-center font-bold text-sm">S</div>
+        <div class="flex-1"><p class="text-xs font-bold truncate">Sergio Giorda</p><p class="text-[10px] text-gray-600 truncate">gerencia</p></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 flex flex-col min-h-screen overflow-hidden">
+    <header class="h-14 bg-[#050505] border-b border-[#1f1f22] flex items-center justify-between px-6">
+      <div class="flex items-center gap-3">
+        <button class="md:hidden text-gray-500 hover:text-white mr-2" onclick="document.getElementById('sidebar').classList.remove('-translate-x-full')"><i class="fas fa-bars"></i></button>
+        <span class="text-xs text-gray-600 uppercase tracking-widest font-bold">Administrar Productos</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="abrirCategorias()" class="btn-ghost text-xs py-2 px-3"><i class="fas fa-tags mr-1 text-purple-400"></i> Categorias</button>
+        <button onclick="abrirModalProducto()" class="btn-red text-xs py-2 px-3"><i class="fas fa-plus mr-1"></i> Nuevo Producto</button>
+      </div>
+    </header>
+
+    <div class="flex-1 p-6 overflow-y-auto">
+      <!-- Filtros -->
+      <div class="flex gap-4 mb-6">
+        <div class="flex-1">
+          <input id="buscador" type="text" placeholder="Buscar por nombre, codigo, marca..." oninput="buscar()" class="input-dark"/>
+        </div>
+        <select id="filtroCategoria" onchange="buscar()" class="input-dark w-48">
+          <option value="">Todas las categorias</option>
+        </select>
+      </div>
+
+      <!-- Tabla de productos -->
+      <div class="card overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-[10px] text-gray-500 uppercase tracking-wider bg-[#0a0a0c]">
+              <th class="py-3 px-4 text-left">Codigo</th>
+              <th class="py-3 px-4 text-left">Producto</th>
+              <th class="py-3 px-4 text-left">Categoria</th>
+              <th class="py-3 px-4 text-right">P. Costo</th>
+              <th class="py-3 px-4 text-right">Margen %</th>
+              <th class="py-3 px-4 text-right">P. Venta</th>
+              <th class="py-3 px-4 text-center">Stock Real</th>
+              <th class="py-3 px-4 text-center">Stock Local</th>
+              <th class="py-3 px-4 text-center">Accion</th>
+            </tr>
+          </thead>
+          <tbody id="tablaProductos" class="divide-y divide-[#18181b]">
+            <tr><td colspan="9" class="py-10 text-center text-gray-600">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL: Producto -->
+  <div id="modalProducto" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#09090b] border border-[#27272a] rounded-2xl w-full max-w-lg">
+      <div class="flex items-center justify-between p-5 border-b border-[#18181b]">
+        <h3 class="font-bold text-white" id="modalTitle">Nuevo Producto</h3>
+        <button onclick="cerrarModal()" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="p-5 space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Marca *</label>
+            <input id="p_marca" type="text" placeholder="Ej: FIRESTONE" class="input-dark uppercase"/>
+          </div>
+          <div>
+            <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Modelo</label>
+            <input id="p_modelo" type="text" placeholder="Ej: F-600" class="input-dark uppercase"/>
+          </div>
+        </div>
+        <div>
+          <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Descripcion *</label>
+          <input id="p_desc" type="text" placeholder="Ej: 205/65 R15 95H" class="input-dark"/>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Codigo</label>
+            <input id="p_codigo" type="text" placeholder="SKU-001" class="input-dark uppercase"/>
+          </div>
+          <div>
+            <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Categoria *</label>
+            <div class="flex gap-2">
+              <select id="p_categoria" class="input-dark flex-1" required>
+                <option value="">Seleccionar...</option>
+              </select>
+              <button onclick="abrirNuevaCategoria()" class="bg-green-600 hover:bg-green-700 text-white px-3 rounded-lg" title="Crear categoria"><i class="fas fa-plus text-xs"></i></button>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-4 gap-4">
+          <div>
+            <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">P. Costo *</label>
+            <input id="p_costo" type="number" value="0" min="0" step="0.01" class="input-dark"/>
+          </div>
+          <div>
+            <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">% Ganancia *</label>
+            <input id="p_ganancia" type="number" value="30" min="0" max="500" class="input-dark"/>
+          </div>
+          <div>
+            <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Stock Real</label>
+            <input id="p_stock_real" type="number" value="0" min="0" class="input-dark"/>
+          </div>
+          <div>
+            <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Stock Local</label>
+            <input id="p_stock_local" type="number" value="0" min="0" class="input-dark"/>
+          </div>
+        </div>
+        <div class="bg-[#18181b] rounded-lg p-3 flex items-center justify-between">
+          <span class="text-xs text-gray-400">Precio de Venta</span>
+          <span id="p_venta_preview" class="text-xl font-black text-green-400">$0</span>
+        </div>
+      </div>
+      <div class="flex gap-3 p-5 border-t border-[#18181b]">
+        <button onclick="cerrarModal()" class="flex-1 btn-ghost">Cancelar</button>
+        <button onclick="guardarProducto()" class="flex-1 btn-red"><i class="fas fa-save mr-2"></i> GUARDAR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Categorias -->
+  <div id="modalCategorias" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#09090b] border border-[#27272a] rounded-2xl w-full max-w-md">
+      <div class="flex items-center justify-between p-5 border-b border-[#18181b]">
+        <h3 class="font-bold text-white">Categorias</h3>
+        <button onclick="cerrarCategorias()" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="p-5">
+        <div class="flex gap-2 mb-4">
+          <input id="nuevaCatNombre" type="text" placeholder="Nombre de nueva categoria..." class="input-dark flex-1"/>
+          <button onclick="crearCategoria()" class="bg-green-600 hover:bg-green-700 text-white px-4 rounded-lg"><i class="fas fa-plus"></i></button>
+        </div>
+        <div id="listaCategorias" class="space-y-2 max-h-64 overflow-y-auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const currency = n => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(n || 0);
+    let editId = null;
+    let categorias = [];
+
+    // ─── INIT ───
+    async function init() {
+      await cargarCategorias();
+      await buscar();
+    }
+
+    // ─── CATEGORIAS ───
+    async function cargarCategorias() {
+      try {
+        const r = await fetch('/api/v1/articulos/categorias');
+        categorias = await r.json();
+        actualizarSelectCategorias();
+      } catch(e) { console.error(e); }
+    }
+
+    function actualizarSelectCategorias() {
+      const sel = document.getElementById('p_categoria');
+      const filtro = document.getElementById('filtroCategoria');
+      sel.innerHTML = '<option value="">Seleccionar...</option>' + categorias.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join('');
+      filtro.innerHTML = '<option value="">Todas las categorias</option>' + categorias.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join('');
+    }
+
+    async function crearCategoria() {
+      const nombre = document.getElementById('nuevaCatNombre').value.trim();
+      if (!nombre) return Swal.fire({icon:'warning',title:'Ingresa un nombre',background:'#09090b',color:'#fff'});
+      try {
+        const r = await fetch('/api/v1/articulos/categorias', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({nombre})
+        });
+        if (r.ok) {
+          document.getElementById('nuevaCatNombre').value = '';
+          await cargarCategorias();
+          Swal.fire({icon:'success',title:'Categoria creada',timer:1500,showConfirmButton:false,background:'#09090b',color:'#fff'});
+        } else {
+          const d = await r.json();
+          Swal.fire({icon:'error',title:d.detail || 'Error',background:'#09090b',color:'#fff'});
+        }
+      } catch(e) { Swal.fire({icon:'error',title:'Error',background:'#09090b',color:'#fff'}); }
+    }
+
+    async function eliminarCategoria(id, nombre) {
+      const result = await Swal.fire({
+        title: '¿Eliminar categoria?',
+        text: `"${nombre}" se eliminara`,
+        icon: 'warning', showCancelButton: true,
+        confirmButtonColor: '#dc2626', cancelButtonColor: '#6b7280',
+        background: '#09090b', color: '#fff',
+        confirmButtonText: 'Eliminar', cancelButtonText: 'Cancelar'
+      });
+      if (!result.isConfirmed) return;
+      try {
+        await fetch(`/api/v1/articulos/categorias/${id}`, {method:'DELETE'});
+        await cargarCategorias();
+      } catch(e) {}
+    }
+
+    function abrirCategorias() {
+      document.getElementById('modalCategorias').classList.remove('hidden');
+      const lista = document.getElementById('listaCategorias');
+      lista.innerHTML = categorias.length ? categorias.map(c => `
+        <div class="flex items-center justify-between bg-[#18181b] rounded-lg px-4 py-2">
+          <span class="text-sm">${c.nombre}</span>
+          <button onclick="eliminarCategoria(${c.id},'${c.nombre}')" class="text-red-500 hover:text-red-400 text-xs"><i class="fas fa-trash"></i></button>
+        </div>`).join('') : '<p class="text-gray-600 text-sm text-center py-4">Sin categorias</p>';
+    }
+
+    function cerrarCategorias() { document.getElementById('modalCategorias').classList.add('hidden'); }
+    function abrirNuevaCategoria() { document.getElementById('nuevaCatNombre').focus(); }
+
+    // ─── PRODUCTOS ───
+    let searchTimer;
+    function buscar() {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(cargarProductos, 300);
+    }
+
+    async function cargarProductos() {
+      const q = document.getElementById('buscador').value;
+      const cat = document.getElementById('filtroCategoria').value;
+      try {
+        const url = new URL('/api/v1/articulos', window.location.origin);
+        if (q) url.searchParams.set('buscar', q);
+        if (cat) url.searchParams.set('categoria', cat);
+        const r = await fetch(url);
+        const d = await r.json();
+        const prods = d.data || [];
+        const tbody = document.getElementById('tablaProductos');
+        if (!prods.length) { tbody.innerHTML = '<tr><td colspan="8" class="py-10 text-center text-gray-600">Sin productos</td></tr>'; return; }
+        tbody.innerHTML = prods.map(p => {
+          const margen = p.precio_costo > 0 ? Math.round(((p.precio_venta - p.precio_costo) / p.precio_costo * 100)) : 0;
+          const catBadge = p.categoria ? `<span class="badge-cat">${p.categoria}</span>` : '<span class="text-gray-600 text-xs">Sin categoria</span>';
+          const stockRealClass = p.stock_real > 5 ? 'text-green-400' : p.stock_real > 0 ? 'text-yellow-400' : 'text-red-400';
+          const stockLocalClass = p.stock_local > 5 ? 'text-green-400' : p.stock_local > 0 ? 'text-yellow-400' : 'text-red-400';
+          return `<tr class="hover:bg-[#18181b] transition">
+            <td class="py-3 px-4 text-xs font-mono text-gray-400">${p.codigo || '—'}</td>
+            <td class="py-3 px-4">
+              <p class="font-semibold text-sm">${p.marca} ${p.modelo || ''}</p>
+              <p class="text-xs text-gray-500">${p.descripcion}</p>
+            </td>
+            <td class="py-3 px-4">${catBadge}</td>
+            <td class="py-3 px-4 text-right font-mono text-gray-400 text-xs">${currency(p.precio_costo)}</td>
+            <td class="py-3 px-4 text-right"><span class="text-xs ${margen > 0 ? 'text-green-400' : 'text-red-400'}">${margen}%</span></td>
+            <td class="py-3 px-4 text-right font-mono text-green-400 font-bold text-sm">${currency(p.precio_venta)}</td>
+            <td class="py-3 px-4 text-center"><span class="${stockRealClass} font-bold text-sm">${p.stock_real}</span></td>
+            <td class="py-3 px-4 text-center"><span class="${stockLocalClass} font-bold text-sm">${p.stock_local}</span></td>
+            <td class="py-3 px-4 text-center">
+              <button onclick="editarProducto(${p.id})" class="text-blue-400 hover:text-blue-300 mx-1"><i class="fas fa-edit"></i></button>
+              <button onclick="eliminarProducto(${p.id})" class="text-red-500 hover:text-red-400 mx-1"><i class="fas fa-trash"></i></button>
+            </td>
+          </tr>`;
+        }).join('');
+      } catch(e) { document.getElementById('tablaProductos').innerHTML = '<tr><td colspan="8" class="py-10 text-center text-red-500">Error</td></tr>'; }
+    }
+
+    async function editarProducto(id) {
+      try {
+        const r = await fetch(`/api/v1/articulos/${id}`);
+        const p = await r.json();
+        editId = id;
+        document.getElementById('modalTitle').textContent = 'Editar Producto';
+        document.getElementById('p_marca').value = p.marca || '';
+        document.getElementById('p_modelo').value = p.modelo || '';
+        document.getElementById('p_desc').value = p.descripcion || '';
+        document.getElementById('p_codigo').value = p.codigo || '';
+        document.getElementById('p_categoria').value = p.categoria || '';
+        document.getElementById('p_costo').value = p.precio_costo || 0;
+        const margenCalc = p.precio_costo > 0 ? Math.round(((p.precio_venta - p.precio_costo) / p.precio_costo * 100)) : 30;
+        document.getElementById('p_ganancia').value = margenCalc;
+        document.getElementById('p_stock_real').value = p.stock_real || 0;
+        document.getElementById('p_stock_local').value = p.stock_local || 0;
+        calcularPrecioVenta();
+        document.getElementById('modalProducto').classList.remove('hidden');
+      } catch(e) { Swal.fire({icon:'error',title:'Error al cargar',background:'#09090b',color:'#fff'}); }
+    }
+
+    function abrirModalProducto() {
+      editId = null;
+      document.getElementById('modalTitle').textContent = 'Nuevo Producto';
+      ['p_marca','p_modelo','p_desc','p_codigo'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('p_categoria').value = '';
+      document.getElementById('p_costo').value = 0;
+      document.getElementById('p_ganancia').value = 30;
+      document.getElementById('p_stock_real').value = 0;
+      document.getElementById('p_stock_local').value = 0;
+      document.getElementById('p_venta_preview').textContent = '$0';
+      document.getElementById('modalProducto').classList.remove('hidden');
+    }
+
+    function cerrarModal() { document.getElementById('modalProducto').classList.add('hidden'); editId = null; }
+
+    function calcularPrecioVenta() {
+      const costo = parseFloat(document.getElementById('p_costo').value) || 0;
+      const margen = parseFloat(document.getElementById('p_ganancia').value) || 0;
+      const venta = costo * (1 + margen / 100);
+      document.getElementById('p_venta_preview').textContent = currency(venta);
+    }
+
+    document.getElementById('p_costo').addEventListener('input', calcularPrecioVenta);
+    document.getElementById('p_ganancia').addEventListener('input', calcularPrecioVenta);
+
+    async function guardarProducto() {
+      const marca = document.getElementById('p_marca').value.trim();
+      const desc = document.getElementById('p_desc').value.trim();
+      const categoria = document.getElementById('p_categoria').value;
+      const costo = parseFloat(document.getElementById('p_costo').value) || 0;
+
+      if (!marca) return Swal.fire({icon:'warning',title:'La marca es obligatoria',background:'#09090b',color:'#fff'});
+      if (!desc) return Swal.fire({icon:'warning',title:'La descripcion es obligatoria',background:'#09090b',color:'#fff'});
+      if (!categoria) return Swal.fire({icon:'warning',title:'La categoria es obligatoria',background:'#09090b',color:'#fff'});
+
+      const margen = parseFloat(document.getElementById('p_ganancia').value) || 30;
+      const venta = costo * (1 + margen / 100);
+
+      const payload = {
+        marca: marca.toUpperCase(),
+        modelo: document.getElementById('p_modelo').value.toUpperCase(),
+        descripcion: desc,
+        codigo: document.getElementById('p_codigo').value.toUpperCase(),
+        categoria: categoria,
+        precio_costo: costo,
+        precio_venta: venta,
+        stock_real: parseInt(document.getElementById('p_stock_real').value) || 0,
+        stock_local: parseInt(document.getElementById('p_stock_local').value) || 0,
+      };
+
+      try {
+        const url = editId ? `/api/v1/articulos/${editId}` : '/api/v1/articulos';
+        const method = editId ? 'PUT' : 'POST';
+        const r = await fetch(url, {method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+        if (r.ok) {
+          cerrarModal();
+          await buscar();
+          Swal.fire({icon:'success',title:'Guardado',timer:1500,showConfirmButton:false,background:'#09090b',color:'#fff'});
+        }
+      } catch(e) { Swal.fire({icon:'error',title:'Error',background:'#09090b',color:'#fff'}); }
+    }
+
+    async function eliminarProducto(id) {
+      const result = await Swal.fire({
+        title: '¿Eliminar producto?',
+        text: 'Esta accion no se puede deshacer',
+        icon: 'warning', showCancelButton: true,
+        confirmButtonColor: '#dc2626', cancelButtonColor: '#6b7280',
+        background: '#09090b', color: '#fff',
+        confirmButtonText: 'Eliminar', cancelButtonText: 'Cancelar'
+      });
+      if (!result.isConfirmed) return;
+      try {
+        await fetch(`/api/v1/articulos/${id}`, {method:'DELETE'});
+        await buscar();
+      } catch(e) {}
+    }
+
+    init();
+  </script>
+</body>
+</html>

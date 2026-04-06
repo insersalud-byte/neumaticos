@@ -4,7 +4,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://72.60.4.111:8000/api/{uri}"
+      "destination": "http://72.60.4.111:8000/api/$1"
     }
   ]
 }
