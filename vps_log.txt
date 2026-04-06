@@ -4,9 +4,9 @@ Welcome to Ubuntu 24.04.4 LTS (GNU/Linux 6.8.0-90-generic x86_64)
  * Management:     https://landscape.canonical.com
  * Support:        https://ubuntu.com/pro
 
- System information as of Mon Apr  6 21:45:07 UTC 2026
+ System information as of Mon Apr  6 22:09:52 UTC 2026
 
-  System load:  0.02               Processes:             142
+  System load:  0.1                Processes:             143
   Usage of /:   14.0% of 95.82GB   Users logged in:       0
   Memory usage: 22%                IPv4 address for eth0: 72.60.4.111
   Swap usage:   0%                 IPv6 address for eth0: 2a02:4780:14:6a4::1
@@ -29,46 +29,56 @@ See https://ubuntu.com/esm or run: sudo pro status
 5 updates could not be installed automatically. For more details,
 see /var/log/unattended-upgrades/unattended-upgrades.log
 
-Last login: Mon Apr  6 21:45:08 2026 from 186.13.122.246
-[?2004hroot@srv947061:~# journalctl -u giorda.service -n 40 --no-pager
-[?2004lApr 06 21:45:28 srv947061 uvicorn[13048]:     with util.safe_reraise():
-Apr 06 21:45:28 srv947061 uvicorn[13048]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
-Apr 06 21:45:28 srv947061 uvicorn[13048]:     raise exc_value.with_traceback(exc_tb)
-Apr 06 21:45:28 srv947061 uvicorn[13048]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4448, in _flush
-Apr 06 21:45:28 srv947061 uvicorn[13048]:     flush_context.execute()
-Apr 06 21:45:28 srv947061 uvicorn[13048]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
-Apr 06 21:45:28 srv947061 uvicorn[13048]:     rec.execute(self)
-Apr 06 21:45:28 srv947061 uvicorn[13048]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
-Apr 06 21:45:28 srv947061 uvicorn[13048]:     util.preloaded.orm_persistence.save_obj(
-Apr 06 21:45:28 srv947061 uvicorn[13048]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
-Apr 06 21:45:28 srv947061 uvicorn[13048]:     _emit_insert_statements(
-Apr 06 21:45:28 srv947061 uvicorn[13048]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/persistence.py", line 1233, in _emit_insert_statements
-Apr 06 21:45:28 srv947061 uvicorn[13048]:     result = connection.execute(
-Apr 06 21:45:28 srv947061 uvicorn[13048]:              ^^^^^^^^^^^^^^^^^^^
-Apr 06 21:45:28 srv947061 uvicorn[13048]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1418, in execute
-Apr 06 21:45:28 srv947061 uvicorn[13048]:     return meth(
-Apr 06 21:45:28 srv947061 uvicorn[13048]:            ^^^^^
-Apr 06 21:45:28 srv947061 uvicorn[13048]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 515, in _execute_on_connection
-Apr 06 21:45:28 srv947061 uvicorn[13048]:     return connection._execute_clauseelement(
-Apr 06 21:45:28 srv947061 uvicorn[13048]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Apr 06 21:45:28 srv947061 uvicorn[13048]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1640, in _execute_clauseelement
-Apr 06 21:45:28 srv947061 uvicorn[13048]:     ret = self._execute_context(
-Apr 06 21:45:28 srv947061 uvicorn[13048]:           ^^^^^^^^^^^^^^^^^^^^^^
-Apr 06 21:45:28 srv947061 uvicorn[13048]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
-Apr 06 21:45:28 srv947061 uvicorn[13048]:     return self._exec_single_context(
-Apr 06 21:45:28 srv947061 uvicorn[13048]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Apr 06 21:45:28 srv947061 uvicorn[13048]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
-Apr 06 21:45:28 srv947061 uvicorn[13048]:     self._handle_dbapi_exception(
-Apr 06 21:45:28 srv947061 uvicorn[13048]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
-Apr 06 21:45:28 srv947061 uvicorn[13048]:     raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-Apr 06 21:45:28 srv947061 uvicorn[13048]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
-Apr 06 21:45:28 srv947061 uvicorn[13048]:     self.dialect.do_execute(
-Apr 06 21:45:28 srv947061 uvicorn[13048]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 941, in do_execute
-Apr 06 21:45:28 srv947061 uvicorn[13048]:     cursor.execute(statement, parameters)
-Apr 06 21:45:28 srv947061 uvicorn[13048]: sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column "activo" of relation "ventas" does not exist
-Apr 06 21:45:28 srv947061 uvicorn[13048]: LINE 1: INSERT INTO ventas (activo, cliente_id, cliente_nombre, clie...
-Apr 06 21:45:28 srv947061 uvicorn[13048]:                             ^
-Apr 06 21:45:28 srv947061 uvicorn[13048]: [SQL: INSERT INTO ventas (activo, cliente_id, cliente_nombre, cliente_telefono, vehiculo_patente, vehiculo_modelo, vehiculo_id, kilometraje, es_cotizacion, cotizacion_original_id, items, subtotal_neto, monto_bonificacion, alicuota_iva, total_venta, metodo_pago, coeficiente_id, monto_abonado, monto_debe, enviar_a_taller, observaciones, datos_cliente_snapshot) VALUES (%(activo)s, %(cliente_id)s, %(cliente_nombre)s, %(cliente_telefono)s, %(vehiculo_patente)s, %(vehiculo_modelo)s, %(vehiculo_id)s, %(kilometraje)s, %(es_cotizacion)s, %(cotizacion_original_id)s, %(items)s, %(subtotal_neto)s, %(monto_bonificacion)s, %(alicuota_iva)s, %(total_venta)s, %(metodo_pago)s, %(coeficiente_id)s, %(monto_abonado)s, %(monto_debe)s, %(enviar_a_taller)s, %(observaciones)s, %(datos_cliente_snapshot)s) RETURNING ventas.id, ventas.fecha_creacion]
-Apr 06 21:45:28 srv947061 uvicorn[13048]: [parameters: {'activo': True, 'cliente_id': 1, 'cliente_nombre': 'Test', 'cliente_telefono': '', 'vehiculo_patente': '', 'vehiculo_modelo': '', 'vehiculo_id': None, 'kilometraje': 0, 'es_cotizacion': True, 'cotizacion_original_id': None, 'items': '[]', 'subtotal_neto': 0, 'monto_bonificacion': 0, 'alicuota_iva': 0, 'total_venta': 0, 'metodo_pago': 'Efectivo', 'coeficiente_id': None, 'monto_abonado': 0, 'monto_debe': 0, 'enviar_a_taller': False, 'observaciones': '', 'datos_cliente_snapshot': '{"nombre": "Test", "telefono": ""}'}]
-Apr 06 21:45:28 srv947061 uvicorn[13048]: (Background on this error at: https://sqlalche.me/e/20/f405)
+Last login: Mon Apr  6 22:08:25 2026 from 186.13.122.246
+[?2004hroot@srv947061:~# journalctl -u giorda.service -n 50 --no-pager 2>&1 | tail -60
+[?2004lApr 06 22:09:37 srv947061 uvicorn[16193]:     result = context.run(func, *args)
+Apr 06 22:09:37 srv947061 uvicorn[16193]:              ^^^^^^^^^^^^^^^^^^^^^^^^
+Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/routers/articulos.py", line 150, in crear_categoria
+Apr 06 22:09:37 srv947061 uvicorn[16193]:     existente = db.query(Categoria).filter(Categoria.nombre.ilike(nombre)).first()
+Apr 06 22:09:37 srv947061 uvicorn[16193]:                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/query.py", line 2728, in first
+Apr 06 22:09:37 srv947061 uvicorn[16193]:     return self.limit(1)._iter().first()  # type: ignore
+Apr 06 22:09:37 srv947061 uvicorn[16193]:            ^^^^^^^^^^^^^^^^^^^^^
+Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/query.py", line 2827, in _iter
+Apr 06 22:09:37 srv947061 uvicorn[16193]:     result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+Apr 06 22:09:37 srv947061 uvicorn[16193]:                                                   ^^^^^^^^^^^^^^^^^^^^^
+Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2362, in execute
+Apr 06 22:09:37 srv947061 uvicorn[16193]:     return self._execute_internal(
+Apr 06 22:09:37 srv947061 uvicorn[16193]:            ^^^^^^^^^^^^^^^^^^^^^^^
+Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2247, in _execute_internal
+Apr 06 22:09:37 srv947061 uvicorn[16193]:     result: Result[Any] = compile_state_cls.orm_execute_statement(
+Apr 06 22:09:37 srv947061 uvicorn[16193]:                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/context.py", line 305, in orm_execute_statement
+Apr 06 22:09:37 srv947061 uvicorn[16193]:     result = conn.execute(
+Apr 06 22:09:37 srv947061 uvicorn[16193]:              ^^^^^^^^^^^^^
+Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1418, in execute
+Apr 06 22:09:37 srv947061 uvicorn[16193]:     return meth(
+Apr 06 22:09:37 srv947061 uvicorn[16193]:            ^^^^^
+Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 515, in _execute_on_connection
+Apr 06 22:09:37 srv947061 uvicorn[16193]:     return connection._execute_clauseelement(
+Apr 06 22:09:37 srv947061 uvicorn[16193]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1640, in _execute_clauseelement
+Apr 06 22:09:37 srv947061 uvicorn[16193]:     ret = self._execute_context(
+Apr 06 22:09:37 srv947061 uvicorn[16193]:           ^^^^^^^^^^^^^^^^^^^^^^
+Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+Apr 06 22:09:37 srv947061 uvicorn[16193]:     return self._exec_single_context(
+Apr 06 22:09:37 srv947061 uvicorn[16193]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+Apr 06 22:09:37 srv947061 uvicorn[16193]:     self._handle_dbapi_exception(
+Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+Apr 06 22:09:37 srv947061 uvicorn[16193]:     raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+Apr 06 22:09:37 srv947061 uvicorn[16193]:     self.dialect.do_execute(
+Apr 06 22:09:37 srv947061 uvicorn[16193]:   File "/var/www/neumaticos/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 941, in do_execute
+Apr 06 22:09:37 srv947061 uvicorn[16193]:     cursor.execute(statement, parameters)
+Apr 06 22:09:37 srv947061 uvicorn[16193]: sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column categorias.activo does not exist
+Apr 06 22:09:37 srv947061 uvicorn[16193]: LINE 1: ...rias.fecha_creacion AS categorias_fecha_creacion, categorias...
+Apr 06 22:09:37 srv947061 uvicorn[16193]:                                                              ^
+Apr 06 22:09:37 srv947061 uvicorn[16193]: [SQL: SELECT categorias.id AS categorias_id, categorias.nombre AS categorias_nombre, categorias.descripcion AS categorias_descripcion, categorias.fecha_creacion AS categorias_fecha_creacion, categorias.activo AS categorias_activo
+Apr 06 22:09:37 srv947061 uvicorn[16193]: FROM categorias
+Apr 06 22:09:37 srv947061 uvicorn[16193]: WHERE categorias.nombre ILIKE %(nombre_1)s
+Apr 06 22:09:37 srv947061 uvicorn[16193]:  LIMIT %(param_1)s]
+Apr 06 22:09:37 srv947061 uvicorn[16193]: [parameters: {'nombre_1': 'Test Categoria', 'param_1': 1}]
+Apr 06 22:09:37 srv947061 uvicorn[16193]: (Background on this error at: https://sqlalche.me/e/20/f405)
+Apr 06 22:09:44 srv947061 uvicorn[16193]: INFO:     186.13.122.246:37095 - "GET /api/v1/operaciones HTTP/1.1" 200 OK
 [?2004hroot@srv947061:~# 

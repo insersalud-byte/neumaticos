@@ -4,9 +4,9 @@ Welcome to Ubuntu 24.04.4 LTS (GNU/Linux 6.8.0-90-generic x86_64)
  * Management:     https://landscape.canonical.com
  * Support:        https://ubuntu.com/pro
 
- System information as of Mon Apr  6 21:45:07 UTC 2026
+ System information as of Mon Apr  6 22:08:23 UTC 2026
 
-  System load:  0.02               Processes:             142
+  System load:  0.08               Processes:             139
   Usage of /:   14.0% of 95.82GB   Users logged in:       0
   Memory usage: 22%                IPv4 address for eth0: 72.60.4.111
   Swap usage:   0%                 IPv6 address for eth0: 2a02:4780:14:6a4::1
@@ -29,19 +29,35 @@ See https://ubuntu.com/esm or run: sudo pro status
 5 updates could not be installed automatically. For more details,
 see /var/log/unattended-upgrades/unattended-upgrades.log
 
-Last login: Mon Apr  6 21:44:36 2026 from 186.13.122.246
-[?2004hroot@srv947061:~# systemctl restart giorda.service
-[?2004l[?2004hroot@srv947061:~# systemctl status giorda.service | head -12
+Last login: Mon Apr  6 21:45:42 2026 from 186.13.122.246
+[?2004hroot@srv947061:~# cd /var/www/neumaticos && git pull
+[?2004lremote: Enumerating objects: 26, done.[K
+remote: Counting objects:   3% (1/26)[Kremote: Counting objects:   7% (2/26)[Kremote: Counting objects:  11% (3/26)[Kremote: Counting objects:  15% (4/26)[Kremote: Counting objects:  19% (5/26)[Kremote: Counting objects:  23% (6/26)[Kremote: Counting objects:  26% (7/26)[Kremote: Counting objects:  30% (8/26)[Kremote: Counting objects:  34% (9/26)[Kremote: Counting objects:  38% (10/26)[Kremote: Counting objects:  42% (11/26)[Kremote: Counting objects:  46% (12/26)[Kremote: Counting objects:  50% (13/26)[Kremote: Counting objects:  53% (14/26)[Kremote: Counting objects:  57% (15/26)[Kremote: Counting objects:  61% (16/26)[Kremote: Counting objects:  65% (17/26)[Kremote: Counting objects:  69% (18/26)[Kremote: Counting objects:  73% (19/26)[Kremote: Counting objects:  76% (20/26)[Kremote: Counting objects:  80% (21/26)[Kremote: Counting objects:  84% (22/26)[Kremote: Counting objects:  88% (23/26)[Kremote: Counting objects:  92% (24/26)[Kremote: Counting objects:  96% (25/26)[Kremote: Counting objects: 100% (26/26)[Kremote: Counting objects: 100% (26/26), done.[K
+remote: Compressing objects:  25% (1/4)[Kremote: Compressing objects:  50% (2/4)[Kremote: Compressing objects:  75% (3/4)[Kremote: Compressing objects: 100% (4/4)[Kremote: Compressing objects: 100% (4/4), done.[K
+remote: Total 14 (delta 9), reused 14 (delta 9), pack-reused 0 (from 0)[K
+Unpacking objects:   7% (1/14)Unpacking objects:  14% (2/14)Unpacking objects:  21% (3/14)Unpacking objects:  28% (4/14)Unpacking objects:  35% (5/14)Unpacking objects:  42% (6/14)Unpacking objects:  50% (7/14)Unpacking objects:  57% (8/14)Unpacking objects:  64% (9/14)Unpacking objects:  71% (10/14)Unpacking objects:  78% (11/14)Unpacking objects:  85% (12/14)Unpacking objects:  92% (13/14)Unpacking objects: 100% (14/14)Unpacking objects: 100% (14/14), 6.41 KiB | 1.07 MiB/s, done.
+From https://github.com/insersalud-byte/neumaticos
+   5e90422..dfe9a5a  main       -> origin/main
+Updating 5e90422..dfe9a5a
+error: Your local changes to the following files would be overwritten by merge:
+	backend/models/models.py
+Please commit your changes or stash them before you merge.
+Aborting
+[?2004hroot@srv947061:/var/www/neumaticos# systemctl restart giorda.service
+[?2004l[?2004hroot@srv947061:/var/www/neumaticos# systemctl status giorda.service | head -15
 [?2004l● giorda.service - GiordaOS FastAPI
      Loaded: loaded (/etc/systemd/system/giorda.service; enabled; preset: enabled)
-     Active: active (running) since Mon 2026-04-06 21:45:08 UTC; 4s ago
-   Main PID: 13048 (uvicorn)
+     Active: active (running) since Mon 2026-04-06 22:08:35 UTC; 4s ago
+   Main PID: 16193 (uvicorn)
       Tasks: 6 (limit: 9483)
-     Memory: 64.2M (peak: 64.6M)
-        CPU: 1.115s
+     Memory: 64.1M (peak: 64.6M)
+        CPU: 949ms
      CGroup: /system.slice/giorda.service
-             └─13048 /var/www/neumaticos/backend/venv/bin/python3 /var/www/neumaticos/backend/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+             └─16193 /var/www/neumaticos/backend/venv/bin/python3 /var/www/neumaticos/backend/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
 
-Apr 06 21:45:08 srv947061 systemd[1]: Started giorda.service - GiordaOS FastAPI.
-Apr 06 21:45:09 srv947061 uvicorn[13048]: INFO:     Started server process [13048]
-[?2004hroot@srv947061:~# 
+Apr 06 22:08:35 srv947061 systemd[1]: Started giorda.service - GiordaOS FastAPI.
+Apr 06 22:08:36 srv947061 uvicorn[16193]: INFO:     Started server process [16193]
+Apr 06 22:08:36 srv947061 uvicorn[16193]: INFO:     Waiting for application startup.
+Apr 06 22:08:36 srv947061 uvicorn[16193]: INFO:     Application startup complete.
+Apr 06 22:08:36 srv947061 uvicorn[16193]: INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[?2004hroot@srv947061:/var/www/neumaticos# 

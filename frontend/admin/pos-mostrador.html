@@ -802,23 +802,24 @@
           ultimaVentaId = ventaId;
         }
         
-        const pdfUrl = `/api/v1/reportes/presupuesto/${ventaId}`;
-        
-        const link = document.createElement('a');
-        link.href = pdfUrl;
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
         Swal.close();
         
         const tel = document.getElementById('inpTelefono').value.replace(/\D/g, '');
+        const cliente = document.getElementById('inpCliente').value || 'Cliente';
+        const pdfUrl = `${window.location.origin}/api/v1/reportes/presupuesto/${ventaId}`;
+        
+        const mensaje = encodeURIComponent(
+          `¡Hola ${cliente}! 👋\n\n` +
+          `Te adjuntamos tu cotización de Giorda Neumáticos.\n\n` +
+          `📄 Link al PDF: ${pdfUrl}\n\n` +
+          `¿Tenés alguna consulta? Estamos para ayudarte.`
+        );
+        
         const num = tel ? `54${tel}` : '';
         
         Swal.fire({
-          title: 'PDF generado',
-          text: '¿Abrir WhatsApp para enviar el PDF?',
+          title: 'PDF listo',
+          html: `Link de la cotización:<br><a href="${pdfUrl}" target="_blank" class="text-blue-400 underline text-xs">${pdfUrl}</a>`,
           icon: 'success',
           showCancelButton: true,
           confirmButtonColor: '#25D366',
@@ -829,7 +830,7 @@
           cancelButtonText: 'Cerrar'
         }).then(result => {
           if (result.isConfirmed) {
-            window.open(`https://wa.me/${num}`, '_blank');
+            window.open(`https://wa.me/${num}?text=${mensaje}`, '_blank');
           }
         });
         
@@ -916,46 +917,31 @@
         return;
       }
       
-      Swal.fire({ title: 'Descargando PDF...', text: 'Preparando archivo', background: '#09090b', color: '#fff', showConfirmButton: false, allowOutsideClick: false });
+      const pdfUrl = `${window.location.origin}/api/v1/reportes/presupuesto/${id}`;
       
-      try {
-        const pdfUrl = `/api/v1/reportes/presupuesto/${id}`;
-        const response = await fetch(pdfUrl);
-        const blob = await response.blob();
-        
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${tipoDoc}_${id}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        
-        Swal.close();
-        
-        const mensaje = encodeURIComponent(
-          `¡Hola! Te enviamos tu ${tipoDoc} de Giorda Neumáticos.\n\n` +
-          `Encontrás el PDF adjunto en tus descargas.\n\n` +
-          `¿Tenés alguna consulta? Estamos para ayudarte.`
-        );
-        
-        Swal.fire({
-          title: 'PDF descargado',
-          text: 'El archivo está en tu carpeta de descargas. Adjuntalo en WhatsApp.',
-          icon: 'success',
-          showCancelButton: true,
-          confirmButtonColor: '#25D366',
-          cancelButtonColor: '#6b7280',
-          background: '#09090b',
-          color: '#fff',
-          confirmButtonText: '<i class="fab fa-whatsapp mr-1"></i> Abrir WhatsApp',
-          cancelButtonText: 'Cerrar'
-        }).then(result => {
-          if (result.isConfirmed) {
-            window.open(`https://wa.me/${num}?text=${mensaje}`, '_blank');
-          }
-        });
+      const mensaje = encodeURIComponent(
+        `¡Hola! 👋\n\n` +
+        `Te enviamos tu ${tipoDoc} de Giorda Neumáticos.\n\n` +
+        `📄 Link al PDF: ${pdfUrl}\n\n` +
+        `¿Tenés alguna consulta? Estamos para ayudarte.`
+      );
+      
+      Swal.fire({
+        title: 'PDF listo',
+        html: `Link de la ${tipoDoc}:<br><a href="${pdfUrl}" target="_blank" class="text-blue-400 underline text-xs">${pdfUrl}</a>`,
+        icon: 'success',
+        showCancelButton: true,
+        confirmButtonColor: '#25D366',
+        cancelButtonColor: '#6b7280',
+        background: '#09090b',
+        color: '#fff',
+        confirmButtonText: '<i class="fab fa-whatsapp mr-1"></i> Abrir WhatsApp',
+        cancelButtonText: 'Cerrar'
+      }).then(result => {
+        if (result.isConfirmed) {
+          window.open(`https://wa.me/${num}?text=${mensaje}`, '_blank');
+        }
+      });
         
       } catch(e) {
         Swal.close();
