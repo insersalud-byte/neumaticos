@@ -1,5 +1,6 @@
 import json
-from fastapi import APIRouter, Depends, HTTPException, Query
+import base64
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
 from core.database import get_db
@@ -396,6 +397,19 @@ def editar_producto_por_id(producto_id: int, data: dict, db: Session = Depends(g
     return {"message": "Producto actualizado"}
 
 
+@router.post("/admin/producto/{producto_id}/subir-imagen")
+async def subir_imagen_producto(producto_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    p = db.query(Producto).filter(Producto.id == producto_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    contenido = await file.read()
+    encoded = base64.b64encode(contenido).decode("utf-8")
+    mime = file.content_type or "image/jpeg"
+    p.foto_base64 = f"data:{mime};base64,{encoded}"
+    db.commit()
+    return {"message": "Imagen guardada", "producto_id": producto_id}
+
+
 @router.get("/admin/finanzas/resumen")
 def resumen_finanzas(db: Session = Depends(get_db)):
     from sqlalchemy import func as sqlfunc
@@ -428,11 +442,16 @@ def buscar_vehiculo(q: str = "", patente: str = "", db: Session = Depends(get_db
         Vehiculo.patente.ilike(f"%{search}%")
     ).limit(10).all()
     for v in vehiculos:
+        cliente_nombre = ""
+        if v.cliente_id:
+            cliente = db.query(Cliente).filter(Cliente.id == v.cliente_id).first()
+            if cliente:
+                cliente_nombre = cliente.nombre or ""
         resultados.append({
             "id": v.id,
             "patente": v.patente,
             "modelo": v.modelo,
-            "cliente_nombre": v.cliente_nombre or ""
+            "cliente_nombre": cliente_nombre
         })
     
     # Buscar en ingresos del taller (para patentes ya registradas)

@@ -256,7 +256,6 @@ def actualizar_articulo(articulo_id: int, data: dict, db: Session = Depends(get_
         a.precio_costo = data["precio_costo"]
         a.costo_base = data["precio_costo"]
     if "precio_venta" in data:
-        a.precio_venta = data["precio_venta"]
         a.precio_venta_contado = data["precio_venta"]
         a.precio_venta_final = data["precio_venta"]
     if "stock_real" in data:
