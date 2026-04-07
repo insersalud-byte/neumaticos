@@ -58,7 +58,7 @@ def serve_coeficientes():
 
 @app.get("/Backups_GiordaOS/{filename}")
 def serve_backup_file(filename: str):
-    backup_path = os.path.join(BASE_PATH, "..", "Backups_GiordaOS", filename)
+    backup_path = os.path.join(BASE_PATH, "Backups_GiordaOS", filename)
     if os.path.exists(backup_path):
         return FileResponse(backup_path)
     raise HTTPException(status_code=404, detail="Archivo no encontrado")
