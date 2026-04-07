@@ -286,7 +286,7 @@ def editar_producto(producto_id: int, data: dict, db: Session = Depends(get_db))
 @router.get("/servicios/buscar")
 def buscar_servicios(q: str = "", termino: str = "", db: Session = Depends(get_db)):
     search = q or termino
-    query = db.query(Servicio)
+    query = db.query(Servicio).filter(Servicio.activo == True)
     if search:
         query = query.filter(Servicio.nombre.ilike(f"%{search}%"))
     servicios = query.all()
@@ -299,10 +299,10 @@ def buscar_servicios(q: str = "", termino: str = "", db: Session = Depends(get_d
 
 @router.get("/servicios")
 def listar_servicios(db: Session = Depends(get_db)):
-    servicios = db.query(Servicio).all()
+    servicios = db.query(Servicio).filter(Servicio.activo == True).all()
     return [
         {"id": s.id, "nombre": s.nombre, "descripcion": s.descripcion or "",
-         "precio_sugerido": s.precio_sugerido or 0}
+         "precio_sugerido": s.precio_sugerido or 0, "precio": s.precio_sugerido or 0}
         for s in servicios
     ]
 

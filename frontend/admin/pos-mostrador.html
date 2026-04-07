@@ -241,7 +241,7 @@
           </div>
           <div class="relative">
             <input id="inpBusqueda" type="text" placeholder="Buscar por nombre, código o medida..." class="input-dark pr-10"
-              oninput="buscarProducto(this.value)" autocomplete="off"/>
+              oninput="buscarProducto(this.value)" onfocus="mostrarServiciosInicio()" autocomplete="off"/>
             <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 text-xs"></i>
             <div id="dropBusqueda" class="autocomplete-box hidden"></div>
           </div>
@@ -430,7 +430,7 @@
         <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold mb-3">Agregar Producto o Servicio</p>
         <div class="relative">
           <input id="editBusqueda" type="text" placeholder="Buscar por nombre, código o medida..." class="input-dark pr-10"
-            oninput="buscarProductoEdit(this.value)" autocomplete="off"/>
+            oninput="buscarProductoEdit(this.value)" onfocus="mostrarServiciosEdit()" autocomplete="off"/>
           <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 text-xs"></i>
           <div id="dropBusquedaEdit" class="autocomplete-box hidden"></div>
         </div>
@@ -553,16 +553,53 @@
     }
 
     // ─── PRODUCTO BUSQUEDA ────────────────────────────────
+    let todosServicios = [];
+
+    async function cargarServiciosCache() {
+      if (todosServicios.length) return;
+      try {
+        const r = await fetch('/api/v1/operaciones/servicios');
+        const data = await r.json();
+        const raw = Array.isArray(data) ? data : (data.data || []);
+        todosServicios = raw.map(s => ({
+          ...s,
+          _tipo: 'servicio',
+          _nombre: s.nombre || '',
+          _precio: s.precio_sugerido || s.precio || 0
+        }));
+      } catch(e) {}
+    }
+
+    async function mostrarServiciosInicio() {
+      const drop = document.getElementById('dropBusqueda');
+      const val = document.getElementById('inpBusqueda').value;
+      if (val.length > 0) return; // ya hay texto, el oninput se encarga
+      await cargarServiciosCache();
+      if (!todosServicios.length) return;
+      drop.innerHTML = '<div class="autocomplete-item text-[10px] text-gray-600 uppercase tracking-widest pb-1 border-b border-[#27272a] mb-1"><i class="fas fa-wrench mr-1"></i> Servicios disponibles</div>' +
+        todosServicios.map(x => {
+          const itemData = JSON.stringify(x).replace(/"/g, '&quot;');
+          return `<div class="autocomplete-item flex items-center gap-2" onclick="agregarItem(${itemData})">
+            <i class="fas fa-wrench text-orange-400 text-[11px] flex-shrink-0"></i>
+            <span class="font-bold flex-1 truncate">${x._nombre}</span>
+            <span class="mono text-green-400 text-xs">${currency(x._precio)}</span>
+            <span class="text-[10px] text-orange-400 ml-1">Servicio</span>
+          </div>`;
+        }).join('');
+      drop.classList.remove('hidden');
+    }
+
     let timerProd;
     async function buscarProducto(val) {
       clearTimeout(timerProd);
       const drop = document.getElementById('dropBusqueda');
+      if (val.length === 0) { mostrarServiciosInicio(); return; }
       if (val.length < 2) { drop.classList.add('hidden'); return; }
       timerProd = setTimeout(async () => {
         let prods = [];
         let servs = [];
 
-        // Fetch productos (independiente)
+        // Fetch productos
         try {
           const rProd = await fetch(`/api/v1/operaciones/admin/inventario?buscar=${encodeURIComponent(val)}`);
           const dataProd = await rProd.json();
@@ -575,7 +612,7 @@
           }));
         } catch(e) { console.warn('Error fetch productos:', e); }
 
-        // Fetch servicios (independiente)
+        // Fetch servicios
         try {
           const rServ = await fetch(`/api/v1/operaciones/servicios/buscar?termino=${encodeURIComponent(val)}`);
           const dataServ = await rServ.json();
@@ -588,7 +625,7 @@
           }));
         } catch(e) { console.warn('Error fetch servicios:', e); }
 
-        const all = [...prods, ...servs];
+        const all = [...servs, ...prods]; // servicios primero
 
         if (!all.length) {
           drop.innerHTML = `<div class="autocomplete-item text-gray-500"><i class="fas fa-search mr-2"></i>Sin resultados para "${val}"</div>`;
@@ -598,14 +635,12 @@
 
         drop.innerHTML = all.map(x => {
           const icon = x._tipo === 'servicio' ? 'fa-wrench text-orange-400' : 'fa-box text-blue-400';
-          const nombre = x._nombre;
-          const precio = x._precio;
           const stock = x._tipo === 'producto' ? ` <span class="text-gray-500 text-[10px]">(stock: ${x.stock_real ?? x.stock ?? 0})</span>` : '<span class="text-[10px] text-orange-400 ml-1">Servicio</span>';
           const itemData = JSON.stringify(x).replace(/"/g, '&quot;');
           return `<div class="autocomplete-item flex items-center gap-2" onclick="agregarItem(${itemData})">
             <i class="fas ${icon} text-[11px] flex-shrink-0"></i>
-            <span class="font-bold flex-1 truncate">${nombre}</span>
-            <span class="mono text-green-400 text-xs">${currency(precio)}</span>
+            <span class="font-bold flex-1 truncate">${x._nombre}</span>
+            <span class="mono text-green-400 text-xs">${currency(x._precio)}</span>
             ${stock}
           </div>`;
         }).join('');
@@ -1137,9 +1172,29 @@
       document.getElementById('editTotal').textContent = currency(total);
     }
 
+    async function mostrarServiciosEdit() {
+      const drop = document.getElementById('dropBusquedaEdit');
+      const val = document.getElementById('editBusqueda').value;
+      if (val.length > 0) return;
+      await cargarServiciosCache();
+      if (!todosServicios.length) return;
+      drop.innerHTML = '<div class="autocomplete-item text-[10px] text-gray-600 uppercase tracking-widest pb-1 border-b border-[#27272a] mb-1"><i class="fas fa-wrench mr-1"></i> Servicios disponibles</div>' +
+        todosServicios.map(x => {
+          const itemData = JSON.stringify(x).replace(/"/g, '&quot;');
+          return `<div class="autocomplete-item flex items-center gap-2" onclick="agregarItemEdit(${itemData})">
+            <i class="fas fa-wrench text-orange-400 text-[11px] flex-shrink-0"></i>
+            <span class="font-bold flex-1 truncate">${x._nombre}</span>
+            <span class="mono text-green-400 text-xs">${currency(x._precio)}</span>
+            <span class="text-[10px] text-orange-400 ml-1">Servicio</span>
+          </div>`;
+        }).join('');
+      drop.classList.remove('hidden');
+    }
+
     function buscarProductoEdit(val) {
       clearTimeout(window.timerProdEdit);
       const drop = document.getElementById('dropBusquedaEdit');
+      if (val.length === 0) { mostrarServiciosEdit(); return; }
       if (val.length < 2) { drop.classList.add('hidden'); return; }
       window.timerProdEdit = setTimeout(async () => {
         let prods = [];
@@ -1169,7 +1224,7 @@
           }));
         } catch(e) { console.warn('Error fetch servicios:', e); }
 
-        const all = [...prods, ...servs];
+        const all = [...servs, ...prods]; // servicios primero
 
         if (!all.length) {
           drop.innerHTML = `<div class="autocomplete-item text-gray-500"><i class="fas fa-search mr-2"></i>Sin resultados para "${val}"</div>`;
