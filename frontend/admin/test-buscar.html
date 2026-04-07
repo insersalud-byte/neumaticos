@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>Test Busqueda</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-10">
+  <h1 class="text-2xl mb-4">Test de Busqueda</h1>
+  
+  <div class="mb-4">
+    <input id="testInput" type="text" placeholder="Escribí algo..." 
+           class="bg-gray-800 border border-gray-600 rounded px-4 py-2 w-96"
+           oninput="testBuscar(this.value)"/>
+  </div>
+  
+  <div id="result" class="bg-gray-800 rounded p-4 min-h-20">
+    Escribí algo arriba...
+  </div>
+
+  <script>
+    const currency = n => '$' + (n || 0).toLocaleString('es-AR');
+    
+    async function testBuscar(val) {
+      const result = document.getElementById('result');
+      
+      if (val.length < 2) {
+        result.innerHTML = 'Escribí al menos 2 caracteres...';
+        return;
+      }
+      
+      result.innerHTML = 'Buscando...';
+      
+      try {
+        console.log('Buscando:', val);
+        
+        const [rProd, rServ] = await Promise.all([
+          fetch(`/api/v1/operaciones/admin/inventario?buscar=${encodeURIComponent(val)}`),
+          fetch(`/api/v1/operaciones/servicios/buscar?termino=${encodeURIComponent(val)}`)
+        ]);
+        
+        console.log('Status:', rProd.status, rServ.status);
+        
+        const dataProd = await rProd.json();
+        const servs = await rServ.json();
+        
+        console.log('Productos:', dataProd);
+        console.log('Servicios:', servs);
+        
+        const prods = Array.isArray(dataProd) ? dataProd : (dataProd.data || []);
+        
+        let html = `<p class="mb-2">Productos encontrados: ${prods.length}</p>`;
+        html += `<p class="mb-4">Servicios encontrados: ${servs.length || 0}</p>`;
+        
+        if (prods.length > 0) {
+          html += '<p class="font-bold mt-4">Productos:</p><ul>';
+          prods.forEach(p => {
+            html += `<li>- ${p.descripcion || p.marca || 'Sin nombre'}: ${currency(p.precio_venta_final)}</li>`;
+          });
+          html += '</ul>';
+        }
+        
+        if (servs && servs.length > 0) {
+          html += '<p class="font-bold mt-4">Servicios:</p><ul>';
+          servs.forEach(s => {
+            html += `<li>- ${s.nombre}: ${currency(s.precio)}</li>`;
+          });
+          html += '</ul>';
+        }
+        
+        result.innerHTML = html;
+        
+      } catch(e) {
+        console.error('Error:', e);
+        result.innerHTML = `<p class="text-red-400">Error: ${e.message}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>
