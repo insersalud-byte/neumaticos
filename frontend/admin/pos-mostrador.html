@@ -953,6 +953,9 @@
           const telDisplay = tel ? `<span class="text-xs text-gray-500 ml-2"><i class="fas fa-phone text-[8px] mr-1"></i>${tel}</span>` : '';
           const tipoDoc = c.es_cotizacion ? 'Cotización' : 'Venta';
           return `<div class="bg-[#0f0f0f] border border-[#27272a] rounded-xl p-4 flex items-center gap-3">
+            <button onclick="abrirEditCotizacion(${c.id})" class="text-gray-500 hover:text-yellow-400 transition" title="Editar / Convertir a Venta">
+              <i class="fas fa-pen text-sm"></i>
+            </button>
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1 flex-wrap">
                 <p class="font-bold text-white text-sm">${c.cliente_nombre || 'Anón'}</p>
@@ -969,7 +972,6 @@
               <button onclick="verPdfCotizacion(${c.id})" class="bg-blue-600/30 hover:bg-blue-600/50 text-blue-400 py-1.5 px-3 rounded-lg transition text-xs" title="Ver PDF">
                 <i class="fas fa-file-pdf mr-1"></i> PDF
               </button>
-              <button onclick="abrirEditCotizacion(${c.id})" class="btn-red text-xs py-1.5 px-3"><i class="fas fa-edit mr-1"></i> Editar</button>
               <button onclick="eliminarCotizacion(${c.id}, ${c.es_cotizacion ? 'true' : 'false'})" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 py-1.5 px-3 rounded-lg transition" title="Eliminar">
                 <i class="fas fa-trash text-xs"></i>
               </button>
