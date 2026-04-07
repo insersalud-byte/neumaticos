@@ -974,13 +974,6 @@
           window.open(`https://wa.me/${num}?text=${mensaje}`, '_blank');
         }
       });
-        
-      } catch(e) {
-        Swal.close();
-        window.open(`/api/v1/reportes/presupuesto/${id}`, '_blank');
-        const mensaje = encodeURIComponent(`¡Hola! Te enviamos tu ${tipoDoc} de Giorda Neumáticos. ¿Tenés alguna consulta?`);
-        window.open(`https://wa.me/${num}?text=${mensaje}`, '_blank');
-      }
     }
 
     function cerrarCotizaciones() {
