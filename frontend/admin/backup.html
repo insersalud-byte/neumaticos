@@ -77,6 +77,10 @@
       <button onclick="hacerBackup()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2.5 rounded-xl flex items-center gap-2 transition">
         <i class="fas fa-download"></i> HACER BACKUP
       </button>
+      <label class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold px-6 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition">
+        <i class="fas fa-upload"></i> RESTORE
+        <input type="file" id="restoreFile" accept=".zip,.sql,.db" class="hidden" onchange="subirYRestaurar(this.files[0])">
+      </label>
     </div>
 
     <!-- Info -->
@@ -230,6 +234,45 @@
 
     function descargarBackup(nombre) {
       window.open(`/Backups_GiordaOS/${nombre}`, '_blank');
+    }
+
+    async function subirYRestaurar(file) {
+      if (!file) return;
+      
+      const result = await Swal.fire({
+        title: '¿Restaurar desde archivo?',
+        text: `Se reemplazarán todos los datos actuales con: ${file.name}`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        background: '#0f172a',
+        color: '#fff',
+        confirmButtonText: 'Sí, restaurar',
+        cancelButtonText: 'Cancelar'
+      });
+      if (!result.isConfirmed) {
+        document.getElementById('restoreFile').value = '';
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('archivo', file);
+
+      try {
+        const res = await fetch('/api/v1/backup/restaurar', {
+          method: 'POST',
+          body: formData
+        });
+        if (res.ok) {
+          await Swal.fire({icon:'success', title:'Restaurado', text:'Datos restaurados correctamente. Recargá la página.', background:'#0f172a', color:'#fff', timer:3000, showConfirmButton:false});
+        } else {
+          throw new Error('Error');
+        }
+      } catch(e) {
+        Swal.fire({icon:'error', title:'Error', text:'No se pudo restaurar el backup', background:'#0f172a', color:'#fff'});
+      }
+      document.getElementById('restoreFile').value = '';
     }
 
     function formatBytes(bytes) {
