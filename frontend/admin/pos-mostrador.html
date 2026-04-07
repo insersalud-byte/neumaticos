@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>POS Mostrador | GiordaOS</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/admin/auth-guard.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
@@ -513,7 +514,7 @@
           const drop = document.getElementById('dropCliente');
           if (!data.length) { drop.classList.add('hidden'); return; }
           drop.innerHTML = data.map(c =>
-            `<div class="autocomplete-item" onclick="selCliente(${c.id},'${(c.nombre||'').replace(/'/g,"\\'")}','${c.telefono||''}')">
+            `<div class="autocomplete-item" data-id="${c.id}" data-nombre="${(c.nombre||'').replace(/"/g,'&quot;')}" data-tel="${c.telefono||''}" onclick="selClienteEl(this)">
               <span class="font-bold">${c.nombre}</span>
               <span class="text-gray-600 text-xs ml-2">${c.telefono || ''}</span>
             </div>`
@@ -526,8 +527,12 @@
     function selCliente(id, nombre, tel) {
       clienteId = id;
       document.getElementById('inpCliente').value = nombre;
-      document.getElementById('inpTelefono').value = tel;
+      document.getElementById('inpTelefono').value = (tel || '').trim();
       document.getElementById('dropCliente').classList.add('hidden');
+    }
+
+    function selClienteEl(el) {
+      selCliente(el.dataset.id, el.dataset.nombre, el.dataset.tel);
     }
 
     // ─── PATENTE LOOKUP ───────────────────────────────────
@@ -550,61 +555,62 @@
     // ─── PRODUCTO BUSQUEDA ────────────────────────────────
     let timerProd;
     async function buscarProducto(val) {
-      console.log('buscarProducto called with:', val);
       clearTimeout(timerProd);
       const drop = document.getElementById('dropBusqueda');
-      console.log('drop element:', drop);
       if (val.length < 2) { drop.classList.add('hidden'); return; }
       timerProd = setTimeout(async () => {
+        let prods = [];
+        let servs = [];
+
+        // Fetch productos (independiente)
         try {
-          const [rProd, rServ] = await Promise.all([
-            fetch(`/api/v1/operaciones/admin/inventario?buscar=${encodeURIComponent(val)}`),
-            fetch(`/api/v1/operaciones/servicios/buscar?termino=${encodeURIComponent(val)}`)
-          ]);
+          const rProd = await fetch(`/api/v1/operaciones/admin/inventario?buscar=${encodeURIComponent(val)}`);
           const dataProd = await rProd.json();
-          const servs = await rServ.json();
-          const prods = Array.isArray(dataProd) ? dataProd : (dataProd.data || []);
-          console.log('dataProd:', dataProd);
-          console.log('servs:', servs);
-          
-          let all = [];
-          
-          // Agregar productos
-          if (prods && prods.length > 0) {
-            all = [...all, ...prods.map(p => ({ ...p, _tipo: 'producto' }))];
-          }
-          
-          // Agregar servicios (siempre aparecen si hay busqueda)
-          if (servs && servs.length > 0) {
-            all = [...all, ...servs.map(s => ({ ...s, _tipo: 'servicio' }))];
-          }
-          
-          // Si no hay resultados, mostrar mensaje
-          if (!all.length) {
-            drop.innerHTML = `<div class="autocomplete-item text-gray-500">Sin resultados</div>`;
-            drop.classList.remove('hidden');
-            return;
-          }
-          
-          drop.innerHTML = all.map(x => {
-            const icon = x._tipo === 'servicio' ? 'fa-wrench text-orange-400' : 'fa-box text-blue-400';
-            const nombre = x.descripcion || x.nombre || '';
-            const precio = x.precio_venta || x.precio || x.precio_sugerido || 0;
-            const stock = x._tipo === 'producto' ? ` <span class="text-gray-600">(${x.stock ?? 0})</span>` : '';
-            const itemJson = JSON.stringify(x).replace(/"/g, '&quot;');
-            return `<div class="autocomplete-item" onclick="agregarItem(${itemJson})">
-              <i class="fas ${icon} text-[10px] mr-2"></i>
-              <span class="font-bold flex-1 truncate">${nombre}</span>
-              <span class="mono text-green-400 ml-2 text-xs">${currency(precio)}</span>
-              ${stock}
-            </div>`;
-          }).join('');
+          const raw = Array.isArray(dataProd) ? dataProd : (dataProd.data || []);
+          prods = raw.map(p => ({
+            ...p,
+            _tipo: 'producto',
+            _nombre: p.descripcion || p.nombre || '',
+            _precio: p.precio_venta_contado || p.precio_venta_final || p.precio_venta || 0
+          }));
+        } catch(e) { console.warn('Error fetch productos:', e); }
+
+        // Fetch servicios (independiente)
+        try {
+          const rServ = await fetch(`/api/v1/operaciones/servicios/buscar?termino=${encodeURIComponent(val)}`);
+          const dataServ = await rServ.json();
+          const rawServ = Array.isArray(dataServ) ? dataServ : [];
+          servs = rawServ.map(s => ({
+            ...s,
+            _tipo: 'servicio',
+            _nombre: s.nombre || s.descripcion || '',
+            _precio: s.precio_sugerido || s.precio || 0
+          }));
+        } catch(e) { console.warn('Error fetch servicios:', e); }
+
+        const all = [...prods, ...servs];
+
+        if (!all.length) {
+          drop.innerHTML = `<div class="autocomplete-item text-gray-500"><i class="fas fa-search mr-2"></i>Sin resultados para "${val}"</div>`;
           drop.classList.remove('hidden');
-        } catch(e) { 
-          console.error('Error busqueda:', e);
-          drop.classList.add('hidden');
+          return;
         }
-      }, 300);
+
+        drop.innerHTML = all.map(x => {
+          const icon = x._tipo === 'servicio' ? 'fa-wrench text-orange-400' : 'fa-box text-blue-400';
+          const nombre = x._nombre;
+          const precio = x._precio;
+          const stock = x._tipo === 'producto' ? ` <span class="text-gray-500 text-[10px]">(stock: ${x.stock_real ?? x.stock ?? 0})</span>` : '<span class="text-[10px] text-orange-400 ml-1">Servicio</span>';
+          const itemData = JSON.stringify(x).replace(/"/g, '&quot;');
+          return `<div class="autocomplete-item flex items-center gap-2" onclick="agregarItem(${itemData})">
+            <i class="fas ${icon} text-[11px] flex-shrink-0"></i>
+            <span class="font-bold flex-1 truncate">${nombre}</span>
+            <span class="mono text-green-400 text-xs">${currency(precio)}</span>
+            ${stock}
+          </div>`;
+        }).join('');
+        drop.classList.remove('hidden');
+      }, 280);
     }
 
     // ─── ITEM LIBRE ─────────────────────────────────────────
@@ -637,12 +643,14 @@
     function agregarItem(item) {
       document.getElementById('dropBusqueda').classList.add('hidden');
       document.getElementById('inpBusqueda').value = '';
-      const precio = item.precio_venta || item.precio || 0;
+      // Usar campos normalizados (_precio, _nombre) si existen, fallback a campos originales
+      const precio = item._precio || item.precio_venta_contado || item.precio_venta_final || item.precio_venta || item.precio_sugerido || item.precio || 0;
+      const descripcion = item._nombre || item.descripcion || item.nombre || 'Sin nombre';
       const existing = carrito.find(c => c.id === item.id && c._tipo === item._tipo);
       if (existing) {
         existing.qty++;
       } else {
-        carrito.push({ id: item.id, _tipo: item._tipo, descripcion: item.descripcion || item.nombre, precio, qty: 1 });
+        carrito.push({ id: item.id, _tipo: item._tipo, descripcion, precio, qty: 1 });
       }
       renderCarrito();
     }
@@ -1131,46 +1139,71 @@
 
     function buscarProductoEdit(val) {
       clearTimeout(window.timerProdEdit);
-      if (val.length < 2) { document.getElementById('dropBusquedaEdit').classList.add('hidden'); return; }
+      const drop = document.getElementById('dropBusquedaEdit');
+      if (val.length < 2) { drop.classList.add('hidden'); return; }
       window.timerProdEdit = setTimeout(async () => {
+        let prods = [];
+        let servs = [];
+
         try {
-          const [rProd, rServ] = await Promise.all([
-            fetch(`/api/v1/operaciones/admin/inventario?buscar=${encodeURIComponent(val)}`),
-            fetch(`/api/v1/operaciones/servicios/buscar?termino=${encodeURIComponent(val)}`)
-          ]);
+          const rProd = await fetch(`/api/v1/operaciones/admin/inventario?buscar=${encodeURIComponent(val)}`);
           const dataProd = await rProd.json();
-          const servs = await rServ.json();
-          const prods = Array.isArray(dataProd) ? dataProd : (dataProd.data || []);
-          const drop = document.getElementById('dropBusquedaEdit');
-          const all = [
-            ...prods.map(p => ({ ...p, _tipo: 'producto' })),
-            ...servs.map(s => ({ ...s, _tipo: 'servicio' }))
-          ];
-          if (!all.length) { drop.classList.add('hidden'); return; }
-          drop.innerHTML = all.map(x => {
-            const icon = x._tipo === 'servicio' ? 'fa-wrench text-orange-400' : 'fa-box text-blue-400';
-            const stock = x._tipo === 'producto' ? ` <span class="text-gray-600">(${x.stock ?? 0})</span>` : '';
-            return `<div class="autocomplete-item" onclick="agregarItemEdit(${JSON.stringify(x).replace(/"/g,'&quot;')})">
-              <i class="fas ${icon} text-[10px] mr-1"></i>
-              <span class="font-bold">${x.descripcion || x.nombre}</span>
-              <span class="mono text-green-400 ml-2 text-xs">${currency(x.precio_venta || x.precio)}</span>
-              ${stock}
-            </div>`;
-          }).join('');
+          const raw = Array.isArray(dataProd) ? dataProd : (dataProd.data || []);
+          prods = raw.map(p => ({
+            ...p,
+            _tipo: 'producto',
+            _nombre: p.descripcion || p.nombre || '',
+            _precio: p.precio_venta_contado || p.precio_venta_final || p.precio_venta || 0
+          }));
+        } catch(e) { console.warn('Error fetch productos:', e); }
+
+        try {
+          const rServ = await fetch(`/api/v1/operaciones/servicios/buscar?termino=${encodeURIComponent(val)}`);
+          const dataServ = await rServ.json();
+          const rawServ = Array.isArray(dataServ) ? dataServ : [];
+          servs = rawServ.map(s => ({
+            ...s,
+            _tipo: 'servicio',
+            _nombre: s.nombre || s.descripcion || '',
+            _precio: s.precio_sugerido || s.precio || 0
+          }));
+        } catch(e) { console.warn('Error fetch servicios:', e); }
+
+        const all = [...prods, ...servs];
+
+        if (!all.length) {
+          drop.innerHTML = `<div class="autocomplete-item text-gray-500"><i class="fas fa-search mr-2"></i>Sin resultados para "${val}"</div>`;
           drop.classList.remove('hidden');
-        } catch(e) {}
-      }, 300);
+          return;
+        }
+
+        drop.innerHTML = all.map(x => {
+          const icon = x._tipo === 'servicio' ? 'fa-wrench text-orange-400' : 'fa-box text-blue-400';
+          const nombre = x._nombre;
+          const precio = x._precio;
+          const stock = x._tipo === 'producto' ? ` <span class="text-gray-500 text-[10px]">(stock: ${x.stock_real ?? x.stock ?? 0})</span>` : '<span class="text-[10px] text-orange-400 ml-1">Servicio</span>';
+          const itemData = JSON.stringify(x).replace(/"/g, '&quot;');
+          return `<div class="autocomplete-item flex items-center gap-2" onclick="agregarItemEdit(${itemData})">
+            <i class="fas ${icon} text-[11px] flex-shrink-0"></i>
+            <span class="font-bold flex-1 truncate">${nombre}</span>
+            <span class="mono text-green-400 text-xs">${currency(precio)}</span>
+            ${stock}
+          </div>`;
+        }).join('');
+        drop.classList.remove('hidden');
+      }, 280);
     }
 
     function agregarItemEdit(item) {
       document.getElementById('dropBusquedaEdit').classList.add('hidden');
       document.getElementById('editBusqueda').value = '';
-      const precio = item.precio_venta || item.precio || 0;
+      const precio = item._precio || item.precio_venta_contado || item.precio_venta_final || item.precio_venta || item.precio_sugerido || item.precio || 0;
+      const descripcion = item._nombre || item.descripcion || item.nombre || 'Sin nombre';
       const existing = editCarrito.find(c => c.id === item.id && c._tipo === item._tipo);
       if (existing) {
         existing.qty++;
       } else {
-        editCarrito.push({ id: item.id, _tipo: item._tipo, descripcion: item.descripcion || item.nombre, precio, qty: 1 });
+        editCarrito.push({ id: item.id, _tipo: item._tipo, descripcion, precio, qty: 1 });
       }
       renderEditItems();
       recalcularEdit();

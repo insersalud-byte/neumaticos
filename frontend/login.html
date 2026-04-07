@@ -41,9 +41,45 @@
   </div>
 
   <script>
-    function login(e) {
+    // Si ya tiene sesión activa, redirigir directo al panel
+    (function() {
+      if (document.cookie.split(';').some(function(c) { return c.trim().indexOf('becubical_session=') === 0; })) {
+        window.location.replace('/admin/pos-mostrador.html');
+      }
+    })();
+
+    async function login(e) {
       e.preventDefault();
-      window.location.href = '/admin/pos-mostrador.html';
+      var btn = document.getElementById('btnLogin');
+      var errMsg = document.getElementById('errorMsg');
+      var user = document.getElementById('username').value.trim();
+      var pass = document.getElementById('password').value;
+
+      if (!user || !pass) {
+        errMsg.textContent = 'Ingresá usuario y contraseña.';
+        errMsg.classList.remove('hidden');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ingresando...';
+      errMsg.classList.add('hidden');
+
+      var formData = new FormData();
+      formData.append('username', user);
+      formData.append('password', pass);
+
+      try {
+        var res = await fetch('/api/v1/auth/token', { method: 'POST', body: formData });
+        var data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Credenciales incorrectas');
+        window.location.href = '/admin/pos-mostrador.html';
+      } catch (err) {
+        errMsg.textContent = err.message;
+        errMsg.classList.remove('hidden');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> INGRESAR';
+      }
     }
   </script>
 </body>

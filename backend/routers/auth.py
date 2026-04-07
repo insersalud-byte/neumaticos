@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from core.database import get_db
@@ -17,4 +17,12 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     token = create_access_token({"sub": user.username, "nombre": user.nombre, "rol": user.rol})
     response = JSONResponse(content={"access_token": token, "token_type": "bearer", "nombre": user.nombre, "rol": user.rol})
     response.set_cookie(key="becubical_session", value=token, httponly=False, samesite="lax", path="/")
+    return response
+
+
+@router.get("/logout")
+@router.post("/logout")
+def logout():
+    response = RedirectResponse(url="/login.html", status_code=302)
+    response.delete_cookie(key="becubical_session", path="/")
     return response

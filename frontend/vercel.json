@@ -12,6 +12,10 @@
     {
       "source": "/api/(.*)",
       "destination": "http://72.60.4.111:8000/api/$1"
+    },
+    {
+      "source": "/logout",
+      "destination": "http://72.60.4.111:8000/api/v1/auth/logout"
     }
   ]
 }

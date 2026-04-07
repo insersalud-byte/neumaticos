@@ -1,11 +1,10 @@
+import os
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, Request
-from sqlalchemy.orm import Session
-from core.database import get_db
+from fastapi import HTTPException, Request
 
-SECRET_KEY = "giorda-secret-local-dev-2026"
+SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "giorda-secret-local-dev-2026")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 

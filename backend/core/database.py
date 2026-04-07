@@ -12,10 +12,14 @@ def get_base_path():
         return exe_dir
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Neon PostgreSQL (produccion)
-NEON_DATABASE_URL = "postgresql://neondb_owner:npg_jdcrnbQZmN83@ep-red-tooth-acqup291-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+# Neon PostgreSQL (produccion) — leer desde variable de entorno DATABASE_URL
+# Fallback al valor hardcodeado solo si la variable no está definida
+NEON_DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql://neondb_owner:npg_jdcrnbQZmN83@ep-red-tooth-acqup291-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+)
 
-# Usar PostgreSQL en produccion (VPS o si existe variable NEON_URL)
+# Usar PostgreSQL en produccion (VPS o si existe variable USE_NEON)
 USE_NEON = os.environ.get("USE_NEON", "true").lower() == "true"
 
 if USE_NEON:

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Coeficientes Tarjetas | Giorda OS</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/admin/auth-guard.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -115,7 +116,7 @@
                 <p class="text-sm font-medium text-white truncate">Sergio Admin</p>
                 <p class="text-xs text-gray-500 truncate">GERENCIA</p>
             </div>
-            <a href="/api/v1/operaciones/logout" class="text-gray-500 hover:text-red-400 transition p-1">
+            <a href="/api/v1/auth/logout" class="text-gray-500 hover:text-red-400 transition p-1">
                 <i class="fas fa-power-off text-sm"></i>
             </a>
         </div>
