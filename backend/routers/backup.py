@@ -16,8 +16,8 @@ def get_base_path():
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 BASE_PATH = get_base_path()
-DB_PATH = os.path.join(BASE_PATH, "giorda.db")
-BACKUP_DIR = os.path.join(BASE_PATH, "Backups_GiordaOS")
+DB_PATH = os.path.join(BASE_PATH, "..", "giorda.db")
+BACKUP_DIR = os.path.join(BASE_PATH, "..", "Backups_GiordaOS")
 os.makedirs(BACKUP_DIR, exist_ok=True)
 
 def _backup():
