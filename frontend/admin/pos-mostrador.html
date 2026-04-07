@@ -549,9 +549,10 @@
 
     // ─── PRODUCTO BUSQUEDA ────────────────────────────────
     let timerProd;
-    function buscarProducto(val) {
+    async function buscarProducto(val) {
       clearTimeout(timerProd);
-      if (val.length < 2) { document.getElementById('dropBusqueda').classList.add('hidden'); return; }
+      const drop = document.getElementById('dropBusqueda');
+      if (val.length < 2) { drop.classList.add('hidden'); return; }
       timerProd = setTimeout(async () => {
         try {
           const [rProd, rServ] = await Promise.all([
@@ -561,24 +562,44 @@
           const dataProd = await rProd.json();
           const servs = await rServ.json();
           const prods = Array.isArray(dataProd) ? dataProd : (dataProd.data || []);
-          const drop = document.getElementById('dropBusqueda');
-          const all = [
-            ...prods.map(p => ({ ...p, _tipo: 'producto' })),
-            ...servs.map(s => ({ ...s, _tipo: 'servicio' }))
-          ];
-          if (!all.length) { drop.classList.add('hidden'); return; }
+          
+          let all = [];
+          
+          // Agregar productos
+          if (prods && prods.length > 0) {
+            all = [...all, ...prods.map(p => ({ ...p, _tipo: 'producto' }))];
+          }
+          
+          // Agregar servicios (siempre aparecen si hay busqueda)
+          if (servs && servs.length > 0) {
+            all = [...all, ...servs.map(s => ({ ...s, _tipo: 'servicio' }))];
+          }
+          
+          // Si no hay resultados, mostrar mensaje
+          if (!all.length) {
+            drop.innerHTML = `<div class="autocomplete-item text-gray-500">Sin resultados</div>`;
+            drop.classList.remove('hidden');
+            return;
+          }
+          
           drop.innerHTML = all.map(x => {
             const icon = x._tipo === 'servicio' ? 'fa-wrench text-orange-400' : 'fa-box text-blue-400';
+            const nombre = x.descripcion || x.nombre || '';
+            const precio = x.precio_venta || x.precio || x.precio_sugerido || 0;
             const stock = x._tipo === 'producto' ? ` <span class="text-gray-600">(${x.stock ?? 0})</span>` : '';
-            return `<div class="autocomplete-item" onclick="agregarItem(${JSON.stringify(x).replace(/"/g,'&quot;')})">
-              <i class="fas ${icon} text-[10px] mr-1"></i>
-              <span class="font-bold">${x.descripcion || x.nombre}</span>
-              <span class="mono text-green-400 ml-2 text-xs">${currency(x.precio_venta || x.precio)}</span>
+            const itemJson = JSON.stringify(x).replace(/"/g, '&quot;');
+            return `<div class="autocomplete-item" onclick="agregarItem(${itemJson})">
+              <i class="fas ${icon} text-[10px] mr-2"></i>
+              <span class="font-bold flex-1 truncate">${nombre}</span>
+              <span class="mono text-green-400 ml-2 text-xs">${currency(precio)}</span>
               ${stock}
             </div>`;
           }).join('');
           drop.classList.remove('hidden');
-        } catch(e) {}
+        } catch(e) { 
+          console.error('Error busqueda:', e);
+          drop.classList.add('hidden');
+        }
       }, 300);
     }
 
@@ -793,8 +814,6 @@
     async function enviarWhatsApp() {
       if (!carrito.length) return Swal.fire('Carrito vacío', 'Agregá al menos un producto', 'warning');
       
-      Swal.fire({ title: 'Generando PDF...', text: 'Por favor espera', background: '#09090b', color: '#fff', showConfirmButton: false, allowOutsideClick: false });
-      
       try {
         let ventaId = ultimaVentaId;
         
@@ -805,8 +824,6 @@
           ventaId = d.id;
           ultimaVentaId = ventaId;
         }
-        
-        Swal.close();
         
         const tel = document.getElementById('inpTelefono').value.replace(/\D/g, '');
         const cliente = document.getElementById('inpCliente').value || 'Cliente';
@@ -822,8 +839,16 @@
         const num = tel ? `54${tel}` : '';
         
         Swal.fire({
-          title: 'PDF listo',
-          html: `Link de la cotización:<br><a href="${pdfUrl}" target="_blank" class="text-blue-400 underline text-xs">${pdfUrl}</a>`,
+          title: '📋 Cotización lista',
+          html: `
+            <div style="text-align:left">
+              <p style="margin-bottom:15px">Compartí el link por WhatsApp:</p>
+              <div style="background:#1f1f22;padding:15px;border-radius:10px;margin-bottom:15px">
+                <a href="${pdfUrl}" target="_blank" style="color:#60a5fa;font-size:13px;word-break:break-all">${pdfUrl}</a>
+              </div>
+              <p style="font-size:12px;color:#888">Copiá el link y pegalo en WhatsApp</p>
+            </div>
+          `,
           icon: 'success',
           showCancelButton: true,
           confirmButtonColor: '#25D366',
@@ -839,7 +864,6 @@
         });
         
       } catch(e) {
-        Swal.close();
         Swal.fire('Error', 'No se pudo generar el PDF', 'error');
       }
     }
