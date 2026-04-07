@@ -550,8 +550,10 @@
     // ─── PRODUCTO BUSQUEDA ────────────────────────────────
     let timerProd;
     async function buscarProducto(val) {
+      console.log('buscarProducto called with:', val);
       clearTimeout(timerProd);
       const drop = document.getElementById('dropBusqueda');
+      console.log('drop element:', drop);
       if (val.length < 2) { drop.classList.add('hidden'); return; }
       timerProd = setTimeout(async () => {
         try {
@@ -562,6 +564,8 @@
           const dataProd = await rProd.json();
           const servs = await rServ.json();
           const prods = Array.isArray(dataProd) ? dataProd : (dataProd.data || []);
+          console.log('dataProd:', dataProd);
+          console.log('servs:', servs);
           
           let all = [];
           
