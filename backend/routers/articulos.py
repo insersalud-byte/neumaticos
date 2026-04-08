@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from core.database import get_db
@@ -86,17 +86,44 @@ def importar_excel(data: dict, db: Session = Depends(get_db)):
 
     # Alias de columnas: variantes → clave interna
     ALIAS = {
-        "codigo": "codigo", "code": "codigo", "cod": "codigo",
-        "descripcion": "descripcion", "descripción": "descripcion",
-        "nombre": "descripcion", "articulo": "descripcion", "artículo": "descripcion",
-        "description": "descripcion", "item": "descripcion", "producto": "descripcion",
+        # código
+        "codigo": "codigo", "code": "codigo", "cod": "codigo", "ref": "codigo",
+        "referencia": "codigo", "sku": "codigo",
+        # descripción
+        "descripcion": "descripcion", "descripcion_del_producto": "descripcion",
+        "descripcion_producto": "descripcion", "nombre": "descripcion",
+        "nombre_del_articulo": "descripcion", "nombre_del_producto": "descripcion",
+        "nombre_articulo": "descripcion", "nombre_producto": "descripcion",
+        "articulo": "descripcion", "articulos": "descripcion",
+        "description": "descripcion", "item": "descripcion",
+        "producto": "descripcion", "productos": "descripcion",
+        "denominacion": "descripcion", "detalle": "descripcion",
+        "concepto": "descripcion", "especificacion": "descripcion",
+        # precio costo
         "precio_compra": "precio_costo", "precio_costo": "precio_costo",
-        "costo": "precio_costo", "precio": "precio_costo",
-        "ganancia_porcentaje": "margen", "ganancia": "margen", "margen": "margen", "utilidad": "margen",
-        "stock": "stock", "cantidad": "stock", "existencia": "stock",
-        "marca": "marca", "brand": "marca",
-        "categoria": "categoria", "categoría": "categoria", "category": "categoria", "rubro": "categoria",
-        "modelo": "modelo",
+        "precio_de_compra": "precio_costo", "precio_de_costo": "precio_costo",
+        "costo": "precio_costo", "costo_unitario": "precio_costo",
+        "precio": "precio_costo", "precio_unitario": "precio_costo",
+        "precio_unit": "precio_costo", "p_costo": "precio_costo",
+        "p_compra": "precio_costo", "valor": "precio_costo",
+        # margen
+        "ganancia_porcentaje": "margen", "ganancia": "margen",
+        "margen": "margen", "utilidad": "margen", "porcentaje": "margen",
+        "porc": "margen", "markup": "margen",
+        # stock
+        "stock": "stock", "cantidad": "stock", "cant": "stock",
+        "existencia": "stock", "existencias": "stock",
+        "stock_actual": "stock", "cantidad_en_stock": "stock",
+        "inventario": "stock", "qty": "stock",
+        # marca
+        "marca": "marca", "brand": "marca", "fabricante": "marca",
+        # categoría
+        "categoria": "categoria", "rubro": "categoria",
+        "tipo": "categoria", "familia": "categoria",
+        "linea": "categoria", "grupo": "categoria", "seccion": "categoria",
+        # modelo / proveedor
+        "modelo": "modelo", "model": "modelo", "version": "modelo",
+        "proveedor": "proveedor", "supplier": "proveedor", "distribuidor": "proveedor",
     }
 
     import unicodedata

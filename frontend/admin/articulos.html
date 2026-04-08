@@ -798,18 +798,32 @@
 
     function renderPreviewExcel(workbook) {
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const data = XLSX.utils.sheet_to_json(sheet, {header: 1});
-        
+        const dataArr = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ''});
+        const dataObj = XLSX.utils.sheet_to_json(sheet, {defval: ''});
+
         const preview = document.getElementById('preview-excel');
-        
-        if (data.length < 2) {
+
+        if (dataArr.length < 2) {
             preview.innerHTML = '<p class="text-yellow-500 text-sm text-center py-8">El archivo está vacío</p>';
             return;
         }
-        
-        const headers = data[0].map(h => String(h).toLowerCase());
-        const rows = data.slice(1, 6);
-        
+
+        const headers = dataArr[0].map(h => String(h));
+        const rows = dataArr.slice(1, 6);
+
+        // Mostrar mapeo de columnas
+        const CAMPOS_CLAVE = {'descripcion':'✅ Descripción','codigo':'✅ Código','precio_costo':'✅ Precio','marca':'✅ Marca','categoria':'✅ Categoría','stock':'✅ Stock','margen':'✅ Margen %','modelo':'✅ Modelo','proveedor':'✅ Proveedor'};
+        let mappingHtml = '<div class="mt-3 p-3 bg-[#0f172a] rounded-lg border border-[#1e3a5f]"><p class="text-xs text-blue-300 font-semibold mb-2">Columnas detectadas:</p><div class="flex flex-wrap gap-2">';
+        if (dataObj.length > 0) {
+            const mapping = getColumnMapping(dataObj[0]);
+            for (const [orig, dest] of Object.entries(mapping)) {
+                const label = CAMPOS_CLAVE[dest];
+                const color = label ? 'bg-emerald-900/50 border-emerald-700 text-emerald-300' : 'bg-gray-800 border-gray-600 text-gray-500';
+                mappingHtml += `<span class="text-xs px-2 py-1 rounded border ${color}">${orig} → ${label || dest}</span>`;
+            }
+        }
+        mappingHtml += '</div></div>';
+
         let html = `<table class="w-full text-xs">
             <thead class="bg-[#27272a]">
                 <tr class="text-gray-400 uppercase">
@@ -818,40 +832,72 @@
             </thead>
             <tbody class="divide-y divide-[#27272a]">
                 ${rows.map(row => `<tr class="hover:bg-white/5">
-                    ${row.map(cell => `<td class="px-2 py-2 text-gray-300">${cell || ''}</td>`).join('')}
+                    ${row.map(cell => `<td class="px-2 py-2 text-gray-300">${cell}</td>`).join('')}
                 </tr>`).join('')}
             </tbody>
         </table>`;
-        
-        preview.innerHTML = html + `<p class="text-xs text-gray-500 mt-2 p-2">Mostrando ${Math.min(5, rows.length)} de ${data.length - 1} filas</p>`;
+
+        preview.innerHTML = html + `<p class="text-xs text-gray-500 mt-2 p-2">Mostrando ${Math.min(5, rows.length)} de ${dataArr.length - 1} filas</p>` + mappingHtml;
     }
 
     // Normaliza las claves del Excel a las esperadas por el backend
     const COL_ALIAS = {
-        'codigo':'codigo','code':'codigo','cod':'codigo',
-        'descripcion':'descripcion','descripción':'descripcion',
-        'nombre':'descripcion','articulo':'descripcion','artículo':'descripcion',
-        'description':'descripcion','item':'descripcion','producto':'descripcion',
-        'precio_compra':'precio_costo','precio_costo':'precio_costo',
-        'costo':'precio_costo','precio':'precio_costo',
+        // código
+        'codigo':'codigo','code':'codigo','cod':'codigo','ref':'codigo','referencia':'codigo','sku':'codigo','id':'codigo',
+        // descripción
+        'descripcion':'descripcion','descripcion_del_producto':'descripcion','descripcion_producto':'descripcion',
+        'nombre':'descripcion','nombre_del_articulo':'descripcion','nombre_del_producto':'descripcion',
+        'nombre_articulo':'descripcion','nombre_producto':'descripcion',
+        'articulo':'descripcion','articulos':'descripcion',
+        'description':'descripcion','item':'descripcion','producto':'descripcion','productos':'descripcion',
+        'denominacion':'descripcion','detalle':'descripcion','concepto':'descripcion','especificacion':'descripcion',
+        // precio costo
+        'precio_compra':'precio_costo','precio_costo':'precio_costo','precio_de_compra':'precio_costo',
+        'precio_de_costo':'precio_costo','costo':'precio_costo','costo_unitario':'precio_costo',
+        'precio':'precio_costo','precio_unitario':'precio_costo','precio_unit':'precio_costo',
+        'p_costo':'precio_costo','p_compra':'precio_costo','valor':'precio_costo',
+        // margen
         'ganancia_porcentaje':'margen','ganancia':'margen','margen':'margen','utilidad':'margen',
-        'stock':'stock','cantidad':'stock','existencia':'stock',
-        'marca':'marca','brand':'marca',
-        'categoria':'categoria','categoría':'categoria','category':'categoria','rubro':'categoria',
-        'modelo':'modelo',
+        'porcentaje':'margen','porc':'margen','markup':'margen',
+        // stock
+        'stock':'stock','cantidad':'stock','cant':'stock','existencia':'stock','existencias':'stock',
+        'stock_actual':'stock','cantidad_en_stock':'stock','inventario':'stock','qty':'stock',
+        // marca
+        'marca':'marca','brand':'marca','fabricante':'marca',
+        // categoría
+        'categoria':'categoria','rubro':'categoria','tipo':'categoria','family':'categoria',
+        'familia':'categoria','linea':'categoria','grupo':'categoria','seccion':'categoria',
+        // modelo
+        'modelo':'modelo','model':'modelo','version':'modelo',
+        // proveedor
+        'proveedor':'proveedor','supplier':'proveedor','distribuidor':'proveedor',
     };
+
+    function normalizarKey(k) {
+        return k.toString().toLowerCase().trim()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+            .replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+    }
 
     function normalizarFilas(rows) {
         return rows.map(row => {
             const out = {};
             for (const [k, v] of Object.entries(row)) {
-                const norm = k.toString().toLowerCase().trim()
-                    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-                    .replace(/\s+/g,'_');
+                const norm = normalizarKey(k);
                 out[COL_ALIAS[norm] || norm] = v;
             }
             return out;
         });
+    }
+
+    // Retorna el mapeo de columnas originales → campo interno
+    function getColumnMapping(firstRow) {
+        const mapping = {};
+        for (const k of Object.keys(firstRow)) {
+            const norm = normalizarKey(k);
+            mapping[k] = COL_ALIAS[norm] || norm;
+        }
+        return mapping;
     }
 
     async function importarExcel() {
