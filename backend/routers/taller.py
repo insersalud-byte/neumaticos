@@ -70,6 +70,34 @@ def save_items_ingreso(ingreso_id: int, data: dict, db: Session = Depends(get_db
     return {"message": "Items guardados"}
 
 
+@router.patch("/ingresos/{ingreso_id}/datos")
+def actualizar_datos_ingreso(ingreso_id: int, data: dict, db: Session = Depends(get_db)):
+    ingreso = db.query(IngresoTaller).filter(IngresoTaller.id == ingreso_id).first()
+    if not ingreso:
+        raise HTTPException(status_code=404, detail="Ingreso no encontrado")
+    if "cliente_nombre" in data:
+        ingreso.cliente_nombre = data["cliente_nombre"]
+    if "cliente_telefono" in data:
+        ingreso.cliente_telefono = data["cliente_telefono"]
+    if "vehiculo_patente" in data:
+        ingreso.vehiculo_patente = data["vehiculo_patente"].upper()
+    if "vehiculo_modelo" in data:
+        ingreso.vehiculo_modelo = data["vehiculo_modelo"]
+    if "kilometraje" in data:
+        ingreso.kilometraje = int(data["kilometraje"] or 0)
+    if "mecanico_nombre" in data:
+        ingreso.mecanico_nombre = data["mecanico_nombre"]
+    db.commit()
+    return {
+        "message": "Datos actualizados",
+        "cliente_nombre": ingreso.cliente_nombre,
+        "cliente_telefono": ingreso.cliente_telefono,
+        "vehiculo_patente": ingreso.vehiculo_patente,
+        "vehiculo_modelo": ingreso.vehiculo_modelo,
+        "kilometraje": getattr(ingreso, "kilometraje", 0) or 0,
+    }
+
+
 @router.patch("/ingresos/{ingreso_id}/estado")
 def cambiar_estado_ingreso(ingreso_id: int, data: dict, db: Session = Depends(get_db)):
     ingreso = db.query(IngresoTaller).filter(IngresoTaller.id == ingreso_id).first()

@@ -96,6 +96,56 @@
       
       <!-- Body -->
       <div class="p-4 space-y-4">
+
+        <!-- Datos del Cliente / Vehículo -->
+        <div class="bg-[#0a0a14] border border-blue-900/30 rounded-xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <p class="text-xs font-bold text-blue-400 uppercase tracking-wider"><i class="fas fa-user-edit mr-1"></i>Datos del Cliente &amp; Vehículo</p>
+            <button onclick="toggleDatosCliente()" id="btnToggleDatos" class="text-[10px] text-gray-500 hover:text-white font-bold uppercase tracking-wider transition">
+              <i class="fas fa-chevron-down"></i> <span id="lblToggleDatos">Editar</span>
+            </button>
+          </div>
+          <!-- Info rápida (visible siempre) -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs mb-2">
+            <div><span class="text-gray-600 uppercase">Cliente</span><p id="infoCliente" class="text-white font-semibold mt-0.5">—</p></div>
+            <div><span class="text-gray-600 uppercase">Teléfono</span><p id="infoTelefono" class="text-green-400 font-mono mt-0.5">—</p></div>
+            <div><span class="text-gray-600 uppercase">Patente</span><p id="infoPatente" class="text-blue-400 font-mono font-bold mt-0.5">—</p></div>
+            <div><span class="text-gray-600 uppercase">Kilometraje</span><p id="infoKm" class="text-yellow-400 font-mono mt-0.5">—</p></div>
+          </div>
+          <!-- Formulario editable (colapsable) -->
+          <div id="formDatosCliente" class="hidden mt-3 border-t border-blue-900/20 pt-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              <div>
+                <label class="block text-[10px] text-gray-500 uppercase mb-1">Nombre del cliente</label>
+                <input id="dc_nombre" type="text" placeholder="Nombre completo" class="input-dark w-full text-sm">
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-500 uppercase mb-1">Teléfono / WhatsApp</label>
+                <input id="dc_telefono" type="tel" placeholder="Ej: 3518818847" class="input-dark w-full text-sm">
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-500 uppercase mb-1">Patente</label>
+                <input id="dc_patente" type="text" placeholder="ABC123" class="input-dark w-full text-sm uppercase" oninput="this.value=this.value.toUpperCase()">
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-500 uppercase mb-1">Modelo / Año</label>
+                <input id="dc_modelo" type="text" placeholder="Ej: Ford Ranger 2022" class="input-dark w-full text-sm">
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-500 uppercase mb-1"><i class="fas fa-tachometer-alt text-yellow-400 mr-1"></i>Kilometraje</label>
+                <input id="dc_km" type="number" min="0" placeholder="Ej: 85000" class="input-dark w-full text-sm">
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-500 uppercase mb-1"><i class="fas fa-hard-hat text-orange-400 mr-1"></i>Mecánico</label>
+                <input id="dc_mecanico" type="text" placeholder="Nombre del mecánico" class="input-dark w-full text-sm">
+              </div>
+            </div>
+            <button onclick="guardarDatosCliente()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl transition text-sm">
+              <i class="fas fa-save mr-2"></i>Guardar datos
+            </button>
+          </div>
+        </div>
+
         <!-- Agregar Items -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div class="md:col-span-2">
@@ -209,16 +259,77 @@
     function abrirTrabajo(v) {
       ingresoActual = v;
       itemsTrabajo = [];
-      
+
       document.getElementById('modal-id').textContent = v.id;
       document.getElementById('modal-vehiculo').textContent = v.vehiculo_modelo || 'VEHÍCULO';
       document.getElementById('modal-patente').textContent = v.vehiculo_patente || '';
       document.getElementById('modal-cliente').textContent = `${v.cliente_nombre || 'Cliente'}${v.cliente_telefono ? ' - ' + v.cliente_telefono : ''}`;
-      
-      // Cargar items guardados
+
+      // Rellenar info rápida
+      actualizarInfoCliente(v);
+
+      // Rellenar formulario editable
+      document.getElementById('dc_nombre').value = v.cliente_nombre || '';
+      document.getElementById('dc_telefono').value = v.cliente_telefono || '';
+      document.getElementById('dc_patente').value = v.vehiculo_patente || '';
+      document.getElementById('dc_modelo').value = v.vehiculo_modelo || '';
+      document.getElementById('dc_km').value = v.kilometraje || '';
+      document.getElementById('dc_mecanico').value = v.mecanico_nombre || '';
+
+      // Cerrar formulario al abrir
+      document.getElementById('formDatosCliente').classList.add('hidden');
+      document.getElementById('lblToggleDatos').textContent = 'Editar';
+
       cargarItemsTrabajo(v.id);
-      
       document.getElementById('modalTrabajo').classList.remove('hidden');
+    }
+
+    function actualizarInfoCliente(v) {
+      document.getElementById('infoCliente').textContent = v.cliente_nombre || '—';
+      document.getElementById('infoTelefono').textContent = v.cliente_telefono || '—';
+      document.getElementById('infoPatente').textContent = v.vehiculo_patente || '—';
+      document.getElementById('infoKm').textContent = v.kilometraje ? v.kilometraje.toLocaleString('es-AR') + ' km' : '—';
+    }
+
+    function toggleDatosCliente() {
+      const form = document.getElementById('formDatosCliente');
+      const lbl = document.getElementById('lblToggleDatos');
+      const visible = !form.classList.contains('hidden');
+      form.classList.toggle('hidden', visible);
+      lbl.textContent = visible ? 'Editar' : 'Cerrar';
+    }
+
+    async function guardarDatosCliente() {
+      if (!ingresoActual) return;
+      const payload = {
+        cliente_nombre: document.getElementById('dc_nombre').value.trim(),
+        cliente_telefono: document.getElementById('dc_telefono').value.trim(),
+        vehiculo_patente: document.getElementById('dc_patente').value.trim().toUpperCase(),
+        vehiculo_modelo: document.getElementById('dc_modelo').value.trim(),
+        kilometraje: parseInt(document.getElementById('dc_km').value) || 0,
+        mecanico_nombre: document.getElementById('dc_mecanico').value.trim(),
+      };
+      try {
+        const res = await fetch(`/api/v1/taller/ingresos/${ingresoActual.id}/datos`, {
+          method: 'PATCH',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error();
+        // Actualizar ingresoActual con los nuevos datos
+        ingresoActual = { ...ingresoActual, ...payload };
+        // Actualizar header del modal
+        document.getElementById('modal-vehiculo').textContent = payload.vehiculo_modelo || 'VEHÍCULO';
+        document.getElementById('modal-patente').textContent = payload.vehiculo_patente || '';
+        document.getElementById('modal-cliente').textContent = `${payload.cliente_nombre || 'Cliente'}${payload.cliente_telefono ? ' - ' + payload.cliente_telefono : ''}`;
+        actualizarInfoCliente(ingresoActual);
+        // Cerrar formulario
+        document.getElementById('formDatosCliente').classList.add('hidden');
+        document.getElementById('lblToggleDatos').textContent = 'Editar';
+        Swal.fire({icon:'success', title:'Datos guardados', timer:1200, showConfirmButton:false, background:'#111', color:'#fff'});
+      } catch(e) {
+        Swal.fire({icon:'error', title:'Error', text:'No se pudo guardar', background:'#111', color:'#fff'});
+      }
     }
 
     async function cargarItemsTrabajo(ingresoId) {
