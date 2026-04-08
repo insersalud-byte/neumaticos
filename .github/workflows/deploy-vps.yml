@@ -15,6 +15,9 @@ jobs:
           host: 72.60.4.111
           username: root
           password: ${{ secrets.VPS_PASSWORD }}
+          port: 22
+          timeout: 60s
+          command_timeout: 30m
           script: |
             cd /var/www/neumaticos
             git pull origin main
