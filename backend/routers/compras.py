@@ -19,7 +19,10 @@ def get_base_path():
         return exe_dir
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-UPLOAD_DIR = os.path.join(get_base_path(), "uploads")
+if os.environ.get("VERCEL") == "1":
+    UPLOAD_DIR = "/tmp/uploads"
+else:
+    UPLOAD_DIR = os.path.join(get_base_path(), "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
