@@ -799,7 +799,6 @@
     function renderPreviewExcel(workbook) {
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const dataArr = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ''});
-        const dataObj = XLSX.utils.sheet_to_json(sheet, {defval: ''});
 
         const preview = document.getElementById('preview-excel');
 
@@ -808,8 +807,10 @@
             return;
         }
 
-        const headers = dataArr[0].map(h => String(h));
-        const rows = dataArr.slice(1, 6);
+        const headerIdx = detectarHeaderRow(dataArr);
+        const headers = (dataArr[headerIdx] || []).map(h => String(h));
+        const rows = dataArr.slice(headerIdx + 1, headerIdx + 6);
+        const dataObj = leerExcelConAutoHeader(sheet);
 
         // Mostrar mapeo de columnas
         const CAMPOS_CLAVE = {'descripcion':'✅ Descripción','codigo':'✅ Código','precio_costo':'✅ Precio','marca':'✅ Marca','categoria':'✅ Categoría','stock':'✅ Stock','margen':'✅ Margen %','modelo':'✅ Modelo','proveedor':'✅ Proveedor'};
@@ -900,11 +901,39 @@
         return mapping;
     }
 
+    // Detecta automáticamente qué fila contiene los encabezados
+    function detectarHeaderRow(dataArr) {
+        let bestRow = 0, bestScore = 0;
+        for (let i = 0; i < Math.min(8, dataArr.length); i++) {
+            const score = (dataArr[i] || []).filter(cell => {
+                const norm = normalizarKey(String(cell ?? ''));
+                return !!COL_ALIAS[norm] || /^(cod|desc|nom|art|prod|prec|cost|gan|marc|categ|stock|cant|rubr|item|sku|ref)/i.test(norm);
+            }).length;
+            if (score > bestScore) { bestScore = score; bestRow = i; }
+        }
+        return bestRow;
+    }
+
+    // Lee Excel respetando la fila de encabezado real
+    function leerExcelConAutoHeader(sheet) {
+        const dataArr = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ''});
+        if (dataArr.length < 2) return [];
+        const headerIdx = detectarHeaderRow(dataArr);
+        const headers = (dataArr[headerIdx] || []).map(h => String(h));
+        return dataArr.slice(headerIdx + 1)
+            .filter(row => row.some(c => c !== '' && c != null))
+            .map(row => {
+                const obj = {};
+                headers.forEach((h, i) => { obj[h] = row[i] ?? ''; });
+                return obj;
+            });
+    }
+
     async function importarExcel() {
         if (!excelData) return;
 
         const sheet = excelData.Sheets[excelData.SheetNames[0]];
-        const rawData = XLSX.utils.sheet_to_json(sheet);
+        const rawData = leerExcelConAutoHeader(sheet);
 
         if (rawData.length === 0) {
             return Swal.fire({icon:'warning', title:'Archivo vacío', background:'#111', color:'#fff'});
