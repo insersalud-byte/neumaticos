@@ -24,7 +24,7 @@ def get_base_path():
         return exe_dir
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-LOGO_PATH = os.path.join(get_base_path(), "uploads", "logo.png")
+LOGO_PATH = os.path.join(get_base_path(), "uploads", "logo.jpg")
 EMPRESA_INFO = {
     "nombre": "GIORDA NEUMÁTICOS",
     "direccion": "Emilio Carafa 2154",
@@ -39,7 +39,7 @@ def _header_empresa(tipo_doc="FACTURA"):
 
     if os.path.exists(LOGO_PATH):
         try:
-            logo = Image(LOGO_PATH, width=50*mm, height=20*mm)
+            logo = Image(LOGO_PATH, width=35*mm, height=35*mm)
             elements.append(logo)
             elements.append(Spacer(1, 8*mm))
         except:

@@ -3,6 +3,7 @@ backend/build/
 backend/__pycache__/
 backend/giorda.db
 backend/uploads/
+!backend/uploads/logo.jpg
 backend/Backups_GiordaOS/
 backend/server.log
 backend/*.spec

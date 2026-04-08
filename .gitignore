@@ -21,6 +21,7 @@ yarn-error.log*
 *.db-shm
 Backups_GiordaOS/
 uploads/
+!backend/uploads/logo.jpg
 dist/
 build/
 *.egg-info/
