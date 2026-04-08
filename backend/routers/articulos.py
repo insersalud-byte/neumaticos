@@ -151,10 +151,20 @@ def importar_excel(data: dict, db: Session = Depends(get_db)):
             # Normalizar claves del row
             art = {normalize_key(k): v for k, v in raw.items()}
 
-            codigo = str(g(art, "codigo", default="")).strip()
+            def to_str(val):
+                """Convierte valor (incluido float tipo 12345.0) a string limpio."""
+                if val is None or val == "":
+                    return ""
+                try:
+                    f = float(val)
+                    return str(int(f)) if f == int(f) else str(f)
+                except (ValueError, TypeError):
+                    return str(val).strip()
+
+            codigo = to_str(g(art, "codigo", default=""))
             descripcion = str(g(art, "descripcion", default="")).strip()
             marca = str(g(art, "marca", default="")).strip()
-            categoria = str(g(art, "categoria", default="")).strip()
+            categoria_raw = str(g(art, "categoria", default="")).strip()
             modelo = str(g(art, "modelo", default="")).strip()
 
             # Saltar filas sin nombre ni código
@@ -167,15 +177,17 @@ def importar_excel(data: dict, db: Session = Depends(get_db)):
             precio_venta = precio_costo * (1 + margen / 100)
             stock_val = float(g(art, "stock", default=0) or 0)
 
-            # Auto-crear categoría si no existe
-            if categoria:
+            # Auto-crear categoría y usar nombre CANÓNICO de la BD
+            categoria = categoria_raw
+            if categoria_raw:
                 cat_obj = db.query(Categoria).filter(
-                    func.lower(Categoria.nombre) == categoria.lower()
+                    func.lower(Categoria.nombre) == categoria_raw.lower()
                 ).first()
                 if not cat_obj:
-                    cat_obj = Categoria(nombre=categoria)
+                    cat_obj = Categoria(nombre=categoria_raw)
                     db.add(cat_obj)
                     db.flush()
+                categoria = cat_obj.nombre  # nombre exacto de la BD
 
             # Buscar existente
             existente = None

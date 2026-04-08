@@ -941,6 +941,17 @@
 
         const data = normalizarFilas(rawData);
 
+        // DEBUG: mostrar primera fila para verificar mapeo
+        if (data.length > 0) {
+            const muestra = data[0];
+            console.log('[Excel Import] Primera fila normalizada:', muestra);
+            const keys = Object.keys(muestra).join(', ');
+            const desc = muestra.descripcion ?? muestra.nombre ?? '—';
+            const cod = muestra.codigo ?? '—';
+            const cat = muestra.categoria ?? '—';
+            console.log(`[Excel Import] descripcion="${desc}" codigo="${cod}" categoria="${cat}" | Columnas: ${keys}`);
+        }
+
         const opcStock = document.getElementById('opc-actualizar-stock').value;
         const opcExistente = document.getElementById('opc-existente').value;
         const gananciaDefault = parseFloat(document.getElementById('ganancia-default').value) || 30;
