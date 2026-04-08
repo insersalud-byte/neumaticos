@@ -38,9 +38,7 @@ desktop.ini
 nul
 
 # Environment
-.env
 .env.local
-*.env
 
 # Logs
 *.log
