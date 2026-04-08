@@ -35,8 +35,8 @@ except Exception:
 EMPRESA_INFO = {
     "nombre": "GIORDA NEUMÁTICOS",
     "direccion": "Emilio Carafa 2154",
-    "telefono": "3515893288",
-    "whatsapp": "35123500349",
+    "telefono": "3518818847",
+    "whatsapp": "3512350349",
     "email": "giordaneumaticos@hotmail.com",
 }
 
