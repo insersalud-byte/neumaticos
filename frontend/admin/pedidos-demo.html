@@ -361,6 +361,38 @@
         </div>
       </div>
 
+      <!-- Ítem libre -->
+      <div class="bg-[#1e293b] border border-yellow-900/30 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-xs font-bold text-yellow-400 uppercase"><i class="fas fa-edit mr-1"></i>Ítem libre (fuera de stock)</p>
+          <button onclick="toggleEditLibre()" class="text-[10px] text-yellow-500 hover:text-yellow-300 font-bold uppercase tracking-wider transition" id="btnEditLibre">
+            <i class="fas fa-chevron-down"></i> Mostrar
+          </button>
+        </div>
+        <div id="editLibreBox" class="hidden">
+          <div class="grid grid-cols-12 gap-2">
+            <div class="col-span-5">
+              <input id="editLibreDesc" type="text" placeholder="Descripción del artículo"
+                class="w-full bg-[#0f172a] border border-yellow-900/30 text-white rounded-lg px-3 py-2 text-xs outline-none focus:border-yellow-500 placeholder-gray-600">
+            </div>
+            <div class="col-span-2">
+              <input id="editLibreCant" type="number" value="1" min="1" placeholder="Cant."
+                class="w-full bg-[#0f172a] border border-yellow-900/30 text-white rounded-lg px-3 py-2 text-xs text-center outline-none focus:border-yellow-500">
+            </div>
+            <div class="col-span-3">
+              <input id="editLibrePrecio" type="number" placeholder="Precio unit."
+                class="w-full bg-[#0f172a] border border-yellow-900/30 text-white rounded-lg px-3 py-2 text-xs text-right outline-none focus:border-yellow-500">
+            </div>
+            <div class="col-span-2">
+              <button onclick="agregarEditLibre()"
+                class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 rounded-lg text-xs transition">
+                <i class="fas fa-plus"></i> Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Buscador artículos/servicios -->
       <div class="bg-[#1e293b] border border-blue-900/20 rounded-xl p-4">
         <p class="text-xs font-bold text-gray-400 uppercase mb-2"><i class="fas fa-plus-circle text-blue-400 mr-1"></i>Agregar artículo o servicio</p>
@@ -535,6 +567,9 @@
     document.getElementById('modalEditar').classList.remove('flex');
     editId = null;
     editCarrito = [];
+    // Cerrar ítem libre si estaba abierto
+    document.getElementById('editLibreBox').classList.add('hidden');
+    document.getElementById('btnEditLibre').innerHTML = '<i class="fas fa-chevron-down"></i> Mostrar';
   }
 
   // ── Render items ─────────────────────────────────────────────
@@ -567,6 +602,32 @@
 
   function quitarItem(idx) {
     editCarrito.splice(idx, 1);
+    renderEditItems();
+    recalcularEdit();
+  }
+
+  // ── Ítem libre ───────────────────────────────────────────────
+  function toggleEditLibre() {
+    const box = document.getElementById('editLibreBox');
+    const btn = document.getElementById('btnEditLibre');
+    const visible = !box.classList.contains('hidden');
+    box.classList.toggle('hidden', visible);
+    btn.innerHTML = visible
+      ? '<i class="fas fa-chevron-down"></i> Mostrar'
+      : '<i class="fas fa-chevron-up"></i> Ocultar';
+    if (!visible) document.getElementById('editLibreDesc').focus();
+  }
+
+  function agregarEditLibre() {
+    const desc = document.getElementById('editLibreDesc').value.trim();
+    const cant = parseInt(document.getElementById('editLibreCant').value) || 1;
+    const precio = parseFloat(document.getElementById('editLibrePrecio').value) || 0;
+    if (!desc) { document.getElementById('editLibreDesc').focus(); return; }
+    editCarrito.push({ tipo: 'libre', referencia_id: null, descripcion: desc, cantidad: cant, precio_final: precio });
+    document.getElementById('editLibreDesc').value = '';
+    document.getElementById('editLibreCant').value = '1';
+    document.getElementById('editLibrePrecio').value = '';
+    document.getElementById('editLibreDesc').focus();
     renderEditItems();
     recalcularEdit();
   }
