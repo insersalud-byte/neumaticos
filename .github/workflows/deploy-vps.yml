@@ -1,4 +1,4 @@
-name: Deploy to VPS
+name: Deploy
 
 on:
   push:
@@ -6,7 +6,8 @@ on:
       - main
 
 jobs:
-  deploy:
+  deploy-vps:
+    name: Deploy to VPS
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to VPS via SSH
@@ -23,3 +24,16 @@ jobs:
             git pull origin main
             systemctl restart giorda.service
             echo "Deploy completado: $(date)"
+
+  deploy-vercel:
+    name: Deploy to Vercel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+      - name: Deploy to Vercel
+        run: vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
+        env:
+          VERCEL_ORG_ID: team_Qw2JNWodrJ5Uv7ZvFpaKqSOa
+          VERCEL_PROJECT_ID: prj_qS0gcmAYNdrI1wXvNJOCH5zZM8KU
