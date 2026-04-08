@@ -24,7 +24,14 @@ def get_base_path():
         return exe_dir
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-LOGO_PATH = os.path.join(get_base_path(), "uploads", "logo.jpg")
+# Logo embebido como base64 para garantizar disponibilidad en Vercel
+try:
+    from routers._logo_b64 import LOGO_B64 as _LOGO_B64
+    import base64 as _b64
+    _logo_bytes = _b64.b64decode(_LOGO_B64)
+    LOGO_IO = io.BytesIO(_logo_bytes)
+except Exception:
+    LOGO_IO = None
 EMPRESA_INFO = {
     "nombre": "GIORDA NEUMÁTICOS",
     "direccion": "Emilio Carafa 2154",
@@ -37,9 +44,10 @@ EMPRESA_INFO = {
 def _header_empresa(tipo_doc="FACTURA"):
     elements = []
 
-    if os.path.exists(LOGO_PATH):
+    if LOGO_IO:
         try:
-            logo = Image(LOGO_PATH, width=35*mm, height=35*mm)
+            LOGO_IO.seek(0)
+            logo = Image(LOGO_IO, width=35*mm, height=35*mm)
             elements.append(logo)
             elements.append(Spacer(1, 8*mm))
         except:
