@@ -34,9 +34,9 @@ EMPRESA_INFO = {
 }
 
 
-def _header_empresa():
+def _header_empresa(tipo_doc="FACTURA"):
     elements = []
-    
+
     if os.path.exists(LOGO_PATH):
         try:
             logo = Image(LOGO_PATH, width=50*mm, height=20*mm)
@@ -46,13 +46,13 @@ def _header_empresa():
             elements.append(Spacer(1, 15*mm))
     else:
         elements.append(Spacer(1, 15*mm))
-    
+
     factura_style = ParagraphStyle("Factura", fontSize=28, fontName="Helvetica-Bold", textColor=colors.HexColor("#1e3a5f"), alignment=1)
     sin_fiscal_style = ParagraphStyle("SinFiscal", fontSize=9, textColor=colors.HexColor("#888888"), alignment=1)
     nombre_style = ParagraphStyle("Nombre", fontSize=16, fontName="Helvetica-Bold", textColor=colors.HexColor("#1e3a5f"), alignment=1)
     datos_style = ParagraphStyle("Datos", fontSize=10, textColor=colors.HexColor("#444444"), leading=14, alignment=1)
-    
-    elements.append(Paragraph("FACTURA", factura_style))
+
+    elements.append(Paragraph(tipo_doc, factura_style))
     elements.append(Spacer(1, 4*mm))
     elements.append(Paragraph("*** SIN VALOR FISCAL ***", sin_fiscal_style))
     elements.append(Spacer(1, 8*mm))
@@ -80,9 +80,8 @@ def generar_presupuesto_pdf(venta_id: int, db: Session = Depends(get_db)):
     label_style = ParagraphStyle("Label", parent=info_style, textColor=colors.HexColor("#666666"))
     value_style = ParagraphStyle("Value", parent=info_style, textColor=colors.black, fontName="Helvetica-Bold")
 
-    elements.extend(_header_empresa())
-
-    tipo = "PRESUPUESTO" if venta.es_cotizacion else "COMPROBANTE"
+    tipo = "COTIZACIÓN" if venta.es_cotizacion else "FACTURA"
+    elements.extend(_header_empresa(tipo_doc=tipo))
     tipo_style = ParagraphStyle("Tipo", fontSize=14, fontName="Helvetica-Bold", textColor=colors.HexColor("#1e3a5f"), spaceAfter=8)
     elements.append(Paragraph(f"{tipo} N° {venta.id}", tipo_style))
     elements.append(Spacer(1, 3*mm))
