@@ -1,8 +1,13 @@
 {
   "outputDirectory": "frontend",
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.12",
+      "maxDuration": 30
+    }
+  },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index" },
-    { "source": "/logout", "destination": "/api/index" }
+    { "source": "/api/(.*)", "destination": "/api/index" }
   ],
   "redirects": [
     { "source": "/", "destination": "/login.html", "permanent": false }
