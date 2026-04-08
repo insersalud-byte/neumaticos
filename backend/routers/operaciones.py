@@ -859,28 +859,68 @@ def actualizar_venta(venta_id: int, data: dict, db: Session = Depends(get_db)):
     venta = db.query(Venta).filter(Venta.id == venta_id).first()
     if not venta:
         raise HTTPException(status_code=404, detail="Operación no encontrada")
-    
-    if 'items' in data:
-        items = data.get('items', [])
-        if isinstance(items, str):
-            items = json.loads(items) if items else []
-        
-        subtotal = sum((i.get("cantidad", 0) * i.get("precio_final", 0)) for i in items)
-        bonificacion = data.get("monto_bonificacion", 0)
-        base = max(0, subtotal - bonificacion)
-        iva = data.get("alicuota_iva", 0)
-        total = base * (1 + iva)
-        
-        venta.items = json.dumps(items)
-        venta.subtotal_neto = subtotal
-        venta.monto_bonificacion = bonificacion
-        venta.alicuota_iva = iva
-        venta.total_venta = total
-    
+
+    items = data.get('items', [])
+    if isinstance(items, str):
+        items = json.loads(items) if items else []
+
+    subtotal = sum((i.get("cantidad", 0) * i.get("precio_final", 0)) for i in items)
+    bonificacion = data.get("monto_bonificacion", venta.monto_bonificacion or 0)
+    base = max(0, subtotal - bonificacion)
+    iva = data.get("alicuota_iva", venta.alicuota_iva or 0)
+    total = base * (1 + iva)
+
+    coef_id = data.get("coeficiente_id")
+    if coef_id:
+        coef = db.query(CoeficienteFinanciacion).filter(CoeficienteFinanciacion.id == coef_id).first()
+        if coef:
+            total *= coef.coeficiente
+
+    abonado = data.get("monto_abonado", 0)
+    debe = max(0, total - abonado)
+
+    venta.items = json.dumps(items)
+    venta.subtotal_neto = subtotal
+    venta.monto_bonificacion = bonificacion
+    venta.alicuota_iva = iva
+    venta.total_venta = total
+    venta.coeficiente_id = coef_id
+    venta.monto_abonado = abonado
+    venta.monto_debe = debe
+
+    if 'cliente_nombre' in data:
+        venta.cliente_nombre = data['cliente_nombre']
+    if 'cliente_telefono' in data:
+        venta.cliente_telefono = data['cliente_telefono']
+    if 'vehiculo_patente' in data:
+        venta.vehiculo_patente = data['vehiculo_patente'].upper()
+    if 'vehiculo_modelo' in data:
+        venta.vehiculo_modelo = data['vehiculo_modelo']
     if 'observaciones' in data:
-        venta.observaciones = data.get('observaciones', '')
-    
+        venta.observaciones = data['observaciones']
+    if 'metodo_pago' in data:
+        venta.metodo_pago = data['metodo_pago']
+
+    # Si se confirma como venta
+    if data.get("confirmar_venta"):
+        venta.es_cotizacion = False
+        metodo_pago = data.get("metodo_pago", "Efectivo")
+        metodo_normalizado = metodo_pago.lower().replace(" ", "_")
+        if debe > 0 and venta.cliente_id and metodo_normalizado == "cuenta_corriente":
+            cliente = db.query(Cliente).filter(Cliente.id == venta.cliente_id).first()
+            if cliente:
+                cliente.saldo_deudor = (cliente.saldo_deudor or 0) + debe
+                mov = MovimientoCuenta(
+                    cliente_id=venta.cliente_id,
+                    tipo="cargo",
+                    monto=debe,
+                    descripcion=f"Venta #{venta.id} - Saldo pendiente",
+                    metodo_pago=metodo_pago,
+                    venta_id=venta.id,
+                )
+                db.add(mov)
+
     db.commit()
     db.refresh(venta)
-    return {"id": venta.id, "message": "Cotización actualizada"}
+    return {"id": venta.id, "total_venta": venta.total_venta, "es_cotizacion": venta.es_cotizacion, "message": "Actualizada"}
 

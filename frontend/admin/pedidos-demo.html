@@ -216,6 +216,7 @@
               <td class="py-3 text-right font-mono text-blue-300 font-bold text-xs">${currency.format(v.total_venta)}</td>
               <td class="py-3 text-center">${estado}</td>
               <td class="py-3 text-center">
+                ${v.es_cotizacion ? `<button onclick="abrirEditar(${v.id})" class="text-yellow-400 hover:text-yellow-300 text-xs mr-2" title="Editar cotización"><i class="fas fa-pencil-alt"></i></button>` : ''}
                 <button onclick="enviarWhatsApp(${v.id}, '${(v.cliente_telefono||'').replace(/\D/g,'')}')" class="text-green-500 hover:text-green-400 text-xs mr-2" title="Enviar por WhatsApp"><i class="fab fa-whatsapp"></i></button>
                 <a href="/api/v1/reportes/presupuesto/${v.id}" target="_blank" class="text-red-400 hover:text-red-300 text-xs mr-2"><i class="fas fa-file-pdf"></i></a>
                 <button onclick="eliminarVenta(${v.id}, ${v.es_cotizacion ? 'true' : 'false'})" class="text-gray-500 hover:text-red-400 text-xs" title="Eliminar"><i class="fas fa-trash"></i></button>
@@ -322,5 +323,432 @@
 
     cargarHistorial();
   </script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL EDITAR COTIZACIÓN
+════════════════════════════════════════════════════════════════ -->
+<div id="modalEditar" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
+  <div class="bg-[#0f172a] border border-blue-900/30 rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col shadow-2xl">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-blue-900/20 flex-shrink-0">
+      <div>
+        <h2 class="text-lg font-black text-white">Editar Cotización <span id="editModalId" class="text-blue-400"></span></h2>
+        <p class="text-xs text-gray-500 mt-0.5">Modificá ítems, precios y convertí a venta</p>
+      </div>
+      <button onclick="cerrarEditar()" class="text-gray-500 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+    </div>
+
+    <div class="overflow-y-auto flex-1 p-6 space-y-5">
+
+      <!-- Datos del cliente -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div>
+          <label class="block text-[10px] text-gray-500 uppercase mb-1">Cliente</label>
+          <input id="editCliente" type="text" class="w-full bg-[#1e293b] border border-blue-900/30 text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500">
+        </div>
+        <div>
+          <label class="block text-[10px] text-gray-500 uppercase mb-1">Teléfono</label>
+          <input id="editTelefono" type="text" class="w-full bg-[#1e293b] border border-blue-900/30 text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500">
+        </div>
+        <div>
+          <label class="block text-[10px] text-gray-500 uppercase mb-1">Patente</label>
+          <input id="editPatente" type="text" class="w-full bg-[#1e293b] border border-blue-900/30 text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 uppercase">
+        </div>
+        <div>
+          <label class="block text-[10px] text-gray-500 uppercase mb-1">Modelo</label>
+          <input id="editModelo" type="text" class="w-full bg-[#1e293b] border border-blue-900/30 text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500">
+        </div>
+      </div>
+
+      <!-- Buscador artículos/servicios -->
+      <div class="bg-[#1e293b] border border-blue-900/20 rounded-xl p-4">
+        <p class="text-xs font-bold text-gray-400 uppercase mb-2"><i class="fas fa-plus-circle text-blue-400 mr-1"></i>Agregar artículo o servicio</p>
+        <div class="flex gap-2">
+          <input id="editBuscar" type="text" placeholder="Buscar por nombre, código..." oninput="buscarArticulos()"
+            class="flex-1 bg-[#0f172a] border border-blue-900/30 text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 placeholder-gray-600">
+          <select id="editTipoBusqueda" onchange="buscarArticulos()"
+            class="bg-[#0f172a] border border-blue-900/30 text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 cursor-pointer">
+            <option value="producto">Productos</option>
+            <option value="servicio">Servicios</option>
+          </select>
+        </div>
+        <div id="editResultados" class="mt-2 space-y-1 max-h-36 overflow-y-auto"></div>
+      </div>
+
+      <!-- Tabla de ítems -->
+      <div class="bg-[#1e293b] border border-blue-900/20 rounded-xl overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-[10px] text-gray-500 uppercase border-b border-blue-900/20">
+              <th class="px-4 py-3 text-left">Descripción</th>
+              <th class="px-3 py-3 text-center w-20">Cant.</th>
+              <th class="px-3 py-3 text-right w-32">Precio unit.</th>
+              <th class="px-3 py-3 text-right w-32">Subtotal</th>
+              <th class="px-3 py-3 text-center w-12"></th>
+            </tr>
+          </thead>
+          <tbody id="editItems" class="divide-y divide-blue-900/10">
+            <tr><td colspan="5" class="py-6 text-center text-gray-600 text-xs">Sin ítems</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Totales y configuración -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="space-y-3">
+          <div class="flex items-center gap-3">
+            <label class="text-xs text-gray-400 w-28">Bonificación ($)</label>
+            <input id="editBonif" type="number" value="0" min="0" oninput="recalcularEdit()"
+              class="flex-1 bg-[#1e293b] border border-blue-900/30 text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500">
+          </div>
+          <div class="flex items-center gap-3">
+            <label class="text-xs text-gray-400 w-28">IVA 21%</label>
+            <input id="editIva" type="checkbox" onchange="recalcularEdit()" class="w-5 h-5 rounded accent-blue-600 cursor-pointer">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Observaciones</label>
+            <input id="editObs" type="text" placeholder="Opcional..."
+              class="w-full bg-[#1e293b] border border-blue-900/30 text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500">
+          </div>
+        </div>
+
+        <!-- Resumen total -->
+        <div class="bg-[#0f172a] border border-blue-900/20 rounded-xl p-4 space-y-2">
+          <div class="flex justify-between text-xs text-gray-400">
+            <span>Subtotal</span><span id="editSubtotal" class="font-mono">$0</span>
+          </div>
+          <div class="flex justify-between text-xs text-gray-400">
+            <span>Bonificación</span><span id="editDescuento" class="font-mono text-red-400">-$0</span>
+          </div>
+          <div class="flex justify-between text-xs text-gray-400">
+            <span>IVA 21%</span><span id="editIvaDisplay" class="font-mono">$0</span>
+          </div>
+          <div class="flex justify-between text-sm font-black text-white border-t border-blue-900/20 pt-2">
+            <span>TOTAL</span><span id="editTotal" class="text-blue-400 font-mono text-lg">$0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección confirmar venta (método de pago) -->
+      <div class="bg-[#1e293b] border border-yellow-900/30 rounded-xl p-4">
+        <p class="text-xs font-bold text-yellow-400 uppercase mb-3"><i class="fas fa-cash-register mr-1"></i>Confirmar como Venta — Método de Pago</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="col-span-2">
+            <label class="block text-[10px] text-gray-500 uppercase mb-1">Método</label>
+            <select id="editMetodoPago" onchange="onMetodoChange()"
+              class="w-full bg-[#0f172a] border border-blue-900/30 text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-yellow-500 cursor-pointer">
+              <option value="Efectivo">Efectivo</option>
+              <option value="Transferencia">Transferencia</option>
+              <option value="Tarjeta">Tarjeta / Plan</option>
+              <option value="Cuenta Corriente">Cuenta Corriente</option>
+              <option value="Cheque">Cheque</option>
+            </select>
+          </div>
+          <div id="editPlanRow" class="col-span-2 hidden">
+            <label class="block text-[10px] text-gray-500 uppercase mb-1">Plan / Tarjeta</label>
+            <select id="editPlan" onchange="recalcularEdit()"
+              class="w-full bg-[#0f172a] border border-blue-900/30 text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-yellow-500 cursor-pointer">
+              <option value="">-- Sin plan --</option>
+            </select>
+          </div>
+          <div id="editAbonado-row">
+            <label class="block text-[10px] text-gray-500 uppercase mb-1">Monto abonado ($)</label>
+            <input id="editAbonado" type="number" value="0" min="0" oninput="recalcularEdit()"
+              class="w-full bg-[#0f172a] border border-blue-900/30 text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-yellow-500">
+          </div>
+          <div>
+            <label class="block text-[10px] text-gray-500 uppercase mb-1">Saldo debe ($)</label>
+            <p id="editDebe" class="text-red-400 font-black text-lg pt-2">$0</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer botones -->
+    <div class="flex gap-3 px-6 py-4 border-t border-blue-900/20 flex-shrink-0 bg-[#0f172a]">
+      <button onclick="cerrarEditar()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 rounded-xl transition text-sm">
+        Cancelar
+      </button>
+      <button onclick="guardarCotizacion()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition text-sm">
+        <i class="fas fa-save mr-1"></i> Guardar Cotización
+      </button>
+      <button onclick="confirmarComoVenta()" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition text-sm">
+        <i class="fas fa-check-circle mr-1"></i> Confirmar Venta
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Estado del editor ────────────────────────────────────────
+  let editId = null;
+  let editCarrito = [];
+  let planesEdit = [];
+  const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
+
+  // ── Abrir modal ──────────────────────────────────────────────
+  async function abrirEditar(id) {
+    editId = id;
+    editCarrito = [];
+    document.getElementById('modalEditar').classList.remove('hidden');
+    document.getElementById('modalEditar').classList.add('flex');
+    document.getElementById('editModalId').textContent = `#${id}`;
+    document.getElementById('editResultados').innerHTML = '';
+    document.getElementById('editBuscar').value = '';
+
+    try {
+      const res = await fetch(`/api/v1/operaciones/${id}`);
+      const v = await res.json();
+
+      document.getElementById('editCliente').value = v.cliente_nombre || '';
+      document.getElementById('editTelefono').value = v.cliente_telefono || '';
+      document.getElementById('editPatente').value = v.vehiculo_patente || '';
+      document.getElementById('editModelo').value = v.vehiculo_modelo || '';
+      document.getElementById('editObs').value = v.observaciones || '';
+      document.getElementById('editBonif').value = v.monto_bonificacion || 0;
+      document.getElementById('editIva').checked = (v.alicuota_iva || 0) > 0;
+      document.getElementById('editMetodoPago').value = v.metodo_pago || 'Efectivo';
+      document.getElementById('editAbonado').value = v.monto_abonado || 0;
+
+      editCarrito = (v.items || []).map(i => ({
+        tipo: i.tipo || 'producto',
+        referencia_id: i.referencia_id || null,
+        descripcion: i.descripcion || '',
+        cantidad: i.cantidad || 1,
+        precio_final: i.precio_final || 0,
+      }));
+
+      renderEditItems();
+      recalcularEdit();
+      onMetodoChange();
+      await cargarPlanesEdit();
+    } catch(e) {
+      Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar la cotización', background: '#0f172a', color: '#fff' });
+      cerrarEditar();
+    }
+  }
+
+  function cerrarEditar() {
+    document.getElementById('modalEditar').classList.add('hidden');
+    document.getElementById('modalEditar').classList.remove('flex');
+    editId = null;
+    editCarrito = [];
+  }
+
+  // ── Render items ─────────────────────────────────────────────
+  function renderEditItems() {
+    const tbody = document.getElementById('editItems');
+    if (!editCarrito.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-gray-600 text-xs">Sin ítems — buscá arriba para agregar</td></tr>';
+      return;
+    }
+    tbody.innerHTML = editCarrito.map((item, idx) => `
+      <tr class="hover:bg-blue-900/10">
+        <td class="px-4 py-2">
+          <input value="${item.descripcion}" onchange="editCarrito[${idx}].descripcion=this.value;recalcularEdit()"
+            class="w-full bg-transparent text-white text-xs outline-none border-b border-transparent focus:border-blue-500 pb-0.5">
+        </td>
+        <td class="px-3 py-2">
+          <input type="number" value="${item.cantidad}" min="1" onchange="editCarrito[${idx}].cantidad=parseFloat(this.value)||1;renderEditItems();recalcularEdit()"
+            class="w-16 bg-[#1e293b] text-white text-xs text-center rounded px-2 py-1 outline-none focus:border-blue-500 border border-transparent focus:border-blue-500">
+        </td>
+        <td class="px-3 py-2">
+          <input type="number" value="${item.precio_final}" min="0" onchange="editCarrito[${idx}].precio_final=parseFloat(this.value)||0;recalcularEdit()"
+            class="w-28 bg-[#1e293b] text-white text-xs text-right rounded px-2 py-1 outline-none border border-transparent focus:border-blue-500">
+        </td>
+        <td class="px-3 py-2 text-right text-blue-300 font-mono text-xs">${fmt.format(item.cantidad * item.precio_final)}</td>
+        <td class="px-3 py-2 text-center">
+          <button onclick="quitarItem(${idx})" class="text-gray-600 hover:text-red-400 text-xs"><i class="fas fa-times"></i></button>
+        </td>
+      </tr>`).join('');
+  }
+
+  function quitarItem(idx) {
+    editCarrito.splice(idx, 1);
+    renderEditItems();
+    recalcularEdit();
+  }
+
+  // ── Búsqueda de artículos ────────────────────────────────────
+  let buscarTimer = null;
+  async function buscarArticulos() {
+    const q = document.getElementById('editBuscar').value.trim();
+    const tipo = document.getElementById('editTipoBusqueda').value;
+    const div = document.getElementById('editResultados');
+    if (q.length < 2) { div.innerHTML = ''; return; }
+    clearTimeout(buscarTimer);
+    buscarTimer = setTimeout(async () => {
+      try {
+        let res, items = [];
+        if (tipo === 'producto') {
+          res = await fetch(`/api/v1/operaciones/admin/inventario?buscar=${encodeURIComponent(q)}&limit=8`);
+          const d = await res.json();
+          items = (d.productos || d.data || d || []).map(p => ({
+            id: p.id, label: p.descripcion || p.nombre || '', precio: p.precio_venta_final || p.precio_venta_contado || 0, tipo: 'producto'
+          }));
+        } else {
+          res = await fetch(`/api/v1/operaciones/servicios/buscar?q=${encodeURIComponent(q)}`);
+          const d = await res.json();
+          items = (d.servicios || d || []).map(s => ({
+            id: s.id, label: s.nombre || '', precio: s.precio || 0, tipo: 'servicio'
+          }));
+        }
+        if (!items.length) { div.innerHTML = '<p class="text-xs text-gray-600 py-2 px-2">Sin resultados</p>'; return; }
+        div.innerHTML = items.map(it => `
+          <button onclick='agregarItemEdit(${JSON.stringify(it).replace(/'/g,"&#39;")})'
+            class="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-blue-900/30 flex justify-between items-center group transition">
+            <span class="text-white group-hover:text-blue-300">${it.label}</span>
+            <span class="text-blue-400 font-mono font-bold">${fmt.format(it.precio)}</span>
+          </button>`).join('');
+      } catch(e) { div.innerHTML = '<p class="text-xs text-red-500 py-2 px-2">Error al buscar</p>'; }
+    }, 300);
+  }
+
+  function agregarItemEdit(it) {
+    const existente = editCarrito.findIndex(i => i.referencia_id === it.id && i.tipo === it.tipo);
+    if (existente >= 0) {
+      editCarrito[existente].cantidad += 1;
+    } else {
+      editCarrito.push({ tipo: it.tipo, referencia_id: it.id, descripcion: it.label, cantidad: 1, precio_final: it.precio });
+    }
+    document.getElementById('editBuscar').value = '';
+    document.getElementById('editResultados').innerHTML = '';
+    renderEditItems();
+    recalcularEdit();
+  }
+
+  // ── Recalcular totales ───────────────────────────────────────
+  function recalcularEdit() {
+    const subtotal = editCarrito.reduce((s, i) => s + i.cantidad * i.precio_final, 0);
+    const bonif = parseFloat(document.getElementById('editBonif').value) || 0;
+    const conIva = document.getElementById('editIva').checked;
+    const base = Math.max(0, subtotal - bonif);
+    const ivaVal = conIva ? base * 0.21 : 0;
+
+    let total = base + ivaVal;
+
+    // Coeficiente tarjeta
+    const planSel = document.getElementById('editPlan');
+    if (planSel.value) {
+      const coef = parseFloat(planSel.selectedOptions[0]?.dataset?.coeficiente) || 1;
+      total *= coef;
+    }
+
+    const abonado = parseFloat(document.getElementById('editAbonado').value) || 0;
+    const debe = Math.max(0, total - abonado);
+
+    document.getElementById('editSubtotal').textContent = fmt.format(subtotal);
+    document.getElementById('editDescuento').textContent = `-${fmt.format(bonif)}`;
+    document.getElementById('editIvaDisplay').textContent = fmt.format(ivaVal);
+    document.getElementById('editTotal').textContent = fmt.format(total);
+    document.getElementById('editDebe').textContent = fmt.format(debe);
+  }
+
+  // ── Método de pago ───────────────────────────────────────────
+  function onMetodoChange() {
+    const metodo = document.getElementById('editMetodoPago').value;
+    const planRow = document.getElementById('editPlanRow');
+    const abonadoRow = document.getElementById('editAbonado-row');
+    const isCCte = metodo === 'Cuenta Corriente';
+
+    planRow.classList.toggle('hidden', metodo !== 'Tarjeta');
+    if (isCCte) {
+      document.getElementById('editAbonado').value = 0;
+    }
+    recalcularEdit();
+  }
+
+  async function cargarPlanesEdit() {
+    try {
+      const res = await fetch('/api/v1/finanzas/coeficientes/28');
+      const data = await res.json();
+      planesEdit = Array.isArray(data) ? data.filter(p => p.activo) : [];
+      const sel = document.getElementById('editPlan');
+      sel.innerHTML = '<option value="">-- Sin plan --</option>';
+      planesEdit.forEach(p => {
+        const op = document.createElement('option');
+        op.value = p.id;
+        op.dataset.coeficiente = p.coeficiente;
+        op.textContent = `${p.nombre} (${p.cuotas}c ×${p.coeficiente})`;
+        sel.appendChild(op);
+      });
+    } catch(e) {}
+  }
+
+  // ── Guardar como cotización ──────────────────────────────────
+  async function guardarCotizacion() {
+    if (!editId) return;
+    if (!editCarrito.length) {
+      Swal.fire({ icon: 'warning', title: 'Sin ítems', text: 'Agregá al menos un artículo', background: '#0f172a', color: '#fff' }); return;
+    }
+    const payload = buildEditPayload(false);
+    try {
+      const res = await fetch(`/api/v1/operaciones/${editId}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        Swal.fire({ icon: 'success', title: 'Cotización guardada', timer: 1800, showConfirmButton: false, background: '#0f172a', color: '#fff' });
+        cerrarEditar();
+        cargarHistorial();
+      } else throw new Error();
+    } catch(e) { Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo guardar', background: '#0f172a', color: '#fff' }); }
+  }
+
+  // ── Confirmar como venta ─────────────────────────────────────
+  async function confirmarComoVenta() {
+    if (!editId) return;
+    if (!editCarrito.length) {
+      Swal.fire({ icon: 'warning', title: 'Sin ítems', text: 'Agregá al menos un artículo', background: '#0f172a', color: '#fff' }); return;
+    }
+    const result = await Swal.fire({
+      title: '¿Confirmar como venta?',
+      text: 'La cotización pasará a ser una venta cerrada.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#16a34a',
+      cancelButtonColor: '#6b7280',
+      background: '#0f172a', color: '#fff',
+      confirmButtonText: 'Sí, confirmar',
+      cancelButtonText: 'Cancelar'
+    });
+    if (!result.isConfirmed) return;
+
+    const payload = buildEditPayload(true);
+    try {
+      const res = await fetch(`/api/v1/operaciones/${editId}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const d = await res.json();
+        Swal.fire({ icon: 'success', title: '¡Venta confirmada!', text: `Total: ${fmt.format(d.total_venta)}`, timer: 2500, showConfirmButton: false, background: '#0f172a', color: '#fff' });
+        cerrarEditar();
+        cargarHistorial();
+      } else throw new Error();
+    } catch(e) { Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo confirmar', background: '#0f172a', color: '#fff' }); }
+  }
+
+  function buildEditPayload(confirmarVenta) {
+    const conIva = document.getElementById('editIva').checked;
+    const metodo = document.getElementById('editMetodoPago').value;
+    const abonado = confirmarVenta ? (parseFloat(document.getElementById('editAbonado').value) || 0) : 0;
+    const planId = document.getElementById('editPlan').value ? parseInt(document.getElementById('editPlan').value) : null;
+    return {
+      items: editCarrito,
+      cliente_nombre: document.getElementById('editCliente').value.trim(),
+      cliente_telefono: document.getElementById('editTelefono').value.trim(),
+      vehiculo_patente: document.getElementById('editPatente').value.trim().toUpperCase(),
+      vehiculo_modelo: document.getElementById('editModelo').value.trim(),
+      monto_bonificacion: parseFloat(document.getElementById('editBonif').value) || 0,
+      alicuota_iva: conIva ? 0.21 : 0,
+      metodo_pago: metodo,
+      coeficiente_id: planId,
+      monto_abonado: abonado,
+      observaciones: document.getElementById('editObs').value.trim(),
+      confirmar_venta: confirmarVenta,
+    };
+  }
+</script>
 </body>
 </html>
