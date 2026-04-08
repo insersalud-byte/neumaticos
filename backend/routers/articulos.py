@@ -144,12 +144,17 @@ def importar_excel(data: dict, db: Session = Depends(get_db)):
     nuevos = 0
     actualizados = 0
     omitidos = 0
+    sin_categoria = 0
     errores = []
+    primer_row_claves = []  # para diagnóstico
 
     for raw in articulos:
         try:
             # Normalizar claves del row
             art = {normalize_key(k): v for k, v in raw.items()}
+
+            if not primer_row_claves:
+                primer_row_claves = list(art.keys())
 
             def to_str(val):
                 """Convierte valor (incluido float tipo 12345.0) a string limpio."""
@@ -171,6 +176,9 @@ def importar_excel(data: dict, db: Session = Depends(get_db)):
             if not descripcion and not codigo:
                 omitidos += 1
                 continue
+
+            if not categoria_raw:
+                sin_categoria += 1
 
             precio_costo = float(g(art, "precio_costo", default=0) or 0)
             margen = float(g(art, "margen", default=ganancia_default) or ganancia_default)
@@ -235,7 +243,14 @@ def importar_excel(data: dict, db: Session = Depends(get_db)):
             errores.append(str(e))
 
     db.commit()
-    return {"nuevos": nuevos, "actualizados": actualizados, "omitidos": omitidos, "errores": errores}
+    return {
+        "nuevos": nuevos,
+        "actualizados": actualizados,
+        "omitidos": omitidos,
+        "sin_categoria": sin_categoria,
+        "columnas_detectadas": primer_row_claves,
+        "errores": errores,
+    }
 
 
 @router.delete("/limpiar-vacios")

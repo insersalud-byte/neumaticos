@@ -941,15 +941,24 @@
 
         const data = normalizarFilas(rawData);
 
-        // DEBUG: mostrar primera fila para verificar mapeo
+        // Validar columnas obligatorias antes de importar
         if (data.length > 0) {
             const muestra = data[0];
-            console.log('[Excel Import] Primera fila normalizada:', muestra);
-            const keys = Object.keys(muestra).join(', ');
-            const desc = muestra.descripcion ?? muestra.nombre ?? '—';
-            const cod = muestra.codigo ?? '—';
-            const cat = muestra.categoria ?? '—';
-            console.log(`[Excel Import] descripcion="${desc}" codigo="${cod}" categoria="${cat}" | Columnas: ${keys}`);
+            const claves = Object.keys(muestra);
+            const OBLIGATORIAS = ['descripcion','codigo','categoria'];
+            const faltantes = OBLIGATORIAS.filter(k => !claves.includes(k));
+            if (faltantes.length > 0) {
+                const mapa = claves.map(k => `<b>${rawData[0] ? Object.keys(rawData[0]).find(ok => normalizarKey(ok) === normalizarKey(k)) || k : k}</b> → ${k}`).join('<br>');
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Columnas no reconocidas',
+                    html: `<p class="text-red-400 mb-2">Faltan columnas obligatorias: <b>${faltantes.join(', ')}</b></p>
+                           <p class="text-xs text-gray-400 mb-1">Columnas detectadas en tu Excel:</p>
+                           <div class="text-left text-xs font-mono bg-black/40 p-2 rounded max-h-40 overflow-auto">${mapa}</div>`,
+                    background: '#111', color: '#fff'
+                });
+                return;
+            }
         }
 
         const opcStock = document.getElementById('opc-actualizar-stock').value;
@@ -973,12 +982,19 @@
             });
 
             const result = await res.json();
-            const errStr = result.errores?.length ? `<p class="text-red-400">Errores: ${result.errores.length}</p>` : '';
+            const errStr = result.errores?.length ? `<p class="text-red-400 text-xs">⚠️ Errores: ${result.errores.length}</p>` : '';
+            const sinCatStr = result.sin_categoria > 0
+                ? `<p class="text-yellow-400 text-xs">⚠️ Sin categoría: <b>${result.sin_categoria}</b> artículos</p>` : '';
+            const colStr = result.columnas_detectadas?.length
+                ? `<p class="text-gray-500 text-xs mt-2">Columnas: ${result.columnas_detectadas.join(', ')}</p>` : '';
 
             await Swal.fire({
-                icon:'success',
+                icon: result.nuevos + result.actualizados > 0 ? 'success' : 'warning',
                 title:'Importación completada',
-                html: `<p>✅ Nuevos: <b>${result.nuevos}</b></p><p>🔄 Actualizados: <b>${result.actualizados}</b></p><p>⏭️ Omitidos (vacíos): <b>${result.omitidos || 0}</b></p>${errStr}`,
+                html: `<p>✅ Nuevos: <b>${result.nuevos}</b></p>
+                       <p>🔄 Actualizados: <b>${result.actualizados}</b></p>
+                       <p>⏭️ Omitidos: <b>${result.omitidos || 0}</b></p>
+                       ${sinCatStr}${errStr}${colStr}`,
                 background:'#111', color:'#fff'
             });
 
