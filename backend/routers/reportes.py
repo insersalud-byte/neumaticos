@@ -44,33 +44,46 @@ EMPRESA_INFO = {
 def _header_empresa(tipo_doc="FACTURA"):
     elements = []
 
+    factura_style = ParagraphStyle("Factura", fontSize=28, fontName="Helvetica-Bold", textColor=colors.HexColor("#1e3a5f"), alignment=1)
+    sin_fiscal_style = ParagraphStyle("SinFiscal", fontSize=9, textColor=colors.HexColor("#888888"), alignment=1)
+    nombre_style = ParagraphStyle("Nombre", fontSize=14, fontName="Helvetica-Bold", textColor=colors.HexColor("#1e3a5f"), alignment=1)
+    datos_style = ParagraphStyle("Datos", fontSize=9, textColor=colors.HexColor("#444444"), leading=13, alignment=1)
+
+    # Columna derecha: tipo doc + datos empresa
+    col_texto = [
+        Paragraph(tipo_doc, factura_style),
+        Spacer(1, 2*mm),
+        Paragraph("*** SIN VALOR FISCAL ***", sin_fiscal_style),
+        Spacer(1, 4*mm),
+        Paragraph("GIORDA NEUMATICOS", nombre_style),
+        Spacer(1, 2*mm),
+        Paragraph(f"Dirección: {EMPRESA_INFO['direccion']}", datos_style),
+        Paragraph(f"Tel: {EMPRESA_INFO['telefono']} | WhatsApp: {EMPRESA_INFO['whatsapp']}", datos_style),
+        Paragraph(f"Email: {EMPRESA_INFO['email']}", datos_style),
+    ]
+
     if LOGO_IO:
         try:
             LOGO_IO.seek(0)
-            logo = Image(LOGO_IO, width=35*mm, height=35*mm)
-            elements.append(logo)
-            elements.append(Spacer(1, 8*mm))
+            logo_img = Image(LOGO_IO, width=42*mm, height=42*mm)
+            header_table = Table(
+                [[logo_img, col_texto]],
+                colWidths=[46*mm, 134*mm]
+            )
+            header_table.setStyle(TableStyle([
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (0, 0), 0),
+                ("RIGHTPADDING", (0, 0), (0, 0), 4),
+            ]))
+            elements.append(header_table)
         except:
-            elements.append(Spacer(1, 15*mm))
+            for el in col_texto:
+                elements.append(el)
     else:
-        elements.append(Spacer(1, 15*mm))
+        for el in col_texto:
+            elements.append(el)
 
-    factura_style = ParagraphStyle("Factura", fontSize=28, fontName="Helvetica-Bold", textColor=colors.HexColor("#1e3a5f"), alignment=1)
-    sin_fiscal_style = ParagraphStyle("SinFiscal", fontSize=9, textColor=colors.HexColor("#888888"), alignment=1)
-    nombre_style = ParagraphStyle("Nombre", fontSize=16, fontName="Helvetica-Bold", textColor=colors.HexColor("#1e3a5f"), alignment=1)
-    datos_style = ParagraphStyle("Datos", fontSize=10, textColor=colors.HexColor("#444444"), leading=14, alignment=1)
-
-    elements.append(Paragraph(tipo_doc, factura_style))
-    elements.append(Spacer(1, 4*mm))
-    elements.append(Paragraph("*** SIN VALOR FISCAL ***", sin_fiscal_style))
     elements.append(Spacer(1, 8*mm))
-    elements.append(Paragraph("GIORDA NEUMATICOS", nombre_style))
-    elements.append(Spacer(1, 3*mm))
-    elements.append(Paragraph(f"Direccion: {EMPRESA_INFO['direccion']}", datos_style))
-    elements.append(Paragraph(f"Tel: {EMPRESA_INFO['telefono']} | WhatsApp: {EMPRESA_INFO['whatsapp']}", datos_style))
-    elements.append(Paragraph(f"Email: {EMPRESA_INFO['email']}", datos_style))
-    elements.append(Spacer(1, 10*mm))
-    
     return elements
 
 
