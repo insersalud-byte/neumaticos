@@ -266,15 +266,26 @@
                     </div>
                 </div>
                 
-                <!-- Template Download -->
-                <div class="bg-blue-900/20 border border-blue-800/30 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-blue-400 flex items-center gap-2 mb-2">
-                        <i class="fas fa-download"></i> Descargar Plantilla
-                    </h4>
-                    <p class="text-xs text-gray-400 mb-3">Descargá la plantilla Excel con el formato correcto para importar artículos.</p>
-                    <button onclick="descargarPlantilla()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition text-sm">
-                        <i class="fas fa-download mr-2"></i> Descargar template.xlsx
-                    </button>
+                <!-- Template Download + Limpiar -->
+                <div class="space-y-4">
+                    <div class="bg-blue-900/20 border border-blue-800/30 rounded-xl p-4">
+                        <h4 class="text-sm font-bold text-blue-400 flex items-center gap-2 mb-2">
+                            <i class="fas fa-download"></i> Descargar Plantilla
+                        </h4>
+                        <p class="text-xs text-gray-400 mb-3">Descargá la plantilla Excel con el formato correcto para importar artículos.</p>
+                        <button onclick="descargarPlantilla()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition text-sm">
+                            <i class="fas fa-download mr-2"></i> Descargar template.xlsx
+                        </button>
+                    </div>
+                    <div class="bg-red-900/20 border border-red-800/30 rounded-xl p-4">
+                        <h4 class="text-sm font-bold text-red-400 flex items-center gap-2 mb-2">
+                            <i class="fas fa-broom"></i> Limpiar artículos vacíos
+                        </h4>
+                        <p class="text-xs text-gray-400 mb-3">Elimina definitivamente los artículos que quedaron sin nombre ni código (por ejemplo de una importación fallida).</p>
+                        <button onclick="limpiarVacios()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition text-sm">
+                            <i class="fas fa-trash mr-2"></i> Eliminar artículos vacíos
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -662,8 +673,12 @@
             tbody.innerHTML = categoriasCache.map(c => `<tr class="hover:bg-white/5">
                 <td class="px-4 py-3 text-white font-semibold">${c.nombre}</td>
                 <td class="px-4 py-3 text-center text-gray-400">${c.articulos_count || 0}</td>
-                <td class="px-4 py-3 text-center">
-                    <button onclick="eliminarCategoria(${c.id})" class="text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button>
+                <td class="px-4 py-3 text-center flex items-center justify-center gap-3">
+                    <button onclick="borradoMasivoCategoria('${c.nombre.replace(/'/g,"\\'")}')" title="Borrar todos los artículos de esta categoría"
+                        class="text-orange-400 hover:text-orange-300 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                        <i class="fas fa-trash-alt"></i> Borrar todos
+                    </button>
+                    <button onclick="eliminarCategoria(${c.id})" title="Eliminar categoría" class="text-red-400 hover:text-red-300"><i class="fas fa-tag"></i> Cat.</button>
                 </td>
             </tr>`).join('');
             
@@ -699,6 +714,31 @@
                 body: JSON.stringify({nombre})
             });
             cerrarModalCategoria();
+            cargarCategorias();
+        } catch(e) {
+            Swal.fire({icon:'error', title:'Error', background:'#111', color:'#fff'});
+        }
+    }
+
+    async function borradoMasivoCategoria(nombre) {
+        const conf = await Swal.fire({
+            icon:'warning',
+            title:`¿Borrar todos los artículos de "${nombre}"?`,
+            text:'Los artículos quedarán inactivos. Esta acción no se puede deshacer.',
+            showCancelButton:true, confirmButtonColor:'#ea580c',
+            confirmButtonText:'Sí, borrar todos', cancelButtonText:'Cancelar',
+            background:'#111', color:'#fff'
+        });
+        if (!conf.isConfirmed) return;
+        try {
+            const r = await fetch('/api/v1/articulos/por-categoria', {
+                method:'DELETE',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({categoria: nombre})
+            });
+            const d = await r.json();
+            Swal.fire({icon:'success', title:`${d.eliminados} artículos eliminados`, background:'#111', color:'#fff'});
+            cargarArticulos();
             cargarCategorias();
         } catch(e) {
             Swal.fire({icon:'error', title:'Error', background:'#111', color:'#fff'});
@@ -786,24 +826,54 @@
         preview.innerHTML = html + `<p class="text-xs text-gray-500 mt-2 p-2">Mostrando ${Math.min(5, rows.length)} de ${data.length - 1} filas</p>`;
     }
 
+    // Normaliza las claves del Excel a las esperadas por el backend
+    const COL_ALIAS = {
+        'codigo':'codigo','code':'codigo','cod':'codigo',
+        'descripcion':'descripcion','descripción':'descripcion',
+        'nombre':'descripcion','articulo':'descripcion','artículo':'descripcion',
+        'description':'descripcion','item':'descripcion','producto':'descripcion',
+        'precio_compra':'precio_costo','precio_costo':'precio_costo',
+        'costo':'precio_costo','precio':'precio_costo',
+        'ganancia_porcentaje':'margen','ganancia':'margen','margen':'margen','utilidad':'margen',
+        'stock':'stock','cantidad':'stock','existencia':'stock',
+        'marca':'marca','brand':'marca',
+        'categoria':'categoria','categoría':'categoria','category':'categoria','rubro':'categoria',
+        'modelo':'modelo',
+    };
+
+    function normalizarFilas(rows) {
+        return rows.map(row => {
+            const out = {};
+            for (const [k, v] of Object.entries(row)) {
+                const norm = k.toString().toLowerCase().trim()
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+                    .replace(/\s+/g,'_');
+                out[COL_ALIAS[norm] || norm] = v;
+            }
+            return out;
+        });
+    }
+
     async function importarExcel() {
         if (!excelData) return;
-        
+
         const sheet = excelData.Sheets[excelData.SheetNames[0]];
-        const data = XLSX.utils.sheet_to_json(sheet);
-        
-        if (data.length === 0) {
+        const rawData = XLSX.utils.sheet_to_json(sheet);
+
+        if (rawData.length === 0) {
             return Swal.fire({icon:'warning', title:'Archivo vacío', background:'#111', color:'#fff'});
         }
-        
+
+        const data = normalizarFilas(rawData);
+
         const opcStock = document.getElementById('opc-actualizar-stock').value;
         const opcExistente = document.getElementById('opc-existente').value;
         const gananciaDefault = parseFloat(document.getElementById('ganancia-default').value) || 30;
-        
+
         const btn = document.getElementById('btnImportarExcel');
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Importando...';
-        
+
         try {
             const res = await fetch('/api/v1/articulos/importar-excel', {
                 method: 'POST',
@@ -815,24 +885,46 @@
                     ganancia_default: gananciaDefault
                 })
             });
-            
+
             const result = await res.json();
-            
+            const errStr = result.errores?.length ? `<p class="text-red-400">Errores: ${result.errores.length}</p>` : '';
+
             await Swal.fire({
                 icon:'success',
                 title:'Importación completada',
-                html: `<p>Nuevos: ${result.nuevos}</p><p>Actualizados: ${result.actualizados}</p><p>Errors: ${result.errores}</p>`,
+                html: `<p>✅ Nuevos: <b>${result.nuevos}</b></p><p>🔄 Actualizados: <b>${result.actualizados}</b></p><p>⏭️ Omitidos (vacíos): <b>${result.omitidos || 0}</b></p>${errStr}`,
                 background:'#111', color:'#fff'
             });
-            
+
             clearExcelFile();
             showTab('articulos');
-            
+            cargarArticulos();
+
         } catch(e) {
             Swal.fire({icon:'error', title:'Error', text:'No se pudo importar', background:'#111', color:'#fff'});
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-file-import mr-2"></i> Importar Artículos';
+        }
+    }
+
+    async function limpiarVacios() {
+        const conf = await Swal.fire({
+            icon:'warning',
+            title:'¿Eliminar artículos vacíos?',
+            text:'Se borrarán definitivamente los artículos sin nombre ni código',
+            showCancelButton:true, confirmButtonColor:'#dc2626',
+            confirmButtonText:'Sí, eliminar', cancelButtonText:'Cancelar',
+            background:'#111', color:'#fff'
+        });
+        if (!conf.isConfirmed) return;
+        try {
+            const r = await fetch('/api/v1/articulos/limpiar-vacios', {method:'DELETE'});
+            const d = await r.json();
+            Swal.fire({icon:'success', title:`${d.eliminados} artículos eliminados`, background:'#111', color:'#fff'});
+            cargarArticulos();
+        } catch(e) {
+            Swal.fire({icon:'error', title:'Error', background:'#111', color:'#fff'});
         }
     }
 

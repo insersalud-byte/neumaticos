@@ -83,66 +83,145 @@ def importar_excel(data: dict, db: Session = Depends(get_db)):
     opc_stock = data.get("opc_stock", "todos")
     opc_existente = data.get("opc_existente", "actualizar")
     ganancia_default = data.get("ganancia_default", 30)
-    
+
+    # Alias de columnas: variantes → clave interna
+    ALIAS = {
+        "codigo": "codigo", "code": "codigo", "cod": "codigo",
+        "descripcion": "descripcion", "descripción": "descripcion",
+        "nombre": "descripcion", "articulo": "descripcion", "artículo": "descripcion",
+        "description": "descripcion", "item": "descripcion", "producto": "descripcion",
+        "precio_compra": "precio_costo", "precio_costo": "precio_costo",
+        "costo": "precio_costo", "precio": "precio_costo",
+        "ganancia_porcentaje": "margen", "ganancia": "margen", "margen": "margen", "utilidad": "margen",
+        "stock": "stock", "cantidad": "stock", "existencia": "stock",
+        "marca": "marca", "brand": "marca",
+        "categoria": "categoria", "categoría": "categoria", "category": "categoria", "rubro": "categoria",
+        "modelo": "modelo",
+    }
+
+    import unicodedata
+
+    def normalize_key(k):
+        k = str(k).strip().lower()
+        k = unicodedata.normalize("NFD", k)
+        k = "".join(c for c in k if unicodedata.category(c) != "Mn")
+        k = k.replace(" ", "_")
+        return ALIAS.get(k, k)
+
+    def g(art_norm, *keys, default=""):
+        for k in keys:
+            if k in art_norm and art_norm[k] not in (None, ""):
+                return art_norm[k]
+        return default
+
     nuevos = 0
     actualizados = 0
+    omitidos = 0
     errores = []
-    
-    for art in articulos:
+
+    for raw in articulos:
         try:
-            codigo = art.get("codigo", "")
-            descripcion = art.get("descripcion", "")
-            precio_costo = float(art.get("precio_costo", 0) or 0)
-            margen = float(art.get("margen", art.get("ganancia", ganancia_default)) or ganancia_default)
-            categoria = art.get("categoria", "")
-            
+            # Normalizar claves del row
+            art = {normalize_key(k): v for k, v in raw.items()}
+
+            codigo = str(g(art, "codigo", default="")).strip()
+            descripcion = str(g(art, "descripcion", default="")).strip()
+            marca = str(g(art, "marca", default="")).strip()
+            categoria = str(g(art, "categoria", default="")).strip()
+            modelo = str(g(art, "modelo", default="")).strip()
+
+            # Saltar filas sin nombre ni código
+            if not descripcion and not codigo:
+                omitidos += 1
+                continue
+
+            precio_costo = float(g(art, "precio_costo", default=0) or 0)
+            margen = float(g(art, "margen", default=ganancia_default) or ganancia_default)
             precio_venta = precio_costo * (1 + margen / 100)
-            
+            stock_val = float(g(art, "stock", default=0) or 0)
+
+            # Auto-crear categoría si no existe
+            if categoria:
+                cat_obj = db.query(Categoria).filter(
+                    func.lower(Categoria.nombre) == categoria.lower()
+                ).first()
+                if not cat_obj:
+                    cat_obj = Categoria(nombre=categoria)
+                    db.add(cat_obj)
+                    db.flush()
+
+            # Buscar existente
+            existente = None
             if codigo:
                 existente = db.query(Producto).filter(Producto.codigo == codigo).first()
-            elif descripcion:
-                existente = db.query(Producto).filter(Producto.descripcion == descripcion).first()
-            else:
-                existente = None
-            
+            if not existente and descripcion:
+                existente = db.query(Producto).filter(
+                    func.lower(Producto.descripcion) == descripcion.lower()
+                ).first()
+
             if existente:
                 if opc_existente == "actualizar":
-                    if art.get("descripcion"):
+                    if descripcion:
                         existente.descripcion = descripcion
-                    if art.get("marca"):
-                        existente.marca = art.get("marca", "")
+                    if marca:
+                        existente.marca = marca
                     existente.precio_costo = precio_costo
                     existente.costo_base = precio_costo
                     existente.precio_venta_contado = precio_venta
                     existente.precio_venta_final = precio_venta
                     if categoria:
                         existente.categoria = categoria
-                    if art.get("stock") is not None:
-                        existente.stock_real = float(art.get("stock", 0))
-                        existente.stock_local = float(art.get("stock", 0))
+                    if opc_stock != "no_actualizar":
+                        existente.stock_real = stock_val
+                        existente.stock_local = stock_val
                     actualizados += 1
             else:
                 nuevo = Producto(
                     codigo=codigo,
                     descripcion=descripcion,
-                    marca=art.get("marca", ""),
-                    modelo=art.get("modelo", ""),
+                    marca=marca,
+                    modelo=modelo,
                     categoria=categoria,
                     precio_costo=precio_costo,
                     costo_base=precio_costo,
                     precio_venta_contado=precio_venta,
                     precio_venta_final=precio_venta,
-                    stock_real=float(art.get("stock", 0) or 0),
-                    stock_local=float(art.get("stock", 0) or 0),
+                    stock_real=stock_val,
+                    stock_local=stock_val,
                     activo=True,
                 )
                 db.add(nuevo)
                 nuevos += 1
         except Exception as e:
             errores.append(str(e))
-    
+
     db.commit()
-    return {"nuevos": nuevos, "actualizados": actualizados, "errores": errores}
+    return {"nuevos": nuevos, "actualizados": actualizados, "omitidos": omitidos, "errores": errores}
+
+
+@router.delete("/limpiar-vacios")
+def limpiar_articulos_vacios(db: Session = Depends(get_db)):
+    """Elimina definitivamente artículos sin descripción ni código."""
+    arts = db.query(Producto).filter(
+        ((Producto.descripcion == None) | (Producto.descripcion == "")) &
+        ((Producto.codigo == None) | (Producto.codigo == ""))
+    ).all()
+    count = len(arts)
+    for a in arts:
+        db.delete(a)
+    db.commit()
+    return {"eliminados": count}
+
+
+@router.delete("/por-categoria")
+def borrado_masivo_categoria(data: dict, db: Session = Depends(get_db)):
+    """Elimina (soft-delete) todos los artículos de una categoría."""
+    categoria = data.get("categoria", "").strip()
+    if not categoria:
+        raise HTTPException(status_code=400, detail="Falta la categoría")
+    count = db.query(Producto).filter(Producto.categoria == categoria).update({"activo": False})
+    db.commit()
+    return {"eliminados": count, "categoria": categoria}
 
 
 # ── CATEGORÍAS ──
