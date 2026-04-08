@@ -67,33 +67,89 @@
             <div class="bg-[#18181b] border border-[#27272a] p-5 md:p-6 rounded-2xl shadow-2xl mb-6 md:mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                 <div class="w-full lg:w-auto">
                     <h2 class="text-2xl md:text-3xl font-black text-white italic tracking-tighter">CUENTAS CORRIENTES</h2>
-                    <p class="text-gray-500 text-sm mt-1">Gestión de créditos, saldos deudores y remitos de clientes.</p>
+                    <p class="text-gray-500 text-sm mt-1">Gestión de créditos, saldos deudores y remitos.</p>
                 </div>
-                <div class="w-full lg:w-auto flex gap-3">
-                    <button onclick="cargarClientes(false)" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 px-5 rounded-lg transition text-xs md:text-sm">VER TODOS</button>
-                    <button onclick="cargarClientes(true)" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-5 rounded-lg transition text-xs md:text-sm">SOLO DEUDORES</button>
+                <div class="w-full lg:w-auto flex gap-3 flex-wrap">
+                    <button id="tabBtnClientes" onclick="switchTab('clientes')" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-5 rounded-lg transition text-xs md:text-sm">
+                        <i class="fas fa-users mr-1"></i> CLIENTES
+                    </button>
+                    <button id="tabBtnProveedores" onclick="switchTab('proveedores')" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 px-5 rounded-lg transition text-xs md:text-sm">
+                        <i class="fas fa-truck mr-1"></i> PROVEEDORES
+                    </button>
                 </div>
             </div>
 
-            <div class="bg-[#18181b] border border-[#27272a] rounded-2xl overflow-hidden shadow-xl">
-                <div class="p-4">
-                    <input id="buscar-cliente" type="text" placeholder="Buscar cliente por nombre..." oninput="filtrarTablaClientes()"
-                        class="w-full bg-[#09090b] border border-[#27272a] text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-red-500 transition placeholder-gray-600">
+            <!-- TAB CLIENTES -->
+            <div id="tabClientes">
+                <div class="flex gap-3 mb-4">
+                    <button onclick="cargarClientes(false)" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition text-xs">VER TODOS</button>
+                    <button onclick="cargarClientes(true)" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition text-xs">SOLO DEUDORES</button>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead class="bg-[#222] border-b border-gray-800">
-                            <tr>
-                                <th class="px-6 py-4 text-left text-gray-400 font-semibold uppercase text-xs">Cliente</th>
-                                <th class="px-6 py-4 text-left text-gray-400 font-semibold uppercase text-xs">Teléfono</th>
-                                <th class="px-6 py-4 text-right text-gray-400 font-semibold uppercase text-xs">Saldo Deudor</th>
-                                <th class="px-6 py-4 text-center text-gray-400 font-semibold uppercase text-xs">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabla-clientes" class="divide-y divide-gray-800/50">
-                            <tr><td colspan="4" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Cargando cuentas...</td></tr>
-                        </tbody>
-                    </table>
+                <div class="bg-[#18181b] border border-[#27272a] rounded-2xl overflow-hidden shadow-xl">
+                    <div class="p-4">
+                        <input id="buscar-cliente" type="text" placeholder="Buscar cliente por nombre..." oninput="filtrarTablaClientes()"
+                            class="w-full bg-[#09090b] border border-[#27272a] text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-red-500 transition placeholder-gray-600">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-[#222] border-b border-gray-800">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-gray-400 font-semibold uppercase text-xs">Cliente</th>
+                                    <th class="px-6 py-4 text-left text-gray-400 font-semibold uppercase text-xs">Teléfono</th>
+                                    <th class="px-6 py-4 text-right text-gray-400 font-semibold uppercase text-xs">Saldo Deudor</th>
+                                    <th class="px-6 py-4 text-center text-gray-400 font-semibold uppercase text-xs">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-clientes" class="divide-y divide-gray-800/50">
+                                <tr><td colspan="4" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Cargando cuentas...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB PROVEEDORES -->
+            <div id="tabProveedores" class="hidden">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-[#18181b] border border-[#27272a] rounded-xl p-4">
+                        <p class="text-xs text-gray-500 uppercase font-bold mb-1">Proveedores con deuda</p>
+                        <p id="kpi-prov-deudores" class="text-2xl font-black text-orange-400">-</p>
+                    </div>
+                    <div class="bg-[#18181b] border border-[#27272a] rounded-xl p-4">
+                        <p class="text-xs text-gray-500 uppercase font-bold mb-1">Total que debemos</p>
+                        <p id="kpi-prov-total" class="text-2xl font-black text-red-400">-</p>
+                    </div>
+                    <div class="col-span-2 md:col-span-1 bg-[#18181b] border border-[#27272a] rounded-xl p-4 flex items-center gap-3">
+                        <button onclick="cargarProveedores(true)" class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-3 rounded-lg transition text-xs">
+                            <i class="fas fa-exclamation-circle mr-1"></i> SOLO CON DEUDA
+                        </button>
+                        <button onclick="cargarProveedores(false)" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-3 rounded-lg transition text-xs">
+                            VER TODOS
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-[#18181b] border border-[#27272a] rounded-2xl overflow-hidden shadow-xl">
+                    <div class="p-4">
+                        <input id="buscar-prov" type="text" placeholder="Buscar proveedor..." oninput="filtrarTablaProveedores()"
+                            class="w-full bg-[#09090b] border border-[#27272a] text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500 transition placeholder-gray-600">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-[#222] border-b border-gray-800">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-gray-400 font-semibold uppercase text-xs">Proveedor</th>
+                                    <th class="px-6 py-4 text-left text-gray-400 font-semibold uppercase text-xs">CUIT</th>
+                                    <th class="px-6 py-4 text-left text-gray-400 font-semibold uppercase text-xs">Teléfono</th>
+                                    <th class="px-6 py-4 text-right text-gray-400 font-semibold uppercase text-xs">Lo que debemos</th>
+                                    <th class="px-6 py-4 text-center text-gray-400 font-semibold uppercase text-xs">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-proveedores" class="divide-y divide-gray-800/50">
+                                <tr><td colspan="5" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -208,10 +264,87 @@
     </div>
 </div>
 
+<!-- MODAL DETALLE PROVEEDOR -->
+<div id="modalProv" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
+    <div id="modalProvInner" class="bg-[#18181b] border border-gray-700 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300">
+
+        <div class="bg-[#222] border-b border-gray-800 p-5 flex justify-between items-center">
+            <div>
+                <h3 class="text-xl font-bold text-white" id="provModalNombre">Proveedor</h3>
+                <p class="text-gray-400 text-xs" id="provModalCuit">CUIT: ---</p>
+            </div>
+            <button onclick="cerrarModalProv()" class="text-gray-500 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="p-5 grid grid-cols-1 lg:grid-cols-2 gap-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
+
+            <div class="space-y-4">
+                <div class="bg-[#222] rounded-xl p-4 border border-gray-800">
+                    <p class="text-xs text-gray-500 uppercase font-bold mb-1">Lo que debemos</p>
+                    <p id="provModalSaldo" class="text-3xl font-black text-orange-400">$0</p>
+                </div>
+
+                <!-- Facturas impagas -->
+                <div>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                        <i class="fas fa-file-invoice text-orange-400 mr-1"></i>Facturas Pendientes
+                    </p>
+                    <div id="provImpagas" class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                        <p class="text-gray-500 text-sm italic">Cargando...</p>
+                    </div>
+                </div>
+
+                <!-- Registrar pago -->
+                <div class="bg-[#222] rounded-xl p-4 border border-gray-800 space-y-3">
+                    <p class="text-sm font-bold text-white">Registrar Pago al Proveedor</p>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Monto ($)</label>
+                        <input type="number" id="provPagoMonto" placeholder="0"
+                            class="w-full bg-[#111] border border-gray-700 text-white text-sm rounded-lg p-2.5 outline-none focus:border-orange-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Método</label>
+                        <select id="provPagoMetodo" onchange="toggleChequeRow()"
+                            class="w-full bg-[#111] border border-gray-700 text-white text-sm rounded-lg p-2.5 outline-none focus:border-orange-500 cursor-pointer">
+                            <option value="efectivo">Efectivo</option>
+                            <option value="transferencia">Transferencia</option>
+                            <option value="cheque">Cheque</option>
+                            <option value="tarjeta">Tarjeta</option>
+                        </select>
+                    </div>
+                    <div id="chequeRow" class="hidden">
+                        <label class="block text-xs text-gray-400 mb-1">N° Cheque</label>
+                        <input type="text" id="provPagoCheque" placeholder="Número de cheque"
+                            class="w-full bg-[#111] border border-gray-700 text-white text-sm rounded-lg p-2.5 outline-none focus:border-orange-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Observaciones</label>
+                        <input type="text" id="provPagoObs" placeholder="Opcional..."
+                            class="w-full bg-[#111] border border-gray-700 text-white text-sm rounded-lg p-2.5 outline-none focus:border-orange-500">
+                    </div>
+                    <button onclick="procesarPagoProveedor()" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 rounded-lg transition text-sm">
+                        <i class="fas fa-money-bill-wave mr-1"></i> Registrar Pago
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <p class="text-sm font-bold text-white mb-3">Historial de Movimientos</p>
+                <div id="provHistorial" class="space-y-2 max-h-[480px] overflow-y-auto custom-scrollbar pr-1">
+                    <p class="text-gray-500 text-sm italic">Cargando...</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
 <script>
     const currency = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
     let clienteActual = null;
     let planesDisponibles = [];
+    let provActualId = null;
+    let proveedoresCache = [];
 
     async function cargarClientes(soloDeudores = true) {
         const tbody = document.getElementById('tabla-clientes');
@@ -492,6 +625,195 @@
         await _originalAbrirDetalle(clienteId);
         cargarFacturasImpagasCliente(clienteId);
     };
+
+    // ─── TABS ──────────────────────────────────────────────────
+    function switchTab(tab) {
+        const esClientes = tab === 'clientes';
+        document.getElementById('tabClientes').classList.toggle('hidden', !esClientes);
+        document.getElementById('tabProveedores').classList.toggle('hidden', esClientes);
+        document.getElementById('tabBtnClientes').className = esClientes
+            ? 'bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-5 rounded-lg transition text-xs md:text-sm'
+            : 'bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 px-5 rounded-lg transition text-xs md:text-sm';
+        document.getElementById('tabBtnProveedores').className = !esClientes
+            ? 'bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 px-5 rounded-lg transition text-xs md:text-sm'
+            : 'bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 px-5 rounded-lg transition text-xs md:text-sm';
+        if (!esClientes) cargarProveedores(true);
+    }
+
+    // ─── PROVEEDORES ───────────────────────────────────────────
+    async function cargarProveedores(soloConDeuda = true) {
+        const tbody = document.getElementById('tabla-proveedores');
+        tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Cargando...</td></tr>`;
+        try {
+            const res = await fetch(`/api/v1/compras/proveedores?solo_con_deuda=${soloConDeuda}`);
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            proveedoresCache = data.data || [];
+
+            const conDeuda = proveedoresCache.filter(p => p.saldo_deudor > 0);
+            const totalDeuda = conDeuda.reduce((s, p) => s + (p.saldo_deudor || 0), 0);
+            document.getElementById('kpi-prov-deudores').textContent = conDeuda.length;
+            document.getElementById('kpi-prov-total').textContent = currency.format(totalDeuda);
+
+            renderTablaProveedores(proveedoresCache);
+        } catch(e) {
+            tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-red-500">Error al cargar proveedores.</td></tr>`;
+        }
+    }
+
+    function renderTablaProveedores(lista) {
+        const tbody = document.getElementById('tabla-proveedores');
+        tbody.innerHTML = '';
+        if (!lista.length) {
+            tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 italic">No hay proveedores en esta vista.</td></tr>`;
+            return;
+        }
+        lista.forEach(p => {
+            const deudaClass = p.saldo_deudor > 0 ? 'text-orange-400' : 'text-green-400';
+            tbody.innerHTML += `
+            <tr class="hover:bg-white/5 transition cursor-pointer" onclick="abrirDetalleProv(${p.id})">
+                <td class="px-6 py-4 font-semibold text-white">${p.nombre || ''}</td>
+                <td class="px-6 py-4 text-gray-400 text-sm">${p.cuit || '-'}</td>
+                <td class="px-6 py-4 text-gray-400 text-sm">${p.telefono || '-'}</td>
+                <td class="px-6 py-4 text-right font-bold font-mono ${deudaClass}">${currency.format(p.saldo_deudor || 0)}</td>
+                <td class="px-6 py-4 text-center">
+                    <button onclick="event.stopPropagation();abrirDetalleProv(${p.id})"
+                        class="bg-[#222] hover:bg-orange-900 text-orange-400 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition">
+                        <i class="fas fa-plus-circle mr-1"></i>Ver / Pagar
+                    </button>
+                </td>
+            </tr>`;
+        });
+    }
+
+    function filtrarTablaProveedores() {
+        const q = document.getElementById('buscar-prov').value.toLowerCase();
+        const filtrados = proveedoresCache.filter(p => p.nombre.toLowerCase().includes(q));
+        renderTablaProveedores(filtrados);
+    }
+
+    async function abrirDetalleProv(provId) {
+        provActualId = provId;
+        const modal = document.getElementById('modalProv');
+        const modalInner = document.getElementById('modalProvInner');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => { modal.classList.remove('opacity-0'); modalInner.classList.remove('scale-95'); }, 10);
+
+        document.getElementById('provPagoMonto').value = '';
+        document.getElementById('provPagoObs').value = '';
+        document.getElementById('provPagoMetodo').value = 'efectivo';
+        document.getElementById('chequeRow').classList.add('hidden');
+        document.getElementById('provHistorial').innerHTML = '<p class="text-gray-500 text-sm italic">Cargando...</p>';
+        document.getElementById('provImpagas').innerHTML = '<p class="text-gray-500 text-sm italic">Cargando...</p>';
+
+        try {
+            const [resMov, resImp] = await Promise.all([
+                fetch(`/api/v1/compras/proveedores/${provId}/movimientos`),
+                fetch(`/api/v1/compras/proveedores/${provId}/facturas-impagas`)
+            ]);
+            const dataMov = await resMov.json();
+            const dataImp = await resImp.json();
+
+            const p = dataMov.proveedor;
+            document.getElementById('provModalNombre').textContent = p.nombre || 'Proveedor';
+            document.getElementById('provModalCuit').textContent = `CUIT: ${p.cuit || '---'}`;
+            document.getElementById('provModalSaldo').textContent = currency.format(p.saldo_deudor || 0);
+
+            // Movimientos
+            const movs = dataMov.movimientos || [];
+            const histDiv = document.getElementById('provHistorial');
+            if (!movs.length) {
+                histDiv.innerHTML = '<p class="text-gray-500 text-sm italic">Sin movimientos registrados.</p>';
+            } else {
+                histDiv.innerHTML = movs.map(m => {
+                    const esPago = m.tipo === 'pago';
+                    const icon = esPago ? 'fa-arrow-down text-green-400' : 'fa-arrow-up text-orange-400';
+                    const color = esPago ? 'text-green-400' : 'text-orange-400';
+                    const fecha = m.fecha ? new Date(m.fecha).toLocaleDateString('es-AR') : '';
+                    const extra = m.numero_cheque ? ` | Cheque #${m.numero_cheque}` : '';
+                    return `<div class="bg-[#222] rounded-lg p-3 border border-gray-800 flex items-center gap-3">
+                        <i class="fas ${icon}"></i>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs text-white font-semibold truncate">${m.descripcion || m.tipo}</p>
+                            <p class="text-[10px] text-gray-500">${fecha}${m.metodo_pago ? ' | ' + m.metodo_pago : ''}${extra}</p>
+                        </div>
+                        <span class="font-bold font-mono text-sm ${color}">${currency.format(m.monto || 0)}</span>
+                    </div>`;
+                }).join('');
+            }
+
+            // Facturas impagas
+            const impagas = dataImp.facturas_impagas || [];
+            const impDiv = document.getElementById('provImpagas');
+            if (!impagas.length) {
+                impDiv.innerHTML = '<p class="text-green-400 text-sm"><i class="fas fa-check-circle mr-1"></i>Sin facturas pendientes</p>';
+            } else {
+                impDiv.innerHTML = impagas.map(f => {
+                    const fecha = f.fecha ? new Date(f.fecha).toLocaleDateString('es-AR') : '';
+                    return `<div class="bg-[#222] rounded-lg p-2.5 border border-gray-800 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-white font-semibold">${f.numero_factura || 'S/N'}</p>
+                            <p class="text-[10px] text-gray-500">${fecha} | Total: ${currency.format(f.total||0)}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500">Pagado: ${currency.format(f.pagado||0)}</p>
+                            <p class="text-sm font-bold text-orange-400">Pendiente: ${currency.format(f.pendiente||0)}</p>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+        } catch(e) {
+            document.getElementById('provHistorial').innerHTML = '<p class="text-red-500 text-sm">Error al cargar datos.</p>';
+        }
+    }
+
+    function cerrarModalProv() {
+        const modal = document.getElementById('modalProv');
+        const modalInner = document.getElementById('modalProvInner');
+        modal.classList.add('opacity-0');
+        modalInner.classList.add('scale-95');
+        setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
+        provActualId = null;
+    }
+
+    function toggleChequeRow() {
+        document.getElementById('chequeRow').classList.toggle('hidden', document.getElementById('provPagoMetodo').value !== 'cheque');
+    }
+
+    async function procesarPagoProveedor() {
+        if (!provActualId) return;
+        const monto = parseFloat(document.getElementById('provPagoMonto').value);
+        if (!monto || monto <= 0) {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Ingresá un monto válido', background: '#111', color: '#fff' });
+            return;
+        }
+        const metodo = document.getElementById('provPagoMetodo').value;
+        const numero_cheque = document.getElementById('provPagoCheque')?.value || '';
+        const observaciones = document.getElementById('provPagoObs').value || '';
+
+        try {
+            const res = await fetch(`/api/v1/compras/proveedores/${provActualId}/pagar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ monto, metodo_pago: metodo, numero_cheque, observaciones })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                await Swal.fire({
+                    icon: 'success', title: 'Pago registrado',
+                    text: `Se registró el pago de ${currency.format(monto)}. Nuevo saldo: ${currency.format(data.nuevo_saldo)}`,
+                    timer: 2500, showConfirmButton: false, background: '#111', color: '#fff'
+                });
+                cerrarModalProv();
+                cargarProveedores(true);
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.detail || 'No se pudo registrar el pago', background: '#111', color: '#fff' });
+            }
+        } catch(e) {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Error de conexión', background: '#111', color: '#fff' });
+        }
+    }
 
     cargarCoeficientes();
     cargarClientes();

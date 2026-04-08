@@ -7,7 +7,7 @@ from core.database import get_db
 from core.auth import get_current_user
 from models.models import (
     Venta, Producto, Servicio, Vehiculo, Cliente,
-    CoeficienteFinanciacion, IngresoTaller, MovimientoCliente
+    CoeficienteFinanciacion, IngresoTaller, MovimientoCuenta
 )
 
 router = APIRouter(prefix="/api/v1/operaciones", tags=["operaciones"])
@@ -670,13 +670,14 @@ def venta_mostrador(data: dict, db: Session = Depends(get_db)):
     db.commit()
     
     # Registrar en cuenta corriente si es a crédito
-    if debe > 0 and cliente_id and metodo_pago == "cuenta_corriente":
+    metodo_normalizado = metodo_pago.lower().replace(" ", "_")
+    if debe > 0 and cliente_id and metodo_normalizado == "cuenta_corriente":
         cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
         if cliente:
             cliente.saldo_deudor = (cliente.saldo_deudor or 0) + debe
-            mov = MovimientoCliente(
+            mov = MovimientoCuenta(
                 cliente_id=cliente_id,
-                tipo="credito",
+                tipo="cargo",
                 monto=debe,
                 descripcion=f"Venta #{venta.id} - Saldo pendiente",
                 metodo_pago=metodo_pago,
@@ -684,7 +685,7 @@ def venta_mostrador(data: dict, db: Session = Depends(get_db)):
             )
             db.add(mov)
             db.commit()
-    
+
     return {"venta_id": venta.id, "cliente_id": cliente_id, "vehiculo_id": vehiculo_id}
 
 
@@ -784,13 +785,14 @@ def crear_operacion(data: dict, db: Session = Depends(get_db)):
     
     # Registrar en cuenta corriente si es a crédito
     metodo_pago = data.get("metodo_pago", "Efectivo")
-    if debe > 0 and cliente_id and metodo_pago == "cuenta_corriente":
+    metodo_normalizado = metodo_pago.lower().replace(" ", "_")
+    if debe > 0 and cliente_id and metodo_normalizado == "cuenta_corriente":
         cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
         if cliente:
             cliente.saldo_deudor = (cliente.saldo_deudor or 0) + debe
-            mov = MovimientoCliente(
+            mov = MovimientoCuenta(
                 cliente_id=cliente_id,
-                tipo="credito",
+                tipo="cargo",
                 monto=debe,
                 descripcion=f"Venta #{venta.id} - Saldo pendiente",
                 metodo_pago=metodo_pago,
@@ -798,7 +800,7 @@ def crear_operacion(data: dict, db: Session = Depends(get_db)):
             )
             db.add(mov)
             db.commit()
-    
+
     return {"venta_id": venta.id, "message": "Operación creada"}
 
 
