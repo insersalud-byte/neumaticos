@@ -80,7 +80,7 @@
       </button>
       <label class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold px-6 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition">
         <i class="fas fa-upload"></i> RESTORE
-        <input type="file" id="restoreFile" accept=".zip,.sql,.db" class="hidden" onchange="subirYRestaurar(this.files[0])">
+        <input type="file" id="restoreFile" accept=".json" class="hidden" onchange="subirYRestaurar(this.files[0])">
       </label>
     </div>
 
@@ -92,7 +92,7 @@
         </div>
         <div>
           <h3 class="font-bold text-white mb-1">¿Cómo funciona?</h3>
-          <p class="text-sm text-gray-400">El backup crea una copia exacta de la base de datos. Los archivos se guardan en una carpeta segura. Ante cualquier problema, podés restaurar desde cualquier backup anterior.</p>
+          <p class="text-sm text-gray-400"><strong>HACER BACKUP</strong> descarga un archivo <code>.json</code> con toda la base de datos a tu computadora. Para restaurar, subí ese archivo con el botón <strong>RESTORE</strong>. Guardá el archivo en un lugar seguro.</p>
         </div>
       </div>
     </div>
@@ -138,111 +138,48 @@
   </main>
 
   <script>
-    function logout() { window.location.href = '../login.html'; }
+    function logout() { window.location.href = '/api/v1/auth/logout'; }
 
-    async function cargarBackups() {
-      try {
-        const res = await fetch('/api/v1/backup/listar');
-        const data = await res.json();
-        
-        document.getElementById('statTotal').textContent = data.length;
-        document.getElementById('statUltimo').textContent = data.length ? data[0].fecha : '-';
-        
-        let espacio = 0;
-        data.forEach(b => espacio += b.tamano);
-        document.getElementById('statEspacio').textContent = formatBytes(espacio);
-
-        const tbody = document.getElementById('tablaBackups');
-        if (!data.length) {
-          tbody.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-gray-600">Sin backups disponibles</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = data.map(b => `
-          <tr class="border-b border-blue-900/10 hover:bg-blue-900/10 transition">
-            <td class="py-3 text-white font-mono text-xs"><i class="fas fa-file-archive text-gray-500 mr-2"></i>${b.nombre}</td>
-            <td class="py-3 text-gray-400 text-xs">${b.fecha}</td>
-            <td class="py-3 text-right text-gray-400 text-xs">${formatBytes(b.tamano)}</td>
-            <td class="py-3 text-center">
-              <button onclick="descargarBackup('${b.nombre}')" class="text-blue-400 hover:text-blue-300 mr-3" title="Descargar"><i class="fas fa-download"></i></button>
-              <button onclick="restaurarBackup('${b.nombre}')" class="text-yellow-400 hover:text-yellow-300" title="Restaurar"><i class="fas fa-undo"></i></button>
-            </td>
-          </tr>
-        `).join('');
-      } catch(e) {
-        document.getElementById('tablaBackups').innerHTML = '<tr><td colspan="4" class="py-8 text-center text-red-500">Error al cargar backups</td></tr>';
-      }
+    function cargarBackups() {
+      // No hay archivos locales con PostgreSQL/Vercel — se muestran instrucciones
+      document.getElementById('statTotal').textContent = '-';
+      document.getElementById('statUltimo').textContent = '-';
+      document.getElementById('statEspacio').textContent = '-';
+      document.getElementById('tablaBackups').innerHTML =
+        '<tr><td colspan="4" class="py-8 text-center text-gray-500">Los backups se descargan a tu PC como archivo .json y se restauran desde ahí.</td></tr>';
     }
 
     async function hacerBackup() {
       try {
         const result = await Swal.fire({
-          title: '¿Crear backup?',
-          text: 'Se creará una copia de seguridad de la base de datos.',
+          title: '¿Descargar backup?',
+          text: 'Se descargará un archivo .json con toda la base de datos.',
           icon: 'question',
           showCancelButton: true,
           confirmButtonColor: '#16a34a',
           cancelButtonColor: '#6b7280',
           background: '#0f172a',
           color: '#fff',
-          confirmButtonText: 'Sí, crear',
+          confirmButtonText: 'Sí, descargar',
           cancelButtonText: 'Cancelar'
         });
         if (!result.isConfirmed) return;
 
-        const res = await fetch('/api/v1/backup/crear', { method: 'POST' });
-        if (res.ok) {
-          await Swal.fire({icon:'success', title:'Backup creado', text:'Copia de seguridad guardada correctamente', background:'#0f172a', color:'#fff', timer:2500, showConfirmButton:false});
-          cargarBackups();
-        } else {
-          throw new Error('Error');
-        }
+        // Trigger file download
+        const a = document.createElement('a');
+        a.href = '/api/v1/backup/descargar';
+        a.click();
       } catch(e) {
-        Swal.fire({icon:'error', title:'Error', text:'No se pudo crear el backup', background:'#0f172a', color:'#fff'});
+        Swal.fire({icon:'error', title:'Error', text:'No se pudo generar el backup', background:'#0f172a', color:'#fff'});
       }
-    }
-
-    async function restaurarBackup(nombre) {
-      const result = await Swal.fire({
-        title: '¿Restaurar backup?',
-        text: `Se reemplazarán todos los datos actuales con el backup: ${nombre}`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
-        background: '#0f172a',
-        color: '#fff',
-        confirmButtonText: 'Sí, restaurar',
-        cancelButtonText: 'Cancelar'
-      });
-      if (!result.isConfirmed) return;
-
-      try {
-        const res = await fetch('/api/v1/backup/restaurar', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({archivo: nombre})
-        });
-        if (res.ok) {
-          await Swal.fire({icon:'success', title:'Restaurado', text:'Datos restaurados correctamente. Recargá la página.', background:'#0f172a', color:'#fff', timer:3000, showConfirmButton:false});
-        } else {
-          throw new Error('Error');
-        }
-      } catch(e) {
-        Swal.fire({icon:'error', title:'Error', text:'No se pudo restaurar el backup', background:'#0f172a', color:'#fff'});
-      }
-    }
-
-    function descargarBackup(nombre) {
-      window.open(`/Backups_GiordaOS/${nombre}`, '_blank');
     }
 
     async function subirYRestaurar(file) {
       if (!file) return;
-      
+
       const result = await Swal.fire({
         title: '¿Restaurar desde archivo?',
-        text: `Se reemplazarán todos los datos actuales con: ${file.name}`,
+        text: `Se importarán todos los datos de: ${file.name}`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#dc2626',
@@ -258,30 +195,23 @@
       }
 
       const formData = new FormData();
-      formData.append('archivo', file);
+      formData.append('file', file);
 
       try {
-        const res = await fetch('/api/v1/backup/restaurar', {
-          method: 'POST',
-          body: formData
-        });
+        Swal.fire({title:'Restaurando...', text:'Espera un momento', background:'#0f172a', color:'#fff', allowOutsideClick:false, didOpen:()=>Swal.showLoading()});
+        const res = await fetch('/api/v1/backup/restaurar', { method: 'POST', body: formData });
+        const data = await res.json();
         if (res.ok) {
-          await Swal.fire({icon:'success', title:'Restaurado', text:'Datos restaurados correctamente. Recargá la página.', background:'#0f172a', color:'#fff', timer:3000, showConfirmButton:false});
+          const errMsg = data.errores && data.errores.length ? `\nAvisos: ${data.errores.slice(0,3).join(', ')}` : '';
+          await Swal.fire({icon:'success', title:'Restaurado', text:'Datos importados correctamente.' + errMsg, background:'#0f172a', color:'#fff', timer:4000, showConfirmButton:false});
+          location.reload();
         } else {
-          throw new Error('Error');
+          throw new Error(data.detail || 'Error');
         }
       } catch(e) {
-        Swal.fire({icon:'error', title:'Error', text:'No se pudo restaurar el backup', background:'#0f172a', color:'#fff'});
+        Swal.fire({icon:'error', title:'Error', text: e.message || 'No se pudo restaurar el backup', background:'#0f172a', color:'#fff'});
       }
       document.getElementById('restoreFile').value = '';
-    }
-
-    function formatBytes(bytes) {
-      if (bytes === 0) return '0 Bytes';
-      const k = 1024;
-      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
     cargarBackups();

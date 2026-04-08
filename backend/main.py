@@ -10,6 +10,8 @@ from models.models import (
 )
 from routers import auth, operaciones, finanzas, crm, reportes, taller, cuenta_corriente, compras, articulos, sueldos, backup
 
+IS_VERCEL = os.environ.get("VERCEL") == "1"
+
 app = FastAPI(title="GiordaOS API", version="1.0.0")
 
 def get_base_path():
@@ -37,31 +39,28 @@ app.include_router(articulos.router)
 app.include_router(sueldos.router)
 app.include_router(backup.router)
 
-# Static files
-app.mount("/admin", StaticFiles(directory=os.path.join(FRONTEND_DIR, "admin"), html=True), name="admin")
+# Static files — only mount when running locally (VPS/dev), not on Vercel
+if not IS_VERCEL:
+    app.mount("/admin", StaticFiles(directory=os.path.join(FRONTEND_DIR, "admin"), html=True), name="admin")
 
+    @app.get("/login.html")
+    def serve_login():
+        return FileResponse(os.path.join(FRONTEND_DIR, "login.html"))
 
-@app.get("/login.html")
-def serve_login():
-    return FileResponse(os.path.join(FRONTEND_DIR, "login.html"))
+    @app.get("/")
+    def root():
+        return FileResponse(os.path.join(FRONTEND_DIR, "login.html"))
 
+    @app.get("/api/v1/finanzas/admin/coeficientes-tarjetas")
+    def serve_coeficientes():
+        return FileResponse(os.path.join(FRONTEND_DIR, "admin", "coeficientes-tarjetas.html"))
 
-@app.get("/")
-def root():
-    return FileResponse(os.path.join(FRONTEND_DIR, "login.html"))
-
-
-@app.get("/api/v1/finanzas/admin/coeficientes-tarjetas")
-def serve_coeficientes():
-    return FileResponse(os.path.join(FRONTEND_DIR, "admin", "coeficientes-tarjetas.html"))
-
-
-@app.get("/Backups_GiordaOS/{filename}")
-def serve_backup_file(filename: str):
-    backup_path = os.path.join(BASE_PATH, "Backups_GiordaOS", filename)
-    if os.path.exists(backup_path):
-        return FileResponse(backup_path)
-    raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    @app.get("/Backups_GiordaOS/{filename}")
+    def serve_backup_file(filename: str):
+        backup_path = os.path.join(BASE_PATH, "Backups_GiordaOS", filename)
+        if os.path.exists(backup_path):
+            return FileResponse(backup_path)
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
 
 
 @app.on_event("startup")

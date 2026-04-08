@@ -1,0 +1,10 @@
+{
+  "outputDirectory": "frontend",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index.py" },
+    { "source": "/logout", "destination": "/api/index.py" }
+  ],
+  "redirects": [
+    { "source": "/", "destination": "/login.html", "permanent": false }
+  ]
+}
