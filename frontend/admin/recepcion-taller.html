@@ -196,72 +196,57 @@
       LISTO:     { label:'LISTO',     color:'border-l-green-500',  badge:'bg-green-900/30 text-green-400 border-green-800' },
     };
 
-    // ─── BÚSQUEDA DE PATENTE ────────────────────────────────
-    let timerPatente;
-    function buscarPatente(val) {
-      clearTimeout(timerPatente);
-      if (val.length < 2) { document.getElementById('dropPatente').classList.add('hidden'); return; }
-      timerPatente = setTimeout(async () => {
-        try {
-          const res = await fetch(`/api/v1/operaciones/vehiculos/buscar?q=${encodeURIComponent(val)}`);
-          const vehiculos = await res.json();
-          const drop = document.getElementById('dropPatente');
-          if (!vehiculos.length) { drop.classList.add('hidden'); return; }
-          drop.innerHTML = vehiculos.map(v => `
-            <div class="px-3 py-2 hover:bg-blue-900/30 cursor-pointer border-b border-blue-900/20 last:border-0"
-                 onclick="seleccionarPatente('${v.patente}', '${(v.modelo || '').replace(/'/g, "\\'")}', '${(v.cliente_nombre || '').replace(/'/g, "\\'")}')">
-              <p class="text-blue-300 font-mono font-bold text-sm">${v.patente}</p>
-              <p class="text-gray-400 text-xs">${v.modelo || 'Sin modelo'}</p>
-              <p class="text-gray-500 text-xs">${v.cliente_nombre || 'Cliente no registrado'}</p>
-            </div>
-          `).join('');
-          drop.classList.remove('hidden');
-        } catch(e) { document.getElementById('dropPatente').classList.add('hidden'); }
-      }, 300);
-    }
+    // ─── AUTOCOMPLETE UNIFICADO (nombre / teléfono / patente) ────
+    let _timerRecAC;
+    window._recAcData = [];
 
-    function seleccionarPatente(patente, modelo, cliente) {
-      document.getElementById('n_patente').value = patente;
-      document.getElementById('n_modelo').value = modelo;
-      if (cliente) document.getElementById('n_cliente').value = cliente;
-      document.getElementById('dropPatente').classList.add('hidden');
-    }
-
-    // ─── BÚSQUEDA DE CLIENTE ────────────────────────────────
-    let timerCliente;
-    function buscarCliente(val) {
-      clearTimeout(timerCliente);
-      if (val.length < 2) { document.getElementById('dropCliente').classList.add('hidden'); return; }
-      timerCliente = setTimeout(async () => {
+    async function buscarUnificadoRec(q, dropId) {
+      clearTimeout(_timerRecAC);
+      ['dropPatente','dropCliente'].forEach(id => {
+        if (id !== dropId) document.getElementById(id)?.classList.add('hidden');
+      });
+      const drop = document.getElementById(dropId);
+      if (q.length < 2) { drop.classList.add('hidden'); return; }
+      _timerRecAC = setTimeout(async () => {
         try {
-          const res = await fetch(`/api/v1/crm/clientes/buscar?q=${encodeURIComponent(val)}`);
+          const res = await fetch(`/api/v1/operaciones/clientes/buscar-completo?q=${encodeURIComponent(q)}`);
           const data = await res.json();
-          const clientes = data.data || [];
-          const drop = document.getElementById('dropCliente');
-          if (!clientes.length) { drop.classList.add('hidden'); return; }
-          drop.innerHTML = clientes.map(c => `
-            <div class="px-3 py-2 hover:bg-blue-900/30 cursor-pointer border-b border-blue-900/20 last:border-0"
-                 onclick="seleccionarCliente('${(c.nombre || '').replace(/'/g, "\\'")}', '${(c.telefono || '').replace(/'/g, "\\'")}')">
-              <p class="text-white font-semibold text-sm">${c.nombre}</p>
-              <p class="text-gray-400 text-xs">${c.telefono || 'Sin teléfono'}</p>
-            </div>
-          `).join('');
+          window._recAcData = data;
+          if (!data.length) { drop.classList.add('hidden'); return; }
+          drop.innerHTML = data.map((x, i) => {
+            const kmStr = x.kilometraje ? ` · ${x.kilometraje.toLocaleString('es-AR')} km` : '';
+            const patStr = x.patente ? `${x.patente}${x.modelo ? ' · ' + x.modelo : ''}${kmStr}` : 'Sin vehículo registrado';
+            return `<div class="px-3 py-2 hover:bg-blue-900/30 cursor-pointer border-b border-blue-900/20 last:border-0"
+                       onclick="selRegistroRec(${i})">
+              <p class="text-white font-semibold text-sm">${x.cliente_nombre || 'Sin nombre'} <span class="text-gray-500 font-normal text-xs">${x.cliente_telefono || ''}</span></p>
+              <p class="text-blue-300 font-mono text-xs">${patStr}</p>
+            </div>`;
+          }).join('');
           drop.classList.remove('hidden');
-        } catch(e) { document.getElementById('dropCliente').classList.add('hidden'); }
+        } catch(e) { drop.classList.add('hidden'); }
       }, 300);
     }
 
-    function seleccionarCliente(nombre, telefono) {
-      document.getElementById('n_cliente').value = nombre;
-      if (telefono) document.getElementById('n_whatsapp').value = telefono;
-      document.getElementById('dropCliente').classList.add('hidden');
+    function selRegistroRec(idx) {
+      const x = window._recAcData[idx];
+      if (!x) return;
+      document.getElementById('n_patente').value = x.patente || '';
+      document.getElementById('n_modelo').value = x.modelo || '';
+      document.getElementById('n_cliente').value = x.cliente_nombre || '';
+      if (x.cliente_telefono) document.getElementById('n_whatsapp').value = x.cliente_telefono;
+      if (x.kilometraje) document.getElementById('n_km').value = x.kilometraje;
+      ['dropPatente','dropCliente'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
     }
+
+    // Alias para compatibilidad con oninput existente
+    function buscarPatente(val) { buscarUnificadoRec(val, 'dropPatente'); }
+    function buscarCliente(val) { buscarUnificadoRec(val, 'dropCliente'); }
 
     // Cerrar dropdowns al hacer click afuera
     document.addEventListener('click', (e) => {
-      if (!e.target.closest('#n_patente') && !e.target.closest('#dropPatente')) 
+      if (!e.target.closest('#n_patente') && !e.target.closest('#dropPatente'))
         document.getElementById('dropPatente').classList.add('hidden');
-      if (!e.target.closest('#n_cliente') && !e.target.closest('#dropCliente')) 
+      if (!e.target.closest('#n_cliente') && !e.target.closest('#dropCliente'))
         document.getElementById('dropCliente').classList.add('hidden');
     });
 

@@ -202,15 +202,15 @@
             <!-- Cliente con autocomplete -->
             <div class="relative">
               <label class="block text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Cliente</label>
-              <input id="inpCliente" type="text" placeholder="Nombre o teléfono..." class="input-dark"
-                oninput="buscarCliente(this.value)" autocomplete="off"/>
+              <input id="inpCliente" type="text" placeholder="Nombre..." class="input-dark"
+                oninput="buscarUnificadoPOS(this.value,'dropCliente')" autocomplete="off"/>
               <div id="dropCliente" class="autocomplete-box hidden"></div>
             </div>
             <!-- Patente -->
             <div class="relative">
               <label class="block text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Patente</label>
               <input id="inpPatente" type="text" placeholder="ABC123 o AB123CD" class="input-dark mono uppercase"
-                oninput="this.value=this.value.toUpperCase()" onblur="buscarPatente(this.value)"/>
+                oninput="this.value=this.value.toUpperCase(); buscarUnificadoPOS(this.value,'dropPatente')" autocomplete="off"/>
               <div id="dropPatente" class="autocomplete-box hidden"></div>
             </div>
             <!-- Modelo -->
@@ -219,9 +219,11 @@
               <input id="inpModelo" type="text" placeholder="Ej: Ford Ranger 2022" class="input-dark"/>
             </div>
             <!-- Teléfono -->
-            <div>
+            <div class="relative">
               <label class="block text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Teléfono</label>
-              <input id="inpTelefono" type="text" placeholder="Ej: 2644123456" class="input-dark"/>
+              <input id="inpTelefono" type="text" placeholder="Ej: 2644123456" class="input-dark"
+                oninput="buscarUnificadoPOS(this.value,'dropTelefono')" autocomplete="off"/>
+              <div id="dropTelefono" class="autocomplete-box hidden"></div>
             </div>
             <!-- Kilometraje -->
             <div>
@@ -507,55 +509,48 @@
 
     // ─── CLIENTE AUTOCOMPLETE ─────────────────────────────
     let timerCliente;
-    function buscarCliente(val) {
-      clearTimeout(timerCliente);
-      clienteId = null;
-      if (val.length < 2) { document.getElementById('dropCliente').classList.add('hidden'); return; }
-      timerCliente = setTimeout(async () => {
+    // ─── AUTOCOMPLETE UNIFICADO (nombre / teléfono / patente) ────
+    let _timerPosAC;
+    window._posAcData = [];
+
+    async function buscarUnificadoPOS(q, dropId) {
+      clearTimeout(_timerPosAC);
+      ['dropCliente','dropPatente','dropTelefono'].forEach(id => {
+        if (id !== dropId) document.getElementById(id)?.classList.add('hidden');
+      });
+      const drop = document.getElementById(dropId);
+      if (q.length < 2) { drop.classList.add('hidden'); return; }
+      _timerPosAC = setTimeout(async () => {
         try {
-          const r = await fetch(`/api/v1/crm/clientes/buscar?termino=${encodeURIComponent(val)}`);
-          const resp = await r.json();
-          const data = resp.data || [];
-          const drop = document.getElementById('dropCliente');
+          const r = await fetch(`/api/v1/operaciones/clientes/buscar-completo?q=${encodeURIComponent(q)}`);
+          const data = await r.json();
+          window._posAcData = data;
           if (!data.length) { drop.classList.add('hidden'); return; }
-          drop.innerHTML = data.map(c =>
-            `<div class="autocomplete-item" data-id="${c.id}" data-nombre="${(c.nombre||'').replace(/"/g,'&quot;')}" data-tel="${c.telefono||''}" onclick="selClienteEl(this)">
-              <span class="font-bold">${c.nombre}</span>
-              <span class="text-gray-600 text-xs ml-2">${c.telefono || ''}</span>
-            </div>`
-          ).join('');
+          drop.innerHTML = data.map((x, i) => {
+            const kmStr = x.kilometraje ? ` · ${x.kilometraje.toLocaleString('es-AR')} km` : '';
+            const patStr = x.patente ? `${x.patente}${x.modelo ? ' · ' + x.modelo : ''}${kmStr}` : 'Sin vehículo registrado';
+            return `<div class="autocomplete-item" onclick="selRegistroPOS(${i})">
+              <div><span class="font-bold text-white">${x.cliente_nombre || 'Sin nombre'}</span>
+              <span class="text-gray-500 text-xs ml-2">${x.cliente_telefono || ''}</span></div>
+              <div class="text-xs text-blue-400 mono">${patStr}</div>
+            </div>`;
+          }).join('');
           drop.classList.remove('hidden');
         } catch(e) {}
       }, 300);
     }
 
-    function selCliente(id, nombre, tel) {
-      clienteId = id;
-      document.getElementById('inpCliente').value = nombre;
-      document.getElementById('inpTelefono').value = (tel || '').trim();
-      document.getElementById('dropCliente').classList.add('hidden');
-    }
-
-    function selClienteEl(el) {
-      selCliente(el.dataset.id, el.dataset.nombre, el.dataset.tel);
-    }
-
-    // ─── PATENTE LOOKUP ───────────────────────────────────
-    async function buscarPatente(pat) {
-      pat = pat.trim().toUpperCase();
-      if (pat.length < 5) return;
-      try {
-        const r = await fetch(`/api/v1/crm/clientes/buscar?termino=${encodeURIComponent(pat)}`);
-        const data = await r.json();
-        // data puede contener vehículo, usar primer resultado si tiene patente
-        const v = data.find(x => x.vehiculo_patente === pat);
-        if (v) {
-          vehiculoId = v.vehiculo_id || null;
-          if (v.nombre) selCliente(v.id, v.nombre, v.telefono || '');
-          if (v.vehiculo_modelo) document.getElementById('inpModelo').value = v.vehiculo_modelo;
-          if (v.kilometraje) document.getElementById('inpKm').value = v.kilometraje;
-        }
-      } catch(e) {}
+    function selRegistroPOS(idx) {
+      const x = window._posAcData[idx];
+      if (!x) return;
+      clienteId = x.cliente_id || null;
+      vehiculoId = x.vehiculo_id || null;
+      document.getElementById('inpCliente').value = x.cliente_nombre || '';
+      document.getElementById('inpTelefono').value = x.cliente_telefono || '';
+      document.getElementById('inpPatente').value = x.patente || '';
+      document.getElementById('inpModelo').value = x.modelo || '';
+      if (x.kilometraje) document.getElementById('inpKm').value = x.kilometraje;
+      ['dropCliente','dropPatente','dropTelefono'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
     }
 
     // ─── PRODUCTO BUSQUEDA ────────────────────────────────
@@ -1079,7 +1074,7 @@
 
     // ─── CERRAR DROPDOWNS AL CLICK FUERA ─────────────────
     document.addEventListener('click', (e) => {
-      ['dropCliente','dropBusqueda','dropPatente'].forEach(id => {
+      ['dropCliente','dropBusqueda','dropPatente','dropTelefono'].forEach(id => {
         const el = document.getElementById(id);
         if (el && !el.closest('div')?.contains(e.target)) el.classList.add('hidden');
       });

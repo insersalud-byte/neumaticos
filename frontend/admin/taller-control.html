@@ -26,6 +26,10 @@
     .input-dark:focus { border-color:#3b82f6; }
     .dropdown-item { padding:8px 12px; cursor:pointer; border-bottom:1px solid #27272a; }
     .dropdown-item:hover { background:#1e3a5f; }
+    .ac-box { position:absolute; left:0; right:0; background:#0f172a; border:1px solid #1e3a5f; border-radius:8px; margin-top:2px; z-index:999; max-height:200px; overflow-y:auto; }
+    .ac-item { padding:8px 12px; cursor:pointer; border-bottom:1px solid #1e293b; }
+    .ac-item:hover { background:#1e3a5f30; }
+    .ac-item:last-child { border-bottom:none; }
   </style>
 </head>
 <body class="bg-[#020817] text-white min-h-screen flex">
@@ -115,17 +119,23 @@
           <!-- Formulario editable (colapsable) -->
           <div id="formDatosCliente" class="hidden mt-3 border-t border-blue-900/20 pt-3">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-              <div>
+              <div class="relative">
                 <label class="block text-[10px] text-gray-500 uppercase mb-1">Nombre del cliente</label>
-                <input id="dc_nombre" type="text" placeholder="Nombre completo" class="input-dark w-full text-sm">
+                <input id="dc_nombre" type="text" placeholder="Nombre completo" class="input-dark w-full text-sm"
+                  oninput="buscarUnificadoTaller(this.value,'dcDropNombre')" autocomplete="off">
+                <div id="dcDropNombre" class="ac-box hidden"></div>
               </div>
-              <div>
+              <div class="relative">
                 <label class="block text-[10px] text-gray-500 uppercase mb-1">Teléfono / WhatsApp</label>
-                <input id="dc_telefono" type="tel" placeholder="Ej: 3518818847" class="input-dark w-full text-sm">
+                <input id="dc_telefono" type="tel" placeholder="Ej: 3518818847" class="input-dark w-full text-sm"
+                  oninput="buscarUnificadoTaller(this.value,'dcDropTelefono')" autocomplete="off">
+                <div id="dcDropTelefono" class="ac-box hidden"></div>
               </div>
-              <div>
+              <div class="relative">
                 <label class="block text-[10px] text-gray-500 uppercase mb-1">Patente</label>
-                <input id="dc_patente" type="text" placeholder="ABC123" class="input-dark w-full text-sm uppercase" oninput="this.value=this.value.toUpperCase()">
+                <input id="dc_patente" type="text" placeholder="ABC123" class="input-dark w-full text-sm uppercase"
+                  oninput="this.value=this.value.toUpperCase(); buscarUnificadoTaller(this.value,'dcDropPatente')" autocomplete="off">
+                <div id="dcDropPatente" class="ac-box hidden"></div>
               </div>
               <div>
                 <label class="block text-[10px] text-gray-500 uppercase mb-1">Modelo / Año</label>
@@ -283,6 +293,55 @@
       cargarItemsTrabajo(v.id);
       document.getElementById('modalTrabajo').classList.remove('hidden');
     }
+
+    // ─── AUTOCOMPLETE UNIFICADO TALLER ──────────────────────
+    let _timerTallerAC;
+    window._tallerAcData = [];
+
+    async function buscarUnificadoTaller(q, dropId) {
+      clearTimeout(_timerTallerAC);
+      ['dcDropNombre','dcDropTelefono','dcDropPatente'].forEach(id => {
+        if (id !== dropId) document.getElementById(id)?.classList.add('hidden');
+      });
+      const drop = document.getElementById(dropId);
+      if (q.length < 2) { drop.classList.add('hidden'); return; }
+      _timerTallerAC = setTimeout(async () => {
+        try {
+          const r = await fetch(`/api/v1/operaciones/clientes/buscar-completo?q=${encodeURIComponent(q)}`);
+          const data = await r.json();
+          window._tallerAcData = data;
+          if (!data.length) { drop.classList.add('hidden'); return; }
+          drop.innerHTML = data.map((x, i) => {
+            const kmStr = x.kilometraje ? ` · ${x.kilometraje.toLocaleString('es-AR')} km` : '';
+            const patStr = x.patente ? `${x.patente}${x.modelo ? ' · ' + x.modelo : ''}${kmStr}` : 'Sin vehículo';
+            return `<div class="ac-item" onclick="selRegistroTaller(${i})">
+              <p class="text-white text-sm font-semibold">${x.cliente_nombre || 'Sin nombre'} <span class="text-gray-500 text-xs font-normal">${x.cliente_telefono || ''}</span></p>
+              <p class="text-blue-400 text-xs mono">${patStr}</p>
+            </div>`;
+          }).join('');
+          drop.classList.remove('hidden');
+        } catch(e) { drop.classList.add('hidden'); }
+      }, 300);
+    }
+
+    function selRegistroTaller(idx) {
+      const x = window._tallerAcData[idx];
+      if (!x) return;
+      document.getElementById('dc_nombre').value = x.cliente_nombre || '';
+      document.getElementById('dc_telefono').value = x.cliente_telefono || '';
+      document.getElementById('dc_patente').value = x.patente || '';
+      document.getElementById('dc_modelo').value = x.modelo || '';
+      if (x.kilometraje) document.getElementById('dc_km').value = x.kilometraje;
+      ['dcDropNombre','dcDropTelefono','dcDropPatente'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+    }
+
+    document.addEventListener('click', (e) => {
+      ['dcDropNombre','dcDropTelefono','dcDropPatente'].forEach(id => {
+        const drop = document.getElementById(id);
+        if (drop && !drop.previousElementSibling?.contains(e.target) && !drop.contains(e.target))
+          drop.classList.add('hidden');
+      });
+    });
 
     function actualizarInfoCliente(v) {
       document.getElementById('infoCliente').textContent = v.cliente_nombre || '—';

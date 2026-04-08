@@ -472,6 +472,120 @@ def buscar_vehiculo(q: str = "", patente: str = "", db: Session = Depends(get_db
     return resultados[:10]
 
 
+@router.get("/clientes/buscar-completo")
+def buscar_cliente_completo(q: str = "", db: Session = Depends(get_db)):
+    """Busca por nombre, teléfono o patente. Retorna cliente + TODOS sus vehículos."""
+    if len(q.strip()) < 2:
+        return []
+
+    results = []
+    seen = set()
+
+    # 1. Buscar clientes por nombre o teléfono → agregar todos sus vehículos
+    clientes = db.query(Cliente).filter(
+        or_(
+            Cliente.nombre.ilike(f"%{q}%"),
+            Cliente.telefono.ilike(f"%{q}%"),
+        )
+    ).limit(10).all()
+
+    for c in clientes:
+        vehiculos = db.query(Vehiculo).filter(Vehiculo.cliente_id == c.id).all()
+        if vehiculos:
+            for v in vehiculos:
+                key = (c.id, v.id)
+                if key not in seen:
+                    seen.add(key)
+                    results.append({
+                        "cliente_id": c.id,
+                        "cliente_nombre": c.nombre or "",
+                        "cliente_telefono": c.telefono or "",
+                        "vehiculo_id": v.id,
+                        "patente": v.patente or "",
+                        "modelo": v.modelo or "",
+                        "kilometraje": v.kilometraje or 0,
+                    })
+        else:
+            key = ("cli", c.id)
+            if key not in seen:
+                seen.add(key)
+                results.append({
+                    "cliente_id": c.id,
+                    "cliente_nombre": c.nombre or "",
+                    "cliente_telefono": c.telefono or "",
+                    "vehiculo_id": None,
+                    "patente": "",
+                    "modelo": "",
+                    "kilometraje": 0,
+                })
+
+    # 2. Buscar por patente → incluir todos los vehículos del mismo cliente
+    q_up = q.upper()
+    vehiculos_pat = db.query(Vehiculo).filter(
+        Vehiculo.patente.ilike(f"%{q_up}%")
+    ).limit(10).all()
+
+    for v in vehiculos_pat:
+        if v.cliente_id:
+            c = db.query(Cliente).filter(Cliente.id == v.cliente_id).first()
+            if c:
+                for tv in db.query(Vehiculo).filter(Vehiculo.cliente_id == c.id).all():
+                    key = (c.id, tv.id)
+                    if key not in seen:
+                        seen.add(key)
+                        results.append({
+                            "cliente_id": c.id,
+                            "cliente_nombre": c.nombre or "",
+                            "cliente_telefono": c.telefono or "",
+                            "vehiculo_id": tv.id,
+                            "patente": tv.patente or "",
+                            "modelo": tv.modelo or "",
+                            "kilometraje": tv.kilometraje or 0,
+                        })
+                continue
+        key = ("veh", v.id)
+        if key not in seen:
+            seen.add(key)
+            results.append({
+                "cliente_id": None,
+                "cliente_nombre": "",
+                "cliente_telefono": "",
+                "vehiculo_id": v.id,
+                "patente": v.patente or "",
+                "modelo": v.modelo or "",
+                "kilometraje": v.kilometraje or 0,
+            })
+
+    # 3. Historial de ingresos al taller (patentes no registradas en tabla vehiculos)
+    ingresos = db.query(IngresoTaller).filter(
+        or_(
+            IngresoTaller.vehiculo_patente.ilike(f"%{q_up}%"),
+            IngresoTaller.cliente_nombre.ilike(f"%{q}%"),
+            IngresoTaller.cliente_telefono.ilike(f"%{q}%"),
+        )
+    ).order_by(IngresoTaller.fecha_ingreso.desc()).limit(20).all()
+
+    for i in ingresos:
+        if not i.vehiculo_patente:
+            continue
+        if any(r["patente"] == i.vehiculo_patente for r in results):
+            continue
+        key = ("taller", i.vehiculo_patente)
+        if key not in seen:
+            seen.add(key)
+            results.append({
+                "cliente_id": None,
+                "cliente_nombre": i.cliente_nombre or "",
+                "cliente_telefono": i.cliente_telefono or "",
+                "vehiculo_id": None,
+                "patente": i.vehiculo_patente or "",
+                "modelo": i.vehiculo_modelo or "",
+                "kilometraje": i.kilometraje or 0,
+            })
+
+    return results[:15]
+
+
 @router.get("/cotizaciones/pendientes")
 def cotizaciones_pendientes(db: Session = Depends(get_db)):
     cots = db.query(Venta).filter(Venta.es_cotizacion == True).order_by(Venta.fecha_creacion.desc()).limit(50).all()
