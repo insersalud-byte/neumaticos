@@ -103,7 +103,7 @@ def generar_presupuesto_pdf(venta_id: int, db: Session = Depends(get_db)):
     cliente_data = [
         [Paragraph("Cliente:", label_style), Paragraph(venta.cliente_nombre or "Consumidor Final", value_style)],
         [Paragraph("Teléfono:", label_style), Paragraph(venta.cliente_telefono or "-", info_style)],
-        [Paragraph("Vehículo:", label_style), Paragraph(f"{venta.vehiculo_patente or '-'} {venta.vehiculo_modelo or ''}", value_style)],
+        [Paragraph("Vehículo:", label_style), Paragraph(f"{venta.vehiculo_patente or '-'} {venta.vehiculo_modelo or ''}" + (f" | {venta.kilometraje:,} km" if venta.kilometraje else ""), value_style)],
         [Paragraph("Fecha:", label_style), Paragraph(venta.fecha_creacion.strftime("%d/%m/%Y %H:%M") if venta.fecha_creacion else "-", info_style)],
     ]
     cliente_table2 = Table(cliente_data, colWidths=[40*mm, 140*mm])

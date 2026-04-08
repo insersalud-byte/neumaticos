@@ -31,6 +31,7 @@ class Vehiculo(Base):
     modelo = Column(String, default="")
     cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=True)
     activo = Column(Boolean, default=True)
+    kilometraje = Column(Integer, default=0)
 
 
 class Producto(Base):
@@ -128,6 +129,7 @@ class IngresoTaller(Base):
     estado = Column(String, default="PENDIENTE")
     venta_ref_id = Column(Integer, nullable=True)
     items = Column(String, default="[]")
+    kilometraje = Column(Integer, default=0)
 
 
 class Turno(Base):

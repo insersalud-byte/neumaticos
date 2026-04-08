@@ -451,7 +451,8 @@ def buscar_vehiculo(q: str = "", patente: str = "", db: Session = Depends(get_db
             "id": v.id,
             "patente": v.patente,
             "modelo": v.modelo,
-            "cliente_nombre": cliente_nombre
+            "cliente_nombre": cliente_nombre,
+            "kilometraje": getattr(v, "kilometraje", 0) or 0,
         })
     
     # Buscar en ingresos del taller (para patentes ya registradas)
@@ -566,7 +567,8 @@ def venta_mostrador(data: dict, db: Session = Depends(get_db)):
     vehiculo_id = data.get("vehiculo_id")
     patente = data.get("patente", "").strip().upper()
     modelo = data.get("modelo_vehiculo", "").strip()
-    
+    km = data.get("kilometraje", 0) or 0
+
     if not vehiculo_id and patente:
         vehiculo = db.query(Vehiculo).filter(Vehiculo.patente == patente).first()
         if not vehiculo:
@@ -574,16 +576,18 @@ def venta_mostrador(data: dict, db: Session = Depends(get_db)):
                 patente=patente,
                 modelo=modelo,
                 cliente_id=cliente_id,
-                activo=True
+                activo=True,
+                kilometraje=km,
             )
             db.add(vehiculo)
             db.flush()
         else:
-            # Actualizar datos del vehículo
             if modelo:
                 vehiculo.modelo = modelo
             if cliente_id:
                 vehiculo.cliente_id = cliente_id
+            if km:
+                vehiculo.kilometraje = km
             vehiculo.activo = True
         vehiculo_id = vehiculo.id
 
@@ -741,11 +745,12 @@ def crear_operacion(data: dict, db: Session = Depends(get_db)):
     vehiculo_id = data.get("vehiculo_id")
     patente = data.get("patente", "").strip().upper()
     modelo = data.get("modelo_vehiculo", "").strip()
-    
+    km = data.get("kilometraje", 0) or 0
+
     if not vehiculo_id and patente:
         vehiculo = db.query(Vehiculo).filter(Vehiculo.patente == patente).first()
         if not vehiculo:
-            vehiculo = Vehiculo(patente=patente, modelo=modelo, cliente_id=cliente_id, activo=True)
+            vehiculo = Vehiculo(patente=patente, modelo=modelo, cliente_id=cliente_id, activo=True, kilometraje=km)
             db.add(vehiculo)
             db.flush()
         else:
@@ -753,6 +758,8 @@ def crear_operacion(data: dict, db: Session = Depends(get_db)):
                 vehiculo.modelo = modelo
             if cliente_id:
                 vehiculo.cliente_id = cliente_id
+            if km:
+                vehiculo.kilometraje = km
             vehiculo.activo = True
         vehiculo_id = vehiculo.id
 

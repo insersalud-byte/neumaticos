@@ -27,6 +27,7 @@ def ingresos_hoy(db: Session = Depends(get_db)):
             "mecanico_nombre": i.mecanico_nombre,
             "estado": i.estado,
             "venta_ref_id": i.venta_ref_id,
+            "kilometraje": getattr(i, "kilometraje", 0) or 0,
         }
         for i in ingresos
     ]
@@ -34,6 +35,7 @@ def ingresos_hoy(db: Session = Depends(get_db)):
 
 @router.post("/ingresos")
 def crear_ingreso(data: dict, db: Session = Depends(get_db)):
+    km = data.get("kilometraje", 0) or 0
     ingreso = IngresoTaller(
         vehiculo_modelo=data.get("vehiculo_modelo", ""),
         vehiculo_patente=data.get("vehiculo_patente", ""),
@@ -42,6 +44,7 @@ def crear_ingreso(data: dict, db: Session = Depends(get_db)):
         mecanico_nombre=data.get("mecanico_nombre", ""),
         estado=data.get("estado", "PENDIENTE"),
         venta_ref_id=data.get("venta_ref_id"),
+        kilometraje=km,
     )
     db.add(ingreso)
     db.commit()

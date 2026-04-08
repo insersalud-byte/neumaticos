@@ -223,6 +223,11 @@
               <label class="block text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Teléfono</label>
               <input id="inpTelefono" type="text" placeholder="Ej: 2644123456" class="input-dark"/>
             </div>
+            <!-- Kilometraje -->
+            <div>
+              <label class="block text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Kilometraje</label>
+              <input id="inpKm" type="number" min="0" placeholder="Ej: 85000" class="input-dark"/>
+            </div>
           </div>
           <!-- Enviar a taller -->
           <div class="mt-3 flex items-center gap-2">
@@ -548,6 +553,7 @@
           vehiculoId = v.vehiculo_id || null;
           if (v.nombre) selCliente(v.id, v.nombre, v.telefono || '');
           if (v.vehiculo_modelo) document.getElementById('inpModelo').value = v.vehiculo_modelo;
+          if (v.kilometraje) document.getElementById('inpKm').value = v.kilometraje;
         }
       } catch(e) {}
     }
@@ -795,6 +801,7 @@
         patente: document.getElementById('inpPatente').value || '',
         modelo_vehiculo: document.getElementById('inpModelo').value || '',
         vehiculo_id: vehiculoId,
+        kilometraje: parseInt(document.getElementById('inpKm').value) || 0,
         observaciones: document.getElementById('inpObs').value || '',
         monto_bonificacion: carrito.reduce((s, c) => s + c.precio * c.qty, 0) * (bonif / 100),
         alicuota_iva: ivaVal,
@@ -849,7 +856,7 @@
       clienteId = null;
       vehiculoId = null;
       ultimaVentaId = null;
-      ['inpCliente','inpPatente','inpModelo','inpTelefono','inpObs'].forEach(id => { document.getElementById(id).value = ''; });
+      ['inpCliente','inpPatente','inpModelo','inpTelefono','inpObs','inpKm'].forEach(id => { document.getElementById(id).value = ''; });
       document.getElementById('inpBonif').value = 0;
       document.getElementById('selPlan').value = '';
       document.getElementById('infoCuota').classList.add('hidden');
