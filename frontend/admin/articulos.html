@@ -456,7 +456,7 @@
         document.getElementById('modal-art-titulo').textContent = id ? 'Editar Artículo' : 'Nuevo Artículo';
 
         // Limpiar formulario
-        ['art-codigo','art-descripcion','art-marca','art-proveedor'].forEach(f => document.getElementById(f).value = '');
+        ['art-codigo','art-descripcion','art-marca','art-proveedor'].forEach(f => { const el = document.getElementById(f); if (el) el.value = ''; });
         document.getElementById('art-compra').value = '0';
         document.getElementById('art-ganancia').value = '30';
         document.getElementById('art-venta').value = '0';
@@ -477,7 +477,7 @@
                 document.getElementById('art-codigo').value = a.codigo || '';
                 document.getElementById('art-descripcion').value = a.descripcion || '';
                 document.getElementById('art-marca').value = a.marca || '';
-                document.getElementById('art-proveedor').value = a.proveedor || '';
+                const provEl = document.getElementById('art-proveedor'); if (provEl) provEl.value = a.proveedor || '';
                 document.getElementById('art-stock').value = a.stock_real || 0;
                 const compra = a.precio_costo || 0;
                 const venta = a.precio_venta || 0;
@@ -539,15 +539,18 @@
     }
 
     function setPublicar(valor) {
-        document.getElementById('art-publicar-web').value = valor;
+        const inp = document.getElementById('art-publicar-web');
+        if (inp) inp.value = valor;
         const btnPublicar = document.getElementById('btn-publicar');
         const btnNoPublicar = document.getElementById('btn-no-publicar');
-        if (valor) {
-            btnPublicar.className = 'bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-4 rounded-lg transition';
-            btnNoPublicar.className = 'bg-[#27272a] hover:bg-[#3f3f46] text-gray-400 text-xs font-bold py-2 px-4 rounded-lg transition';
-        } else {
-            btnPublicar.className = 'bg-[#27272a] hover:bg-[#3f3f46] text-gray-400 text-xs font-bold py-2 px-4 rounded-lg transition';
-            btnNoPublicar.className = 'bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-4 rounded-lg transition';
+        if (btnPublicar && btnNoPublicar) {
+            if (valor) {
+                btnPublicar.className = 'bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-4 rounded-lg transition';
+                btnNoPublicar.className = 'bg-[#27272a] hover:bg-[#3f3f46] text-gray-400 text-xs font-bold py-2 px-4 rounded-lg transition';
+            } else {
+                btnPublicar.className = 'bg-[#27272a] hover:bg-[#3f3f46] text-gray-400 text-xs font-bold py-2 px-4 rounded-lg transition';
+                btnNoPublicar.className = 'bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-4 rounded-lg transition';
+            }
         }
     }
 
@@ -579,8 +582,8 @@
             stock_local: parseInt(document.getElementById('art-stock').value) || 0,
             marca: document.getElementById('art-marca').value.trim(),
             categoria: document.getElementById('art-categoria').value,
-            proveedor: document.getElementById('art-proveedor').value.trim(),
-            publicar_web: document.getElementById('art-publicar-web').value === 'true'
+            proveedor: (document.getElementById('art-proveedor') || {value:''}).value.trim(),
+            publicar_web: (document.getElementById('art-publicar-web') || {value:'true'}).value === 'true'
         };
 
         // Manejar foto si se subió
@@ -912,17 +915,26 @@
         if (dataArr.length < 2) return [];
         const headerIdx = detectarHeaderRow(dataArr);
         const headers = (dataArr[headerIdx] || []).map(h => String(h).trim());
-        // Detectar índices de columnas con header no vacío y conocido
-        const colsValidas = headers
-            .map((h, i) => ({ h, i, norm: normalizarKey(h) }))
-            .filter(({ h, norm }) => h !== '' && (COL_ALIAS[norm] || norm.length > 0));
+
+        // Mapear índice → campo destino normalizado, ignorando headers vacíos
+        // Si dos columnas mapean al mismo campo, guardamos ambos índices y tomamos el primero no vacío
+        const colMap = []; // [{dest, idx}]
+        headers.forEach((h, i) => {
+            if (!h) return;
+            const dest = COL_ALIAS[normalizarKey(h)] || normalizarKey(h);
+            if (dest) colMap.push({ dest, i });
+        });
+
         return dataArr.slice(headerIdx + 1)
             .filter(row => row.some(c => c !== '' && c != null))
             .map(row => {
                 const obj = {};
-                colsValidas.forEach(({ h, i }) => {
+                colMap.forEach(({ dest, i }) => {
                     const v = row[i] ?? '';
-                    if (!(h in obj) || (v !== '' && v != null)) obj[h] = v;
+                    // Solo asignar si el campo aún no tiene valor no-vacío
+                    if (!(dest in obj) || (obj[dest] === '' && v !== '')) {
+                        obj[dest] = v;
+                    }
                 });
                 return obj;
             });
