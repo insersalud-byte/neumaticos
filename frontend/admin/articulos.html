@@ -461,7 +461,8 @@
         document.getElementById('art-ganancia').value = '30';
         document.getElementById('art-venta').value = '0';
         document.getElementById('art-stock').value = '0';
-        document.getElementById('foto-preview').classList.add('hidden');
+        const fotoPreview = document.getElementById('foto-preview');
+        if (fotoPreview) fotoPreview.classList.add('hidden');
         setPublicar(true);
 
         await cargarCategorias();
@@ -486,7 +487,7 @@
                 document.getElementById('art-ganancia').value = ganancia;
                 document.getElementById('art-venta').value = venta;
                 setPublicar(a.publicar_web !== false);
-                if (a.foto_url) {
+                if (a.foto_url && document.getElementById('foto-img')) {
                     document.getElementById('foto-img').src = a.foto_url;
                     document.getElementById('foto-preview').classList.remove('hidden');
                 }
@@ -588,7 +589,7 @@
 
         // Manejar foto si se subió
         const fotoInput = document.getElementById('art-foto');
-        if (fotoInput.files && fotoInput.files[0]) {
+        if (fotoInput && fotoInput.files && fotoInput.files[0]) {
             payload.foto_base64 = await toBase64(fotoInput.files[0]);
         }
 
