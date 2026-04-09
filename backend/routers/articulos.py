@@ -253,6 +253,23 @@ def importar_excel(data: dict, db: Session = Depends(get_db)):
     }
 
 
+@router.get("/debug-categorias")
+def debug_categorias(db: Session = Depends(get_db)):
+    """Muestra los valores reales de categoria en Producto."""
+    rows = (
+        db.query(Producto.categoria, func.count(Producto.id))
+        .filter(Producto.activo == True)
+        .group_by(Producto.categoria)
+        .order_by(func.count(Producto.id).desc())
+        .all()
+    )
+    cats_bd = [c.nombre for c in db.query(Categoria).all()]
+    return {
+        "categorias_en_productos": [{"valor": r[0] or "(vacío)", "count": r[1]} for r in rows],
+        "categorias_en_tabla": cats_bd,
+    }
+
+
 @router.post("/normalizar-categorias")
 def normalizar_categorias(db: Session = Depends(get_db)):
     """Unifica Producto.categoria con el nombre canónico de Categoria (case-insensitive)."""
