@@ -221,6 +221,7 @@ def importar_excel(data: dict, db: Session = Depends(get_db)):
                     if opc_stock != "no_actualizar":
                         existente.stock_real = stock_val
                         existente.stock_local = stock_val
+                    existente.activo = True  # reactivar si estaba borrado
                     actualizados += 1
             else:
                 nuevo = Producto(
