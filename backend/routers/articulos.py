@@ -253,6 +253,24 @@ def importar_excel(data: dict, db: Session = Depends(get_db)):
     }
 
 
+@router.post("/normalizar-categorias")
+def normalizar_categorias(db: Session = Depends(get_db)):
+    """Unifica Producto.categoria con el nombre canónico de Categoria (case-insensitive)."""
+    categorias = db.query(Categoria).all()
+    cat_map = {c.nombre.strip().lower(): c.nombre for c in categorias}
+    productos = db.query(Producto).filter(
+        Producto.categoria != None, Producto.categoria != ""
+    ).all()
+    actualizados = 0
+    for p in productos:
+        key = (p.categoria or "").strip().lower()
+        if key in cat_map and p.categoria != cat_map[key]:
+            p.categoria = cat_map[key]
+            actualizados += 1
+    db.commit()
+    return {"normalizados": actualizados}
+
+
 @router.delete("/limpiar-vacios")
 def limpiar_articulos_vacios(db: Session = Depends(get_db)):
     """Elimina definitivamente artículos sin descripción ni código."""
@@ -284,18 +302,19 @@ categorias_cache = {}
 
 @router.get("/categorias")
 def listar_categorias(db: Session = Depends(get_db)):
-    # Cuenta activos por categoría, normalizado a minúsculas para evitar problemas de casing
+    # Conteo usando lower(trim()) en la BD para evitar problemas de casing/espacios
     raw_counts = (
-        db.query(Producto.categoria, func.count(Producto.id))
+        db.query(
+            func.lower(func.trim(Producto.categoria)),
+            func.count(Producto.id)
+        )
         .filter(Producto.activo == True)
-        .group_by(Producto.categoria)
+        .filter(Producto.categoria != None)
+        .filter(Producto.categoria != "")
+        .group_by(func.lower(func.trim(Producto.categoria)))
         .all()
     )
-    counts = {}
-    for cat_val, cnt in raw_counts:
-        if cat_val:
-            key = cat_val.strip().lower()
-            counts[key] = counts.get(key, 0) + cnt
+    counts = {cat_key: cnt for cat_key, cnt in raw_counts if cat_key}
 
     categorias = db.query(Categoria).order_by(Categoria.nombre).all()
     return [

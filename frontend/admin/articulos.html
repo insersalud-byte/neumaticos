@@ -1015,9 +1015,13 @@
                 background:'#111', color:'#fff'
             });
 
+            // Normalizar categorías post-import (unifica casing)
+            await fetch('/api/v1/articulos/normalizar-categorias', {method:'POST'});
+
             clearExcelFile();
             showTab('articulos');
             cargarArticulos();
+            cargarCategorias();
 
         } catch(e) {
             Swal.fire({icon:'error', title:'Error', text:'No se pudo importar', background:'#111', color:'#fff'});
