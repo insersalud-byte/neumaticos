@@ -885,7 +885,11 @@
             const out = {};
             for (const [k, v] of Object.entries(row)) {
                 const norm = normalizarKey(k);
-                out[COL_ALIAS[norm] || norm] = v;
+                const dest = COL_ALIAS[norm] || norm;
+                // Solo sobreescribir si el valor nuevo no está vacío, o si el campo aún no existe
+                if (!(dest in out) || (v !== '' && v != null)) {
+                    out[dest] = v;
+                }
             }
             return out;
         });
@@ -919,12 +923,19 @@
         const dataArr = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ''});
         if (dataArr.length < 2) return [];
         const headerIdx = detectarHeaderRow(dataArr);
-        const headers = (dataArr[headerIdx] || []).map(h => String(h));
+        const headers = (dataArr[headerIdx] || []).map(h => String(h).trim());
+        // Detectar índices de columnas con header no vacío y conocido
+        const colsValidas = headers
+            .map((h, i) => ({ h, i, norm: normalizarKey(h) }))
+            .filter(({ h, norm }) => h !== '' && (COL_ALIAS[norm] || norm.length > 0));
         return dataArr.slice(headerIdx + 1)
             .filter(row => row.some(c => c !== '' && c != null))
             .map(row => {
                 const obj = {};
-                headers.forEach((h, i) => { obj[h] = row[i] ?? ''; });
+                colsValidas.forEach(({ h, i }) => {
+                    const v = row[i] ?? '';
+                    if (!(h in obj) || (v !== '' && v != null)) obj[h] = v;
+                });
                 return obj;
             });
     }
@@ -947,14 +958,20 @@
             const claves = Object.keys(muestra);
             const OBLIGATORIAS = ['descripcion','codigo','categoria'];
             const faltantes = OBLIGATORIAS.filter(k => !claves.includes(k));
+
+            // Mostrar siempre un diagnóstico de la primera fila
+            const filaHtml = claves.map(k => {
+                const val = muestra[k];
+                const vacio = val === '' || val == null;
+                return `<tr><td class="pr-3 text-gray-400">${k}</td><td class="${vacio ? 'text-red-400' : 'text-green-400'}">${vacio ? '(vacío)' : String(val)}</td></tr>`;
+            }).join('');
+
             if (faltantes.length > 0) {
-                const mapa = claves.map(k => `<b>${rawData[0] ? Object.keys(rawData[0]).find(ok => normalizarKey(ok) === normalizarKey(k)) || k : k}</b> → ${k}`).join('<br>');
                 await Swal.fire({
                     icon: 'error',
                     title: 'Columnas no reconocidas',
-                    html: `<p class="text-red-400 mb-2">Faltan columnas obligatorias: <b>${faltantes.join(', ')}</b></p>
-                           <p class="text-xs text-gray-400 mb-1">Columnas detectadas en tu Excel:</p>
-                           <div class="text-left text-xs font-mono bg-black/40 p-2 rounded max-h-40 overflow-auto">${mapa}</div>`,
+                    html: `<p class="text-red-400 mb-2">Faltan: <b>${faltantes.join(', ')}</b></p>
+                           <table class="text-left text-xs w-full">${filaHtml}</table>`,
                     background: '#111', color: '#fff'
                 });
                 return;
