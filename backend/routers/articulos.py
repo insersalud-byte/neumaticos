@@ -284,20 +284,26 @@ categorias_cache = {}
 
 @router.get("/categorias")
 def listar_categorias(db: Session = Depends(get_db)):
-    # Cuenta activos por categoría en una sola query
-    counts = dict(
+    # Cuenta activos por categoría, normalizado a minúsculas para evitar problemas de casing
+    raw_counts = (
         db.query(Producto.categoria, func.count(Producto.id))
         .filter(Producto.activo == True)
         .group_by(Producto.categoria)
         .all()
     )
+    counts = {}
+    for cat_val, cnt in raw_counts:
+        if cat_val:
+            key = cat_val.strip().lower()
+            counts[key] = counts.get(key, 0) + cnt
+
     categorias = db.query(Categoria).order_by(Categoria.nombre).all()
     return [
         {
             "id": c.id,
             "nombre": c.nombre,
             "descripcion": c.descripcion or "",
-            "articulos_count": counts.get(c.nombre, 0),
+            "articulos_count": counts.get(c.nombre.strip().lower(), 0),
         }
         for c in categorias
     ]
