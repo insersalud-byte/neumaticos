@@ -452,31 +452,51 @@
     }
 
     async function abrirModalArticulo(id = null) {
-        editandoId = id;
+        editandoId = null;
         document.getElementById('modal-art-titulo').textContent = id ? 'Editar Artículo' : 'Nuevo Artículo';
-        
+
+        // Limpiar formulario
+        ['art-codigo','art-descripcion','art-marca','art-proveedor'].forEach(f => document.getElementById(f).value = '');
+        document.getElementById('art-compra').value = '0';
+        document.getElementById('art-ganancia').value = '30';
+        document.getElementById('art-venta').value = '0';
+        document.getElementById('art-stock').value = '0';
+        document.getElementById('foto-preview').classList.add('hidden');
+        setPublicar(true);
+
         await cargarCategorias();
-        
+        document.getElementById('art-categoria').value = '';
+
         if (id) {
-            document.getElementById('art-codigo').value = '';
-            document.getElementById('art-descripcion').value = '';
-            document.getElementById('art-compra').value = '0';
-            document.getElementById('art-ganancia').value = '30';
-            document.getElementById('art-venta').value = '0';
-            document.getElementById('art-stock').value = '0';
-            document.getElementById('art-marca').value = '';
-            document.getElementById('art-categoria').value = '';
-        } else {
-            document.getElementById('art-codigo').value = '';
-            document.getElementById('art-descripcion').value = '';
-            document.getElementById('art-compra').value = '0';
-            document.getElementById('art-ganancia').value = '30';
-            document.getElementById('art-venta').value = '0';
-            document.getElementById('art-stock').value = '0';
-            document.getElementById('art-marca').value = '';
-            document.getElementById('art-categoria').value = '';
+            try {
+                const res = await fetch(`/api/v1/articulos/${id}`);
+                if (!res.ok) throw new Error('No encontrado');
+                const a = await res.json();
+                editandoId = id;
+                document.getElementById('modal-art-titulo').textContent = 'Editar Artículo';
+                document.getElementById('art-codigo').value = a.codigo || '';
+                document.getElementById('art-descripcion').value = a.descripcion || '';
+                document.getElementById('art-marca').value = a.marca || '';
+                document.getElementById('art-proveedor').value = a.proveedor || '';
+                document.getElementById('art-stock').value = a.stock_real || 0;
+                const compra = a.precio_costo || 0;
+                const venta = a.precio_venta || 0;
+                const ganancia = compra > 0 ? ((venta - compra) / compra * 100).toFixed(1) : 30;
+                document.getElementById('art-compra').value = compra;
+                document.getElementById('art-ganancia').value = ganancia;
+                document.getElementById('art-venta').value = venta;
+                setPublicar(a.publicar_web !== false);
+                if (a.foto_url) {
+                    document.getElementById('foto-img').src = a.foto_url;
+                    document.getElementById('foto-preview').classList.remove('hidden');
+                }
+                document.getElementById('art-categoria').value = a.categoria || '';
+            } catch(e) {
+                Swal.fire({icon:'error', title:'Error al cargar artículo', text: e.message, background:'#111', color:'#fff'});
+                return;
+            }
         }
-        
+
         document.getElementById('modal-articulo').classList.remove('hidden');
     }
 
@@ -605,39 +625,7 @@
     }
 
     async function editarArticulo(id) {
-        try {
-            const res = await fetch(`/api/v1/articulos/${id}`);
-            const a = await res.json();
-            
-            editandoId = id;
-            document.getElementById('modal-art-titulo').textContent = 'Editar Artículo';
-            document.getElementById('art-codigo').value = a.codigo || '';
-            document.getElementById('art-descripcion').value = a.descripcion;
-            document.getElementById('art-compra').value = a.precio_costo || 0;
-            document.getElementById('art-stock').value = a.stock_real || 0;
-            document.getElementById('art-marca').value = a.marca || '';
-            document.getElementById('art-proveedor').value = a.proveedor || '';
-            
-            const compra = a.precio_costo || 0;
-            const venta = a.precio_venta || 0;
-            const ganancia = compra > 0 ? ((venta - compra) / compra * 100).toFixed(1) : 30;
-            document.getElementById('art-ganancia').value = ganancia;
-            document.getElementById('art-venta').value = venta;
-            
-            setPublicar(a.publicar_web !== false);
-            
-            if (a.foto_url) {
-                document.getElementById('foto-img').src = a.foto_url;
-                document.getElementById('foto-preview').classList.remove('hidden');
-            } else {
-                document.getElementById('foto-preview').classList.add('hidden');
-            }
-            
-            await cargarCategorias();
-            document.getElementById('art-categoria').value = a.categoria || '';
-            
-            document.getElementById('modal-articulo').classList.remove('hidden');
-        } catch(e) {}
+        await abrirModalArticulo(id);
     }
 
     async function eliminarArticulo(id) {
