@@ -177,14 +177,26 @@
                     <p id="modalSaldo" class="text-3xl font-black text-red-400">$0</p>
                 </div>
 
+                <!-- Facturas Adeudadas -->
+                <div>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                        <i class="fas fa-file-invoice text-yellow-400 mr-1"></i>Facturas Adeudadas
+                    </p>
+                    <div id="clienteImpagas" class="space-y-2 max-h-52 overflow-y-auto custom-scrollbar pr-1">
+                        <p class="text-gray-500 text-sm italic">Cargando...</p>
+                    </div>
+                </div>
+
+                <!-- Registrar Pago Imputado -->
                 <div class="bg-[#222] rounded-xl p-4 border border-gray-800 space-y-3">
-                    <p class="text-sm font-bold text-white">Registrar Pago</p>
+                    <p class="text-sm font-bold text-white">Imputar Pago</p>
                     <input type="hidden" id="pagoClienteId">
 
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1">Monto a Pagar/Saldar ($)</label>
-                        <input type="number" id="pagoMonto" oninput="calcularTotalesPago()"
-                            class="w-full bg-[#111] border border-gray-700 text-white text-sm rounded-lg p-2.5 outline-none focus:border-cyan-500">
+                        <label class="block text-xs text-gray-400 mb-1">Monto a pagar ($)</label>
+                        <input type="number" id="pagoMonto" min="0" step="1" placeholder="0"
+                            class="w-full bg-[#111] border border-gray-700 text-white text-sm rounded-lg p-2.5 outline-none focus:border-cyan-500 font-mono"
+                            oninput="distribuirMonto()"/>
                     </div>
 
                     <div>
@@ -200,21 +212,10 @@
 
                     <div id="planTarjetaRow" class="hidden">
                         <label class="block text-xs text-gray-400 mb-1">Plan / Tarjeta</label>
-                        <select id="pagoPlanTarjeta" onchange="calcularTotalesPago()"
+                        <select id="pagoPlanTarjeta"
                             class="w-full bg-[#222] border border-gray-700 text-white text-sm rounded-lg p-2.5 outline-none focus:border-blue-500 cursor-pointer">
                             <option value="">-- Seleccionar plan --</option>
                         </select>
-                    </div>
-
-                    <div class="bg-[#18181b] p-3 rounded-lg border border-gray-800 space-y-1 mt-2">
-                        <div class="flex justify-between items-center text-xs text-gray-400">
-                            <span>Deuda que se descuenta:</span>
-                            <span id="displayDeudaSaldar" class="font-bold text-green-400 text-sm">$0</span>
-                        </div>
-                        <div class="flex justify-between items-center text-sm font-bold text-white border-t border-gray-700 pt-1 mt-1">
-                            <span>IMPORTE QUE PAGA ($):</span>
-                            <span id="displayImportePaga" class="text-yellow-400 text-lg">$0</span>
-                        </div>
                     </div>
 
                     <div>
@@ -223,17 +224,15 @@
                             class="w-full bg-[#111] border border-gray-700 text-white text-sm rounded-lg p-2.5 outline-none focus:border-cyan-500">
                     </div>
 
-                    <button id="btnProcesarPago" onclick="procesarPago()" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 rounded-lg transition text-sm">
-                        Registrar Pago
-                    </button>
-                </div>
-
-                <!-- Facturas Impagas -->
-                <div>
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"><i class="fas fa-exclamation-triangle text-yellow-400 mr-1"></i>Facturas Impagas</p>
-                    <div id="clienteImpagas" class="space-y-2 max-h-32 overflow-y-auto custom-scrollbar pr-1">
-                        <p class="text-gray-500 text-sm italic">Cargando...</p>
+                    <div class="bg-[#18181b] p-3 rounded-lg border border-gray-800 flex justify-between items-center">
+                        <span class="text-xs text-gray-400">Total a imputar:</span>
+                        <span id="displayTotalImputar" class="font-bold text-cyan-400 text-lg">$0</span>
                     </div>
+
+                    <button id="btnProcesarPago" onclick="procesarPagoImputado()"
+                        class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 rounded-lg transition text-sm">
+                        <i class="fas fa-check mr-1"></i> Imputar Pago
+                    </button>
                 </div>
 
                 <div class="flex gap-2">
@@ -339,6 +338,66 @@
     </div>
 </div>
 
+<!-- MODAL HISTORIAL CLIENTE -->
+<div id="modalHistorial" class="fixed inset-0 bg-black/85 hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
+    <div id="modalHistorialInner" class="bg-[#18181b] border border-gray-700 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]">
+
+        <!-- Header -->
+        <div class="bg-[#222] border-b border-gray-800 p-5 flex justify-between items-center flex-shrink-0">
+            <div>
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-history text-purple-400"></i>
+                    <span id="histNombre">Cliente</span>
+                </h3>
+                <p class="text-gray-400 text-xs mt-0.5" id="histTel">Tel: ---</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="text-right">
+                    <p class="text-[10px] text-gray-500 uppercase">Saldo deudor</p>
+                    <p id="histSaldo" class="text-xl font-black text-red-400">...</p>
+                </div>
+                <button onclick="cerrarModalHistorial()" class="text-gray-500 hover:text-white text-xl ml-2"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="p-5 grid grid-cols-1 lg:grid-cols-2 gap-5 overflow-y-auto custom-scrollbar flex-1">
+
+            <!-- Facturas adeudadas -->
+            <div>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                    <i class="fas fa-file-invoice-dollar text-yellow-400 mr-1"></i>Facturas Adeudadas / Parciales
+                </p>
+                <div id="histFacturas" class="space-y-2 max-h-[55vh] overflow-y-auto custom-scrollbar pr-1">
+                    <p class="text-gray-500 text-sm italic">Cargando...</p>
+                </div>
+            </div>
+
+            <!-- Historial movimientos -->
+            <div>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                    <i class="fas fa-exchange-alt text-cyan-400 mr-1"></i>Historial de Movimientos
+                </p>
+                <div id="histMovimientos" class="space-y-2 max-h-[55vh] overflow-y-auto custom-scrollbar pr-1">
+                    <p class="text-gray-500 text-sm italic">Cargando...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-[#111] border-t border-gray-800 p-4 flex justify-between items-center flex-shrink-0">
+            <a id="histBtnPDF" href="#" target="_blank"
+               class="text-red-500 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 px-4 py-2 rounded-lg text-sm font-bold transition">
+                <i class="fas fa-file-pdf mr-1"></i> PDF Resumen
+            </a>
+            <button id="histBtnWhatsApp"
+                class="bg-green-700 hover:bg-green-600 text-white font-bold px-5 py-2 rounded-lg text-sm transition">
+                <i class="fab fa-whatsapp mr-1"></i> Enviar por WhatsApp
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
     const currency = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
     let clienteActual = null;
@@ -376,7 +435,11 @@
                             </a>
                             <button onclick="event.stopPropagation();abrirDetalle(${c.id})"
                                 class="bg-[#222] hover:bg-cyan-900 text-cyan-400 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition">
-                                <i class="fas fa-plus-circle mr-1"></i>Registrar Pago
+                                <i class="fas fa-plus-circle mr-1"></i>Pago
+                            </button>
+                            <button onclick="event.stopPropagation();abrirHistorial(${c.id},'${(c.nombre||'').replace(/'/g,"\\'")}','${c.telefono||''}')"
+                                class="bg-[#222] hover:bg-purple-900 text-purple-400 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition">
+                                <i class="fas fa-history mr-1"></i>Historial
                             </button>
                         </div>
                     </td>
@@ -399,11 +462,46 @@
         }, 10);
 
         document.getElementById('pagoClienteId').value = clienteId;
-        document.getElementById('pagoMonto').value = '';
         document.getElementById('pagoMetodo').value = 'efectivo';
         document.getElementById('pagoObservaciones').value = '';
-        document.getElementById('displayImportePaga').textContent = '$0';
-        document.getElementById('displayDeudaSaldar').textContent = '$0';
+        document.getElementById('displayTotalImputar').textContent = '$0';
+        document.getElementById('clienteImpagas').innerHTML = '<p class="text-gray-500 text-sm italic">Cargando...</p>';
+
+        // Cargar facturas adeudadas
+        try {
+            const rf = await fetch(`/api/v1/cuenta-corriente/${clienteId}/facturas-adeudadas`);
+            const facturas = await rf.json();
+            const cont = document.getElementById('clienteImpagas');
+            if (!facturas.length) {
+                cont.innerHTML = '<p class="text-gray-500 text-sm italic">Sin facturas adeudadas.</p>';
+            } else {
+                cont.innerHTML = facturas.map(f => `
+                <div class="bg-[#111] border border-gray-800 rounded-lg p-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs text-gray-400">Factura N° ${f.id} — ${f.fecha}</span>
+                        <span class="text-xs font-mono text-white">Total: ${currency.format(f.total)}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="flex-1">
+                            <div class="flex justify-between text-[10px] text-gray-500 mb-1">
+                                <span>Adeudado: <strong class="text-red-400">${currency.format(f.debe)}</strong></span>
+                                <span>Abonado: <strong class="text-green-400">${currency.format(f.abonado)}</strong></span>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-1.5">
+                                <div class="bg-green-500 h-1.5 rounded-full" style="width:${Math.min(100,(f.abonado/f.total*100)).toFixed(0)}%"></div>
+                            </div>
+                        </div>
+                        <input type="number" min="0" max="${f.debe}" step="1"
+                            class="w-28 bg-[#222] border border-cyan-800 text-white text-sm rounded-lg p-1.5 outline-none text-right font-mono imputar-input"
+                            data-venta-id="${f.id}" data-debe="${f.debe}"
+                            placeholder="${currency.format(f.debe)}"
+                            oninput="actualizarTotalImputar()"/>
+                    </div>
+                </div>`).join('');
+            }
+        } catch(e) {
+            document.getElementById('clienteImpagas').innerHTML = '<p class="text-red-500 text-sm">Error al cargar facturas.</p>';
+        }
 
         const mList = document.getElementById('historialMovimientos');
         mList.innerHTML = '<p class="text-gray-500 text-sm italic">Cargando...</p>';
@@ -426,16 +524,27 @@
             } else {
                 mList.innerHTML = movs.map(m => {
                     const esIngreso = m.tipo === 'pago';
-                    const icon = esIngreso ? 'fa-arrow-down text-green-400' : 'fa-arrow-up text-red-400';
+                    const icon  = esIngreso ? 'fa-arrow-down text-green-400' : 'fa-arrow-up text-red-400';
                     const color = esIngreso ? 'text-green-400' : 'text-red-400';
                     const fecha = m.fecha ? new Date(m.fecha).toLocaleDateString('es-AR') : '';
+                    // Normalizar descripcion: Venta # → Factura N°
+                    const desc = (m.descripcion || m.tipo).replace(/Venta\s*#\s*(\d+)/gi, 'Factura N° $1');
+                    // Extraer id de factura para link al PDF
+                    const factMatch = desc.match(/Factura N[°o]?\s*(\d+)/i);
+                    const pdfBtn = factMatch
+                        ? `<a href="/api/v1/reportes/presupuesto/${factMatch[1]}" target="_blank"
+                              title="Ver PDF Factura N° ${factMatch[1]}"
+                              style="color:#f87171;font-size:13px;flex-shrink:0;" onclick="event.stopPropagation()">
+                              <i class="fas fa-file-pdf"></i></a>`
+                        : '';
                     return `<div class="bg-[#222] rounded-lg p-3 border border-gray-800 flex items-center gap-3">
-                        <i class="fas ${icon}"></i>
+                        <i class="fas ${icon} flex-shrink-0"></i>
                         <div class="flex-1 min-w-0">
-                            <p class="text-xs text-white font-semibold truncate">${m.descripcion || m.tipo}</p>
+                            <p class="text-xs text-white font-semibold truncate">${desc}</p>
                             <p class="text-[10px] text-gray-500">${fecha} ${m.metodo_pago ? '| ' + m.metodo_pago : ''}</p>
                         </div>
                         <span class="font-bold font-mono text-sm ${color}">${currency.format(m.monto || 0)}</span>
+                        ${pdfBtn}
                     </div>`;
                 }).join('');
             }
@@ -478,26 +587,85 @@
     function verificarMetodoCtaCte() {
         const metodo = document.getElementById('pagoMetodo').value;
         const planRow = document.getElementById('planTarjetaRow');
-        if (metodo === 'tarjeta') {
-            planRow.classList.remove('hidden');
-        } else {
-            planRow.classList.add('hidden');
-            document.getElementById('pagoPlanTarjeta').value = '';
-        }
-        calcularTotalesPago();
+        planRow.classList.toggle('hidden', metodo !== 'tarjeta');
+        if (metodo !== 'tarjeta') document.getElementById('pagoPlanTarjeta').value = '';
     }
 
-    function calcularTotalesPago() {
-        const monto = parseFloat(document.getElementById('pagoMonto').value) || 0;
-        const metodo = document.getElementById('pagoMetodo').value;
-        const planSel = document.getElementById('pagoPlanTarjeta');
-        let total = monto;
-        if (metodo === 'tarjeta' && planSel.value) {
-            const coef = parseFloat(planSel.selectedOptions[0]?.dataset?.coeficiente) || 1;
-            total = monto * coef;
+    function actualizarTotalImputar() {
+        let total = 0;
+        document.querySelectorAll('.imputar-input').forEach(inp => {
+            const v = parseFloat(inp.value) || 0;
+            const max = parseFloat(inp.dataset.debe) || 0;
+            total += Math.min(v, max);
+        });
+        document.getElementById('displayTotalImputar').textContent = currency.format(total);
+    }
+
+    function distribuirMonto() {
+        let restante = parseFloat(document.getElementById('pagoMonto').value) || 0;
+        document.querySelectorAll('.imputar-input').forEach(inp => {
+            const debe = parseFloat(inp.dataset.debe) || 0;
+            if (restante <= 0) { inp.value = ''; return; }
+            const aplicar = Math.min(restante, debe);
+            inp.value = aplicar;
+            restante -= aplicar;
+        });
+        actualizarTotalImputar();
+    }
+
+    async function procesarPagoImputado() {
+        if (!clienteActual) return;
+
+        const imputaciones = [];
+        document.querySelectorAll('.imputar-input').forEach(inp => {
+            const monto = parseFloat(inp.value) || 0;
+            const debe  = parseFloat(inp.dataset.debe) || 0;
+            if (monto > 0) {
+                imputaciones.push({ venta_id: parseInt(inp.dataset.ventaId), monto: Math.min(monto, debe) });
+            }
+        });
+
+        if (!imputaciones.length) {
+            Swal.fire({ icon:'warning', title:'Ingresá montos', text:'Escribí el monto a pagar en al menos una factura', background:'#111', color:'#fff' });
+            return;
         }
-        document.getElementById('displayDeudaSaldar').textContent = currency.format(monto);
-        document.getElementById('displayImportePaga').textContent = `$${total.toLocaleString('es-AR', {minimumFractionDigits:2})}`;
+
+        const metodo = document.getElementById('pagoMetodo').value;
+        const observaciones = document.getElementById('pagoObservaciones').value || '';
+        const total = imputaciones.reduce((s, i) => s + i.monto, 0);
+
+        const confirm = await Swal.fire({
+            icon:'question', title:'¿Confirmar imputación?',
+            html:`Se imputarán <strong>${currency.format(total)}</strong> en ${imputaciones.length} factura(s).`,
+            showCancelButton: true, confirmButtonColor:'#0891b2',
+            cancelButtonColor:'#374151', background:'#111', color:'#fff',
+            confirmButtonText:'Sí, imputar', cancelButtonText:'Cancelar'
+        });
+        if (!confirm.isConfirmed) return;
+
+        const btn = document.getElementById('btnProcesarPago');
+        btn.disabled = true; btn.textContent = 'Procesando...';
+
+        try {
+            const res = await fetch('/api/v1/cuenta-corriente/pagar-imputado', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ cliente_id: clienteActual, imputaciones, metodo_pago: metodo, observaciones })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                await Swal.fire({ icon:'success', title:'Pago imputado!',
+                    text:`Se imputaron ${currency.format(data.total_pagado)}. Nuevo saldo: ${currency.format(data.nuevo_saldo)}`,
+                    timer:2500, showConfirmButton:false, background:'#111', color:'#fff' });
+                cerrarModalCtaCte();
+                cargarClientes(false);
+            } else {
+                Swal.fire({ icon:'error', title:'Error', text: data.detail || 'No se pudo imputar', background:'#111', color:'#fff' });
+            }
+        } catch(e) {
+            Swal.fire({ icon:'error', title:'Error de conexión', background:'#111', color:'#fff' });
+        } finally {
+            btn.disabled = false; btn.textContent = 'Imputar Pago';
+        }
     }
 
     function enviarWhatsAppCliente() {
@@ -813,6 +981,111 @@
         } catch(e) {
             Swal.fire({ icon: 'error', title: 'Error', text: 'Error de conexión', background: '#111', color: '#fff' });
         }
+    }
+
+    // ─── HISTORIAL CLIENTE ────────────────────────────────────
+    async function abrirHistorial(clienteId, nombre, telefono) {
+        const modal = document.getElementById('modalHistorial');
+        const inner = document.getElementById('modalHistorialInner');
+        document.getElementById('histNombre').textContent = nombre || 'Cliente';
+        document.getElementById('histTel').textContent = `Tel: ${telefono || '---'}`;
+        document.getElementById('histSaldo').textContent = '...';
+        document.getElementById('histFacturas').innerHTML = '<p class="text-gray-500 text-sm italic"><i class="fas fa-spinner fa-spin mr-1"></i>Cargando...</p>';
+        document.getElementById('histMovimientos').innerHTML = '<p class="text-gray-500 text-sm italic"><i class="fas fa-spinner fa-spin mr-1"></i>Cargando...</p>';
+        document.getElementById('histBtnWhatsApp').onclick = () => enviarResumenWhatsApp(clienteId, telefono, nombre);
+        document.getElementById('histBtnPDF').href = `/api/v1/reportes/resumen-cuenta/${clienteId}`;
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => { modal.classList.remove('opacity-0'); inner.classList.remove('scale-95'); }, 10);
+
+        try {
+            const [rFact, rMov] = await Promise.all([
+                fetch(`/api/v1/cuenta-corriente/${clienteId}/facturas-adeudadas`),
+                fetch(`/api/v1/cuenta-corriente/${clienteId}/movimientos`)
+            ]);
+            const facturas = await rFact.json();
+            const dataMov = await rMov.json();
+
+            // Saldo
+            const saldo = dataMov.cliente?.saldo_deudor || 0;
+            document.getElementById('histSaldo').textContent = currency.format(saldo);
+
+            // Facturas adeudadas
+            const contFact = document.getElementById('histFacturas');
+            if (!facturas.length) {
+                contFact.innerHTML = '<p class="text-green-400 text-sm"><i class="fas fa-check-circle mr-1"></i>Sin facturas adeudadas.</p>';
+            } else {
+                contFact.innerHTML = facturas.map(f => {
+                    const pct = f.total > 0 ? Math.min(100, (f.abonado / f.total * 100)).toFixed(0) : 0;
+                    const pctColor = pct >= 100 ? 'bg-green-500' : pct > 0 ? 'bg-yellow-500' : 'bg-red-600';
+                    return `<div class="bg-[#111] border border-gray-800 rounded-lg p-3">
+                        <div class="flex items-center justify-between mb-1">
+                            <a href="/api/v1/reportes/presupuesto/${f.id}" target="_blank"
+                               class="text-xs text-cyan-400 hover:text-cyan-300 font-semibold">
+                               <i class="fas fa-file-pdf mr-1 text-red-400"></i>Factura N° ${f.id}
+                            </a>
+                            <span class="text-[10px] text-gray-500">${f.fecha}</span>
+                        </div>
+                        <div class="flex justify-between text-[10px] mb-1">
+                            <span class="text-gray-400">Total: <strong class="text-white">${currency.format(f.total)}</strong></span>
+                            <span class="text-gray-400">Abonado: <strong class="text-green-400">${currency.format(f.abonado)}</strong></span>
+                            <span class="text-gray-400">Debe: <strong class="text-red-400">${currency.format(f.debe)}</strong></span>
+                        </div>
+                        <div class="w-full bg-gray-800 rounded-full h-1.5">
+                            <div class="${pctColor} h-1.5 rounded-full transition-all" style="width:${pct}%"></div>
+                        </div>
+                        <p class="text-[10px] text-gray-600 mt-0.5 text-right">${pct}% abonado</p>
+                    </div>`;
+                }).join('');
+            }
+
+            // Movimientos
+            const movs = dataMov.movimientos || [];
+            const contMov = document.getElementById('histMovimientos');
+            if (!movs.length) {
+                contMov.innerHTML = '<p class="text-gray-500 text-sm italic">Sin movimientos.</p>';
+            } else {
+                contMov.innerHTML = movs.map(m => {
+                    const esPago = m.tipo === 'pago';
+                    const icon  = esPago ? 'fa-arrow-down text-green-400' : 'fa-arrow-up text-red-400';
+                    const color = esPago ? 'text-green-400' : 'text-red-400';
+                    const fecha = m.fecha ? new Date(m.fecha).toLocaleDateString('es-AR') : '';
+                    const desc  = (m.descripcion || m.tipo).replace(/Venta\s*#\s*(\d+)/gi, 'Factura N° $1');
+                    const factMatch = desc.match(/Factura N[°o]?\s*(\d+)/i);
+                    const pdfBtn = factMatch
+                        ? `<a href="/api/v1/reportes/presupuesto/${factMatch[1]}" target="_blank" title="Ver PDF" onclick="event.stopPropagation()" style="color:#f87171;font-size:12px;flex-shrink:0"><i class="fas fa-file-pdf"></i></a>`
+                        : '';
+                    return `<div class="bg-[#222] rounded-lg p-2.5 border border-gray-800 flex items-center gap-2">
+                        <i class="fas ${icon} flex-shrink-0 text-xs"></i>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs text-white font-semibold truncate">${desc}</p>
+                            <p class="text-[10px] text-gray-500">${fecha}${m.metodo_pago ? ' | '+m.metodo_pago : ''}</p>
+                        </div>
+                        <span class="font-bold font-mono text-xs ${color} flex-shrink-0">${currency.format(m.monto||0)}</span>
+                        ${pdfBtn}
+                    </div>`;
+                }).join('');
+            }
+        } catch(e) {
+            document.getElementById('histFacturas').innerHTML = '<p class="text-red-500 text-sm">Error al cargar datos.</p>';
+        }
+    }
+
+    function cerrarModalHistorial() {
+        const modal = document.getElementById('modalHistorial');
+        const inner = document.getElementById('modalHistorialInner');
+        modal.classList.add('opacity-0');
+        inner.classList.add('scale-95');
+        setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
+    }
+
+    function enviarResumenWhatsApp(clienteId, telefono, nombre) {
+        const url = `${window.location.origin}/api/v1/reportes/resumen-cuenta/${clienteId}`;
+        const texto = encodeURIComponent(`Hola ${nombre || ''}! Te enviamos el resumen de tu cuenta corriente en Giorda Neumáticos: ${url}`);
+        const num = (telefono || '').replace(/\D/g, '');
+        const waUrl = num ? `https://wa.me/549${num}?text=${texto}` : `https://wa.me/?text=${texto}`;
+        window.open(waUrl, '_blank');
     }
 
     cargarCoeficientes();
