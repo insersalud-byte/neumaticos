@@ -253,3 +253,89 @@ def importar_contactos(data: dict, db: Session = Depends(get_db)):
 
     db.commit()
     return {"ok": True, "creados": creados, "actualizados": actualizados}
+
+
+@router.post("/importar-contactos-servidor")
+def importar_contactos_servidor(db: Session = Depends(get_db)):
+    """Lee contactos.xlsx del filesystem del servidor y hace upsert en clientes."""
+    import os
+    import openpyxl
+
+    # Buscar el archivo en ubicaciones posibles
+    base = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    posibles = [
+        os.path.join(base, "frontend", "admin", "catalogos", "contactos.xlsx"),
+        os.path.join(base, "contactos.xlsx"),
+        "/tmp/contactos.xlsx",
+    ]
+    ruta = next((p for p in posibles if os.path.exists(p)), None)
+    if not ruta:
+        raise HTTPException(status_code=404, detail="contactos.xlsx no encontrado en el servidor")
+
+    wb = openpyxl.load_workbook(ruta, read_only=True, data_only=True)
+    ws = wb.active
+    rows = list(ws.iter_rows(values_only=True))
+    wb.close()
+
+    creados = 0
+    actualizados = 0
+
+    for row in rows[1:]:  # saltar header
+        tipo_raw = (str(row[0] or "")).strip().upper()
+        tipo = "empresa" if tipo_raw == "EMPRESA" else "persona"
+        dni_raw = (str(row[1] or "")).strip()
+        apellido = (str(row[2] or "")).strip()
+        nombre_raw = (str(row[3] or "")).strip()
+        wa = (str(row[4] or "")).strip()
+        correo = (str(row[5] or "")).strip() if len(row) > 5 else ""
+
+        # Ignorar filas sin nombre
+        if tipo == "empresa":
+            nombre = nombre_raw
+        else:
+            nombre = f"{apellido} {nombre_raw}".strip() if apellido and nombre_raw else (apellido or nombre_raw)
+        if not nombre or nombre in ("None None", "None"):
+            continue
+
+        # Limpiar DNI: solo dígitos de 6+ chars
+        import re
+        dni = dni_raw if re.match(r"^\d{6,}$", dni_raw) else ""
+
+        # Limpiar teléfono/WA: solo si tiene dígitos
+        telefono = wa if re.search(r"\d{6,}", wa) else ""
+
+        # Upsert
+        existente = None
+        if dni:
+            existente = db.query(Cliente).filter(Cliente.dni_cuit == dni).first()
+        if not existente:
+            existente = db.query(Cliente).filter(
+                text("LOWER(nombre) = LOWER(:n)")
+            ).params(n=nombre).first()
+
+        if existente:
+            existente.tipo_cliente = tipo
+            if dni:
+                existente.dni_cuit = dni
+            if telefono:
+                existente.telefono = telefono
+            if correo and correo != "None":
+                existente.correo = correo
+            actualizados += 1
+        else:
+            db.add(Cliente(
+                nombre=nombre,
+                dni_cuit=dni,
+                telefono=telefono,
+                correo=correo if correo != "None" else "",
+                tipo_cliente=tipo,
+                saldo_deudor=0,
+                activo=True,
+            ))
+            creados += 1
+
+        if (creados + actualizados) % 100 == 0:
+            db.flush()
+
+    db.commit()
+    return {"ok": True, "creados": creados, "actualizados": actualizados}
