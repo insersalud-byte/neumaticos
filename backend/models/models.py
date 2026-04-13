@@ -19,6 +19,8 @@ class Cliente(Base):
     nombre = Column(String, index=True)
     telefono = Column(String, default="")
     dni_cuit = Column(String, default="")
+    tipo_cliente = Column(String, default="persona")  # persona | empresa
+    correo = Column(String, default="")
     saldo_deudor = Column(Float, default=0)
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
     activo = Column(Boolean, default=True)

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from core.database import get_db
-from models.models import Cliente, MovimientoCuenta
+from models.models import Cliente, MovimientoCuenta, Venta
 
 router = APIRouter(prefix="/api/v1/cuenta-corriente", tags=["cuenta-corriente"])
 
@@ -18,6 +19,8 @@ def listar_clientes_cta_cte(solo_con_deuda: bool = True, db: Session = Depends(g
                 "id": c.id,
                 "nombre": c.nombre,
                 "telefono": c.telefono or "",
+                "dni_cuit": c.dni_cuit or "",
+                "tipo_cliente": c.tipo_cliente or "persona",
                 "saldo_deudor": c.saldo_deudor or 0,
             }
             for c in clientes
@@ -60,6 +63,87 @@ def movimientos_cliente(cliente_id: int, db: Session = Depends(get_db)):
     }
 
 
+@router.post("/migrar-descripciones")
+def migrar_descripciones(db: Session = Depends(get_db)):
+    """Corrige los movimientos que dicen 'Venta #' → 'Factura N°'."""
+    from sqlalchemy import text
+    db.execute(text(
+        "UPDATE movimientos_cuenta SET descripcion = REPLACE(descripcion, 'Venta #', 'Factura N° ') "
+        "WHERE descripcion LIKE 'Venta #%'"
+    ))
+    db.commit()
+    return {"ok": True}
+
+
+@router.get("/{cliente_id}/facturas-adeudadas")
+def facturas_adeudadas(cliente_id: int, db: Session = Depends(get_db)):
+    """Devuelve las ventas con monto_debe > 0 del cliente."""
+    ventas = (
+        db.query(Venta)
+        .filter(
+            Venta.cliente_id == cliente_id,
+            Venta.monto_debe > 0,
+            Venta.es_cotizacion == False,
+        )
+        .order_by(Venta.fecha_creacion.asc())
+        .all()
+    )
+    return [
+        {
+            "id": v.id,
+            "fecha": v.fecha_creacion.strftime("%d/%m/%Y") if v.fecha_creacion else "-",
+            "total": v.total_venta or 0,
+            "abonado": v.monto_abonado or 0,
+            "debe": v.monto_debe or 0,
+        }
+        for v in ventas
+    ]
+
+
+@router.post("/pagar-imputado")
+def pagar_imputado(data: dict, db: Session = Depends(get_db)):
+    """Imputa un pago contra facturas específicas del cliente."""
+    cliente_id = data.get("cliente_id")
+    imputaciones = data.get("imputaciones", [])  # [{venta_id, monto}]
+    metodo = data.get("metodo_pago", "efectivo")
+    observaciones = data.get("observaciones", "")
+
+    if not cliente_id or not imputaciones:
+        raise HTTPException(status_code=400, detail="Datos inválidos")
+
+    cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
+    if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+
+    total_pagado = 0
+    for imp in imputaciones:
+        venta_id = imp.get("venta_id")
+        monto = float(imp.get("monto", 0))
+        if monto <= 0:
+            continue
+        venta = db.query(Venta).filter(Venta.id == venta_id, Venta.cliente_id == cliente_id).first()
+        if not venta:
+            continue
+        monto_aplicar = min(monto, venta.monto_debe)
+        venta.monto_abonado = (venta.monto_abonado or 0) + monto_aplicar
+        venta.monto_debe = max(0, (venta.monto_debe or 0) - monto_aplicar)
+        total_pagado += monto_aplicar
+
+        mov = MovimientoCuenta(
+            cliente_id=cliente_id,
+            tipo="pago",
+            monto=monto_aplicar,
+            descripcion=f"Pago Factura N° {venta_id}" + (f" - {observaciones}" if observaciones else ""),
+            metodo_pago=metodo,
+        )
+        db.add(mov)
+
+    cliente.saldo_deudor = max(0, (cliente.saldo_deudor or 0) - total_pagado)
+    db.commit()
+
+    return {"message": "Pago imputado", "total_pagado": total_pagado, "nuevo_saldo": cliente.saldo_deudor}
+
+
 @router.post("/pagar")
 def registrar_pago(data: dict, db: Session = Depends(get_db)):
     cliente_id = data.get("cliente_id")
@@ -92,3 +176,80 @@ def registrar_pago(data: dict, db: Session = Depends(get_db)):
         "message": "Pago registrado",
         "nuevo_saldo": cliente.saldo_deudor,
     }
+
+
+@router.post("/migrar-columnas-clientes")
+def migrar_columnas_clientes(db: Session = Depends(get_db)):
+    """Agrega tipo_cliente y correo a la tabla clientes si no existen."""
+    try:
+        db.execute(text("ALTER TABLE clientes ADD COLUMN tipo_cliente VARCHAR DEFAULT 'persona'"))
+        db.commit()
+    except Exception:
+        db.rollback()
+    try:
+        db.execute(text("ALTER TABLE clientes ADD COLUMN correo VARCHAR DEFAULT ''"))
+        db.commit()
+    except Exception:
+        db.rollback()
+    return {"ok": True}
+
+
+@router.post("/importar-contactos")
+def importar_contactos(data: dict, db: Session = Depends(get_db)):
+    """
+    Importa contactos desde el Excel.
+    data: { contactos: [{tipo, dni_cuit, nombre, telefono, correo}] }
+    Hace upsert por nombre (case-insensitive). Devuelve contadores.
+    """
+    contactos = data.get("contactos", [])
+    if not contactos:
+        raise HTTPException(status_code=400, detail="Sin contactos")
+
+    creados = 0
+    actualizados = 0
+
+    for c in contactos:
+        nombre = (c.get("nombre") or "").strip()
+        if not nombre:
+            continue
+
+        dni = (c.get("dni_cuit") or "").strip()
+        telefono = (c.get("telefono") or "").strip()
+        correo = (c.get("correo") or "").strip()
+        tipo = (c.get("tipo") or "persona").strip().lower()
+        if tipo not in ("persona", "empresa"):
+            tipo = "persona"
+
+        # Buscar por DNI/CUIT primero, luego por nombre
+        existente = None
+        if dni and dni.upper() not in ("", "NOSE", "..", "0"):
+            existente = db.query(Cliente).filter(Cliente.dni_cuit == dni).first()
+        if not existente:
+            existente = db.query(Cliente).filter(
+                text("LOWER(nombre) = LOWER(:n)")
+            ).params(n=nombre).first()
+
+        if existente:
+            existente.tipo_cliente = tipo
+            if dni:
+                existente.dni_cuit = dni
+            if telefono:
+                existente.telefono = telefono
+            if correo:
+                existente.correo = correo
+            actualizados += 1
+        else:
+            nuevo = Cliente(
+                nombre=nombre,
+                dni_cuit=dni,
+                telefono=telefono,
+                correo=correo,
+                tipo_cliente=tipo,
+                saldo_deudor=0,
+                activo=True,
+            )
+            db.add(nuevo)
+            creados += 1
+
+    db.commit()
+    return {"ok": True, "creados": creados, "actualizados": actualizados}

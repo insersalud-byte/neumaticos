@@ -8,6 +8,7 @@
     <script src="/admin/auth-guard.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         body{font-family:'Inter',sans-serif;background:#000;color:#fff}
@@ -75,6 +76,9 @@
                     </button>
                     <button id="tabBtnProveedores" onclick="switchTab('proveedores')" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 px-5 rounded-lg transition text-xs md:text-sm">
                         <i class="fas fa-truck mr-1"></i> PROVEEDORES
+                    </button>
+                    <button onclick="importarContactosExcel()" style="background:#164e63;color:#67e8f9;font-weight:700;padding:10px 20px;border-radius:8px;font-size:12px;border:none;cursor:pointer;transition:background .2s" onmouseover="this.style.background='#155e75'" onmouseout="this.style.background='#164e63'">
+                        <i class="fas fa-file-excel mr-1"></i> IMPORTAR CONTACTOS
                     </button>
                 </div>
             </div>
@@ -422,9 +426,12 @@
             }
             clientes.forEach(c => {
                 const saldoClass = c.saldo_deudor > 0 ? 'text-red-400' : 'text-green-400';
+                const tipoLabel = c.tipo_cliente === 'empresa'
+                    ? `<span style="background:#1e3a5f;color:#93c5fd;font-size:10px;padding:1px 6px;border-radius:4px;font-weight:700">EMPRESA</span>`
+                    : `<span style="background:#14532d;color:#86efac;font-size:10px;padding:1px 6px;border-radius:4px;font-weight:700">PERSONA</span>`;
                 tbody.innerHTML += `
                 <tr class="hover:bg-white/5 transition cursor-pointer" onclick="abrirDetalle(${c.id})">
-                    <td class="px-6 py-4 font-semibold text-white">${c.nombre || ''}</td>
+                    <td class="px-6 py-4 font-semibold text-white">${c.nombre || ''} ${tipoLabel}<br><span class="text-[10px] text-gray-500 font-mono">${c.dni_cuit || ''}</span></td>
                     <td class="px-6 py-4 text-gray-400 text-sm">${c.telefono || '-'}</td>
                     <td class="px-6 py-4 text-right font-bold font-mono ${saldoClass}">${currency.format(c.saldo_deudor || 0)}</td>
                     <td class="px-6 py-4 text-center">
@@ -1086,6 +1093,93 @@
         const num = (telefono || '').replace(/\D/g, '');
         const waUrl = num ? `https://wa.me/549${num}?text=${texto}` : `https://wa.me/?text=${texto}`;
         window.open(waUrl, '_blank');
+    }
+
+    // ─── IMPORTAR CONTACTOS ────────────────────────────────────
+    async function importarContactosExcel() {
+        const res = await Swal.fire({
+            icon: 'question',
+            title: '¿Importar contactos?',
+            html: 'Se leerá <strong>contactos.xlsx</strong> del servidor y se sincronizarán las personas y empresas con la base de datos.',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, importar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#0891b2',
+            cancelButtonColor: '#374151',
+            background: '#111', color: '#fff'
+        });
+        if (!res.isConfirmed) return;
+
+        Swal.fire({ title: 'Procesando...', html: 'Leyendo Excel...', allowOutsideClick: false, background: '#111', color: '#fff', didOpen: () => Swal.showLoading() });
+
+        try {
+            // Primero asegurar columnas en DB
+            await fetch('/api/v1/cuenta-corriente/migrar-columnas-clientes', { method: 'POST' });
+
+            // Leer Excel del servidor
+            const resp = await fetch('/admin/catalogos/contactos.xlsx');
+            const buf = await resp.arrayBuffer();
+            const wb = XLSX.read(buf, { type: 'array' });
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+            // Parsear filas (saltar header)
+            const contactos = [];
+            for (let i = 1; i < rows.length; i++) {
+                const r = rows[i];
+                const tipoRaw = (r[0] || '').toString().trim().toUpperCase();
+                const tipo = tipoRaw === 'EMPRESA' ? 'empresa' : 'persona';
+                const dniRaw = (r[1] || '').toString().trim();
+                const apellido = (r[2] || '').toString().trim();
+                const nombreRaw = (r[3] || '').toString().trim();
+                const wa = (r[4] || '').toString().trim();
+                const correo = (r[5] || '').toString().trim();
+
+                // Armar nombre completo: para personas apellido + nombre, para empresa solo nombre
+                let nombre = '';
+                if (tipo === 'empresa') {
+                    nombre = nombreRaw;
+                } else {
+                    nombre = apellido && nombreRaw ? `${apellido} ${nombreRaw}` : (apellido || nombreRaw);
+                }
+                if (!nombre) continue;
+
+                // Limpiar DNI: ignorar basura
+                const dniLimpio = /^\d{6,}$/.test(dniRaw) ? dniRaw : '';
+
+                contactos.push({ tipo, dni_cuit: dniLimpio, nombre, telefono: wa, correo });
+            }
+
+            Swal.update({ html: `Enviando ${contactos.length} contactos al servidor...` });
+
+            // Enviar en lotes de 200
+            const LOTE = 200;
+            let creados = 0, actualizados = 0;
+            for (let i = 0; i < contactos.length; i += LOTE) {
+                const lote = contactos.slice(i, i + LOTE);
+                const r2 = await fetch('/api/v1/cuenta-corriente/importar-contactos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contactos: lote })
+                });
+                const d = await r2.json();
+                creados += d.creados || 0;
+                actualizados += d.actualizados || 0;
+                Swal.update({ html: `Procesando ${Math.min(i + LOTE, contactos.length)} / ${contactos.length}...` });
+            }
+
+            await Swal.fire({
+                icon: 'success',
+                title: 'Importación completada',
+                html: `<strong>${creados}</strong> nuevos contactos creados<br><strong>${actualizados}</strong> existentes actualizados`,
+                confirmButtonColor: '#0891b2',
+                background: '#111', color: '#fff'
+            });
+            cargarClientes(false);
+
+        } catch(e) {
+            Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'No se pudo importar', background: '#111', color: '#fff' });
+        }
     }
 
     cargarCoeficientes();
