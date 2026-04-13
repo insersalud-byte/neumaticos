@@ -77,6 +77,84 @@ def editar_proveedor(prov_id: int, data: dict, db: Session = Depends(get_db)):
     return {"message": "Proveedor actualizado"}
 
 
+@router.post("/importar-proveedores-lote")
+def importar_proveedores_lote(data: dict, db: Session = Depends(get_db)):
+    """Lee proveedores.xlsx del servidor en lotes para evitar timeout."""
+    import openpyxl, re
+
+    offset = int(data.get("offset", 0))
+    limit = int(data.get("limit", 50))
+
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    posibles = [
+        os.path.join(base, "frontend", "admin", "catalogos", "proveedores.xlsx"),
+        os.path.join(base, "proveedores.xlsx"),
+    ]
+    ruta = next((p for p in posibles if os.path.exists(p)), None)
+    if not ruta:
+        raise HTTPException(status_code=404, detail="proveedores.xlsx no encontrado")
+
+    wb = openpyxl.load_workbook(ruta, read_only=True, data_only=True)
+    ws = wb.active
+    all_rows = list(ws.iter_rows(values_only=True))
+    wb.close()
+
+    total = len(all_rows) - 1  # sin header
+    lote = all_rows[1 + offset: 1 + offset + limit]
+
+    creados = 0
+    actualizados = 0
+
+    for row in lote:
+        cuit_raw = str(row[0] or "").strip()
+        nombre = str(row[1] or "").strip()
+        correo = str(row[2] or "").strip()
+        tel_raw = str(row[3] or "").strip()
+        contacto1 = str(row[4] or "").strip() if len(row) > 4 else ""
+        contacto2 = str(row[5] or "").strip() if len(row) > 5 else ""
+
+        if not nombre or nombre == "None":
+            continue
+
+        # Limpiar CUIT: solo dígitos
+        cuit = re.sub(r"\D", "", cuit_raw)[:11] if cuit_raw and cuit_raw != "None" else ""
+        # Limpiar teléfono
+        telefono = re.sub(r"\D", "", tel_raw)[:15] if tel_raw and tel_raw != "None" else ""
+        email = correo if correo and "@" in correo else ""
+        # Contacto secundario como observación adicional
+        obs = " / ".join(filter(None, [contacto1, contacto2]))
+
+        # Upsert por CUIT primero, luego por nombre
+        existente = None
+        if cuit:
+            existente = db.query(Proveedor).filter(Proveedor.cuit == cuit).first()
+        if not existente:
+            from sqlalchemy import text as _text
+            existente = db.query(Proveedor).filter(
+                _text("LOWER(nombre) = LOWER(:n)")
+            ).params(n=nombre).first()
+
+        if existente:
+            if cuit: existente.cuit = cuit
+            if telefono: existente.telefono = telefono
+            if email: existente.email = email
+            actualizados += 1
+        else:
+            db.add(Proveedor(
+                nombre=nombre,
+                cuit=cuit,
+                telefono=telefono,
+                email=email,
+                direccion=obs,
+                activo=True,
+            ))
+            creados += 1
+
+    db.commit()
+    return {"ok": True, "creados": creados, "actualizados": actualizados,
+            "total": total, "procesados": offset + len(lote), "fin": offset + len(lote) >= total}
+
+
 # ── COMPRAS MANUALES ─────────────────────────────────────────
 
 @router.post("/registrar")
