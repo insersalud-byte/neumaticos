@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from core.database import get_db
@@ -37,3 +37,41 @@ def listar_clientes(db: Session = Depends(get_db)):
             for c in clientes
         ]
     }
+
+
+@router.post("/clientes")
+def crear_cliente(data: dict, db: Session = Depends(get_db)):
+    c = Cliente(
+        nombre=data.get("nombre", "").strip(),
+        telefono=data.get("telefono", "").strip(),
+        dni_cuit=data.get("dni_cuit", "").strip(),
+        tipo_cliente=data.get("tipo_cliente", "persona"),
+        correo=data.get("correo", "").strip(),
+        saldo_deudor=0,
+        activo=True,
+    )
+    if not c.nombre:
+        raise HTTPException(status_code=400, detail="El nombre es obligatorio")
+    db.add(c)
+    db.commit()
+    db.refresh(c)
+    return {"id": c.id, "message": "Cliente creado"}
+
+
+@router.put("/clientes/{cliente_id}")
+def editar_cliente(cliente_id: int, data: dict, db: Session = Depends(get_db)):
+    c = db.query(Cliente).filter(Cliente.id == cliente_id).first()
+    if not c:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    if "nombre" in data:
+        c.nombre = data["nombre"].strip()
+    if "telefono" in data:
+        c.telefono = data["telefono"].strip()
+    if "dni_cuit" in data:
+        c.dni_cuit = data["dni_cuit"].strip()
+    if "tipo_cliente" in data:
+        c.tipo_cliente = data["tipo_cliente"]
+    if "correo" in data:
+        c.correo = data["correo"].strip()
+    db.commit()
+    return {"message": "Cliente actualizado"}

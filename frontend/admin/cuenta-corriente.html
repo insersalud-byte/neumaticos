@@ -85,9 +85,12 @@
 
             <!-- TAB CLIENTES -->
             <div id="tabClientes">
-                <div class="flex gap-3 mb-4">
+                <div class="flex gap-3 mb-4 flex-wrap">
                     <button onclick="cargarClientes(false)" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition text-xs">VER TODOS</button>
                     <button onclick="cargarClientes(true)" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition text-xs">SOLO DEUDORES</button>
+                    <button onclick="abrirFormCliente(null)" style="background:#14532d;color:#86efac;font-weight:700;padding:8px 16px;border-radius:8px;font-size:12px;border:none;cursor:pointer" onmouseover="this.style.background='#166534'" onmouseout="this.style.background='#14532d'">
+                        <i class="fas fa-user-plus mr-1"></i> NUEVO CLIENTE
+                    </button>
                 </div>
                 <div class="bg-[#18181b] border border-[#27272a] rounded-2xl overflow-hidden shadow-xl">
                     <div class="p-4">
@@ -126,6 +129,9 @@
                     <div class="col-span-2 md:col-span-1 bg-[#18181b] border border-[#27272a] rounded-xl p-4 flex items-center gap-3">
                         <button onclick="cargarProveedores(true)" class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-3 rounded-lg transition text-xs">
                             <i class="fas fa-exclamation-circle mr-1"></i> SOLO CON DEUDA
+                        </button>
+                        <button onclick="abrirFormProveedor(null)" class="flex-1 bg-green-800 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg transition text-xs">
+                            <i class="fas fa-plus mr-1"></i> NUEVO
                         </button>
                         <button onclick="cargarProveedores(false)" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-3 rounded-lg transition text-xs">
                             VER TODOS
@@ -447,6 +453,10 @@
                             <button onclick="event.stopPropagation();abrirHistorial(${c.id},'${(c.nombre||'').replace(/'/g,"\\'")}','${c.telefono||''}')"
                                 class="bg-[#222] hover:bg-purple-900 text-purple-400 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition">
                                 <i class="fas fa-history mr-1"></i>Historial
+                            </button>
+                            <button onclick="event.stopPropagation();abrirFormClienteById(${c.id})"
+                                class="bg-[#222] hover:bg-yellow-900 text-yellow-400 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition">
+                                <i class="fas fa-edit"></i>
                             </button>
                         </div>
                     </td>
@@ -852,10 +862,16 @@
                 <td class="px-6 py-4 text-gray-400 text-sm">${p.telefono || '-'}</td>
                 <td class="px-6 py-4 text-right font-bold font-mono ${deudaClass}">${currency.format(p.saldo_deudor || 0)}</td>
                 <td class="px-6 py-4 text-center">
-                    <button onclick="event.stopPropagation();abrirDetalleProv(${p.id})"
-                        class="bg-[#222] hover:bg-orange-900 text-orange-400 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition">
-                        <i class="fas fa-plus-circle mr-1"></i>Ver / Pagar
-                    </button>
+                    <div class="flex justify-center gap-2">
+                        <button onclick="event.stopPropagation();abrirDetalleProv(${p.id})"
+                            class="bg-[#222] hover:bg-orange-900 text-orange-400 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition">
+                            <i class="fas fa-plus-circle mr-1"></i>Ver / Pagar
+                        </button>
+                        <button onclick="event.stopPropagation();abrirFormProveedorById(${p.id})"
+                            class="bg-[#222] hover:bg-yellow-900 text-yellow-400 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
                 </td>
             </tr>`;
         });
@@ -1146,6 +1162,133 @@
         } catch(e) {
             Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'No se pudo importar', background: '#111', color: '#fff' });
         }
+    }
+
+    // ─── FORM CLIENTE (crear/editar) ────────────────────────────
+    async function abrirFormClienteById(id) {
+        const r = await fetch(`/api/v1/cuenta-corriente/clientes?solo_con_deuda=false`);
+        const data = await r.json();
+        const c = (data.data || []).find(x => x.id === id);
+        abrirFormCliente(c || { id });
+    }
+
+    function abrirFormCliente(cliente) {
+        const es = cliente && cliente.id;
+        Swal.fire({
+            title: es ? 'Editar cliente' : 'Nuevo cliente',
+            background: '#111', color: '#fff',
+            html: `
+            <div style="text-align:left;display:grid;gap:10px;margin-top:8px">
+                <div>
+                    <label style="font-size:11px;color:#9ca3af;display:block;margin-bottom:4px">Tipo</label>
+                    <select id="fTipo" style="width:100%;background:#222;border:1px solid #374151;color:#fff;border-radius:8px;padding:8px;font-size:13px">
+                        <option value="persona" ${(!es||cliente.tipo_cliente==='persona')?'selected':''}>Persona</option>
+                        <option value="empresa" ${es&&cliente.tipo_cliente==='empresa'?'selected':''}>Empresa</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:11px;color:#9ca3af;display:block;margin-bottom:4px">Nombre / Razón social *</label>
+                    <input id="fNombre" value="${es ? (cliente.nombre||'') : ''}" style="width:100%;background:#222;border:1px solid #374151;color:#fff;border-radius:8px;padding:8px;font-size:13px" placeholder="Nombre completo">
+                </div>
+                <div>
+                    <label style="font-size:11px;color:#9ca3af;display:block;margin-bottom:4px">DNI / CUIT</label>
+                    <input id="fDni" value="${es ? (cliente.dni_cuit||'') : ''}" style="width:100%;background:#222;border:1px solid #374151;color:#fff;border-radius:8px;padding:8px;font-size:13px" placeholder="20123456789">
+                </div>
+                <div>
+                    <label style="font-size:11px;color:#9ca3af;display:block;margin-bottom:4px">Teléfono / WhatsApp</label>
+                    <input id="fTel" value="${es ? (cliente.telefono||'') : ''}" style="width:100%;background:#222;border:1px solid #374151;color:#fff;border-radius:8px;padding:8px;font-size:13px" placeholder="3512345678">
+                </div>
+                <div>
+                    <label style="font-size:11px;color:#9ca3af;display:block;margin-bottom:4px">Correo electrónico</label>
+                    <input id="fCorreo" value="${es ? (cliente.correo||'') : ''}" style="width:100%;background:#222;border:1px solid #374151;color:#fff;border-radius:8px;padding:8px;font-size:13px" placeholder="email@ejemplo.com">
+                </div>
+            </div>`,
+            showCancelButton: true,
+            confirmButtonText: es ? 'Guardar cambios' : 'Crear cliente',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#16a34a',
+            cancelButtonColor: '#374151',
+            preConfirm: async () => {
+                const nombre = document.getElementById('fNombre').value.trim();
+                if (!nombre) { Swal.showValidationMessage('El nombre es obligatorio'); return false; }
+                const payload = {
+                    nombre,
+                    tipo_cliente: document.getElementById('fTipo').value,
+                    dni_cuit: document.getElementById('fDni').value.trim(),
+                    telefono: document.getElementById('fTel').value.trim(),
+                    correo: document.getElementById('fCorreo').value.trim(),
+                };
+                const url = es ? `/api/v1/crm/clientes/${cliente.id}` : '/api/v1/crm/clientes';
+                const method = es ? 'PUT' : 'POST';
+                const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                if (!res.ok) { const d = await res.json(); Swal.showValidationMessage(d.detail || 'Error'); return false; }
+                return true;
+            }
+        }).then(r => {
+            if (r.isConfirmed) cargarClientes(false);
+        });
+    }
+
+    // ─── FORM PROVEEDOR (crear/editar) ──────────────────────────
+    async function abrirFormProveedorById(id) {
+        const r = await fetch(`/api/v1/compras/proveedores?solo_con_deuda=false`);
+        const data = await r.json();
+        const p = (data.data || []).find(x => x.id === id);
+        abrirFormProveedor(p || { id });
+    }
+
+    function abrirFormProveedor(prov) {
+        const es = prov && prov.id;
+        Swal.fire({
+            title: es ? 'Editar proveedor' : 'Nuevo proveedor',
+            background: '#111', color: '#fff',
+            html: `
+            <div style="text-align:left;display:grid;gap:10px;margin-top:8px">
+                <div>
+                    <label style="font-size:11px;color:#9ca3af;display:block;margin-bottom:4px">Nombre / Razón social *</label>
+                    <input id="pNombre" value="${es ? (prov.nombre||'') : ''}" style="width:100%;background:#222;border:1px solid #374151;color:#fff;border-radius:8px;padding:8px;font-size:13px" placeholder="Nombre">
+                </div>
+                <div>
+                    <label style="font-size:11px;color:#9ca3af;display:block;margin-bottom:4px">CUIT</label>
+                    <input id="pCuit" value="${es ? (prov.cuit||'') : ''}" style="width:100%;background:#222;border:1px solid #374151;color:#fff;border-radius:8px;padding:8px;font-size:13px" placeholder="30123456789">
+                </div>
+                <div>
+                    <label style="font-size:11px;color:#9ca3af;display:block;margin-bottom:4px">Teléfono</label>
+                    <input id="pTel" value="${es ? (prov.telefono||'') : ''}" style="width:100%;background:#222;border:1px solid #374151;color:#fff;border-radius:8px;padding:8px;font-size:13px" placeholder="3512345678">
+                </div>
+                <div>
+                    <label style="font-size:11px;color:#9ca3af;display:block;margin-bottom:4px">Email</label>
+                    <input id="pEmail" value="${es ? (prov.email||'') : ''}" style="width:100%;background:#222;border:1px solid #374151;color:#fff;border-radius:8px;padding:8px;font-size:13px" placeholder="proveedor@email.com">
+                </div>
+                <div>
+                    <label style="font-size:11px;color:#9ca3af;display:block;margin-bottom:4px">Dirección</label>
+                    <input id="pDir" value="${es ? (prov.direccion||'') : ''}" style="width:100%;background:#222;border:1px solid #374151;color:#fff;border-radius:8px;padding:8px;font-size:13px" placeholder="Calle 123">
+                </div>
+            </div>`,
+            showCancelButton: true,
+            confirmButtonText: es ? 'Guardar cambios' : 'Crear proveedor',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#ea580c',
+            cancelButtonColor: '#374151',
+            preConfirm: async () => {
+                const nombre = document.getElementById('pNombre').value.trim();
+                if (!nombre) { Swal.showValidationMessage('El nombre es obligatorio'); return false; }
+                const payload = {
+                    nombre,
+                    cuit: document.getElementById('pCuit').value.trim(),
+                    telefono: document.getElementById('pTel').value.trim(),
+                    email: document.getElementById('pEmail').value.trim(),
+                    direccion: document.getElementById('pDir').value.trim(),
+                };
+                const url = es ? `/api/v1/compras/proveedores/${prov.id}` : '/api/v1/compras/proveedores';
+                const method = es ? 'PUT' : 'POST';
+                const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                if (!res.ok) { const d = await res.json(); Swal.showValidationMessage(d.detail || 'Error'); return false; }
+                return true;
+            }
+        }).then(r => {
+            if (r.isConfirmed) cargarProveedores(false);
+        });
     }
 
     cargarCoeficientes();
