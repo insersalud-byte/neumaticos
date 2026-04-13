@@ -1110,62 +1110,28 @@
         });
         if (!res.isConfirmed) return;
 
-        Swal.fire({ title: 'Procesando...', html: 'Leyendo Excel...', allowOutsideClick: false, background: '#111', color: '#fff', didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: 'Importando...', html: 'Preparando...', allowOutsideClick: false, background: '#111', color: '#fff', didOpen: () => Swal.showLoading() });
 
         try {
-            // Primero asegurar columnas en DB
             await fetch('/api/v1/cuenta-corriente/migrar-columnas-clientes', { method: 'POST' });
 
-            // Leer Excel del servidor
-            const resp = await fetch('/admin/catalogos/contactos.xlsx');
-            const buf = await resp.arrayBuffer();
-            const wb = XLSX.read(buf, { type: 'array' });
-            const ws = wb.Sheets[wb.SheetNames[0]];
-            const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+            const LOTE = 50;
+            let offset = 0, creados = 0, actualizados = 0, total = null;
 
-            // Parsear filas (saltar header)
-            const contactos = [];
-            for (let i = 1; i < rows.length; i++) {
-                const r = rows[i];
-                const tipoRaw = (r[0] || '').toString().trim().toUpperCase();
-                const tipo = tipoRaw === 'EMPRESA' ? 'empresa' : 'persona';
-                const dniRaw = (r[1] || '').toString().trim();
-                const apellido = (r[2] || '').toString().trim();
-                const nombreRaw = (r[3] || '').toString().trim();
-                const wa = (r[4] || '').toString().trim();
-                const correo = (r[5] || '').toString().trim();
-
-                // Armar nombre completo: para personas apellido + nombre, para empresa solo nombre
-                let nombre = '';
-                if (tipo === 'empresa') {
-                    nombre = nombreRaw;
-                } else {
-                    nombre = apellido && nombreRaw ? `${apellido} ${nombreRaw}` : (apellido || nombreRaw);
-                }
-                if (!nombre) continue;
-
-                // Limpiar DNI: ignorar basura
-                const dniLimpio = /^\d{6,}$/.test(dniRaw) ? dniRaw : '';
-
-                contactos.push({ tipo, dni_cuit: dniLimpio, nombre, telefono: wa, correo });
-            }
-
-            Swal.update({ html: `Enviando ${contactos.length} contactos al servidor...` });
-
-            // Enviar en lotes de 200
-            const LOTE = 200;
-            let creados = 0, actualizados = 0;
-            for (let i = 0; i < contactos.length; i += LOTE) {
-                const lote = contactos.slice(i, i + LOTE);
-                const r2 = await fetch('/api/v1/cuenta-corriente/importar-contactos', {
+            while (true) {
+                const r = await fetch('/api/v1/cuenta-corriente/importar-contactos-lote', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contactos: lote })
+                    body: JSON.stringify({ offset, limit: LOTE })
                 });
-                const d = await r2.json();
+                if (!r.ok) throw new Error(`Error HTTP ${r.status}`);
+                const d = await r.json();
                 creados += d.creados || 0;
                 actualizados += d.actualizados || 0;
-                Swal.update({ html: `Procesando ${Math.min(i + LOTE, contactos.length)} / ${contactos.length}...` });
+                total = d.total || total;
+                offset += LOTE;
+                Swal.update({ html: `Procesando ${Math.min(offset, total || offset)} / ${total || '?'}...<br><small>${creados} nuevos · ${actualizados} actualizados</small>` });
+                if (d.fin) break;
             }
 
             await Swal.fire({

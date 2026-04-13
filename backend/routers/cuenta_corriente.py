@@ -255,6 +255,76 @@ def importar_contactos(data: dict, db: Session = Depends(get_db)):
     return {"ok": True, "creados": creados, "actualizados": actualizados}
 
 
+@router.post("/importar-contactos-lote")
+def importar_contactos_lote(data: dict, db: Session = Depends(get_db)):
+    """Procesa un lote (offset+limit) del Excel en el servidor. Para evitar timeout."""
+    import os, openpyxl, re
+
+    offset = int(data.get("offset", 0))
+    limit = int(data.get("limit", 50))
+
+    base = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    posibles = [
+        os.path.join(base, "frontend", "admin", "catalogos", "contactos.xlsx"),
+        os.path.join(base, "contactos.xlsx"),
+    ]
+    ruta = next((p for p in posibles if os.path.exists(p)), None)
+    if not ruta:
+        raise HTTPException(status_code=404, detail="contactos.xlsx no encontrado")
+
+    wb = openpyxl.load_workbook(ruta, read_only=True, data_only=True)
+    ws = wb.active
+    # Saltar header (fila 0) + offset
+    all_rows = list(ws.iter_rows(values_only=True))
+    wb.close()
+
+    total = len(all_rows) - 1  # sin header
+    lote = all_rows[1 + offset: 1 + offset + limit]
+
+    creados = 0
+    actualizados = 0
+
+    for row in lote:
+        tipo_raw = (str(row[0] or "")).strip().upper()
+        tipo = "empresa" if tipo_raw == "EMPRESA" else "persona"
+        dni_raw = (str(row[1] or "")).strip()
+        apellido = (str(row[2] or "")).strip()
+        nombre_raw = (str(row[3] or "")).strip()
+        wa = (str(row[4] or "")).strip()
+        correo_raw = (str(row[5] or "")).strip() if len(row) > 5 else ""
+
+        nombre = f"{apellido} {nombre_raw}".strip() if tipo == "persona" and apellido else nombre_raw
+        if not nombre or nombre in ("None None", "None", ""):
+            continue
+
+        dni = dni_raw if re.match(r"^\d{6,}$", dni_raw) else ""
+        telefono = wa if re.search(r"\d{6,}", wa) else ""
+        correo = correo_raw if correo_raw != "None" else ""
+
+        existente = None
+        if dni:
+            existente = db.query(Cliente).filter(Cliente.dni_cuit == dni).first()
+        if not existente:
+            existente = db.query(Cliente).filter(
+                text("LOWER(nombre) = LOWER(:n)")
+            ).params(n=nombre).first()
+
+        if existente:
+            existente.tipo_cliente = tipo
+            if dni: existente.dni_cuit = dni
+            if telefono: existente.telefono = telefono
+            if correo: existente.correo = correo
+            actualizados += 1
+        else:
+            db.add(Cliente(nombre=nombre, dni_cuit=dni, telefono=telefono,
+                           correo=correo, tipo_cliente=tipo, saldo_deudor=0, activo=True))
+            creados += 1
+
+    db.commit()
+    return {"ok": True, "creados": creados, "actualizados": actualizados,
+            "total": total, "procesados": offset + len(lote), "fin": offset + len(lote) >= total}
+
+
 @router.post("/importar-contactos-servidor")
 def importar_contactos_servidor(db: Session = Depends(get_db)):
     """Lee contactos.xlsx del filesystem del servidor y hace upsert en clientes."""
