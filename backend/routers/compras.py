@@ -85,7 +85,7 @@ def importar_proveedores_lote(data: dict, db: Session = Depends(get_db)):
     offset = int(data.get("offset", 0))
     limit = int(data.get("limit", 50))
 
-    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    base = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     posibles = [
         os.path.join(base, "frontend", "admin", "catalogos", "proveedores.xlsx"),
         os.path.join(base, "proveedores.xlsx"),
