@@ -512,8 +512,8 @@ def ver_factura_compra_pdf(compra_id: int, db: Session = Depends(get_db)):
     for item in items:
         cant   = item.get("cantidad", item.get("qty", 1))
         desc   = item.get("descripcion", item.get("nombre", ""))
-        precio = item.get("precio_unitario", item.get("precio", 0))
-        sub    = float(precio) * int(cant)
+        precio = item.get("costo_unitario", item.get("precio_unitario", item.get("precio", 0)))
+        sub    = float(precio or 0) * int(cant or 1)
         table_data.append([p(str(cant), normal), p(desc, normal), p(money(precio), bold), p(money(sub), bold)])
 
     table_data.append([p("", hdr_st), p("", hdr_st), p("TOTAL", hdr_st), p(money(compra.total or 0), hdr_st)])
