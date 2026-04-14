@@ -447,6 +447,114 @@ def resumen_proveedor_pdf(proveedor_id: int, db: Session = Depends(get_db)):
         headers={"Content-Disposition": f"inline; filename=proveedor_{proveedor_id}.pdf"})
 
 
+@router.get("/compra/{compra_id}")
+def ver_factura_compra_pdf(compra_id: int, db: Session = Depends(get_db)):
+    compra = db.query(CompraProveedor).filter(CompraProveedor.id == compra_id).first()
+    if not compra:
+        raise HTTPException(status_code=404, detail="Compra no encontrada")
+
+    prov = db.query(Proveedor).filter(Proveedor.id == compra.proveedor_id).first()
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=15*mm, bottomMargin=20*mm, leftMargin=15*mm, rightMargin=15*mm)
+    elements = []
+
+    info_style = ParagraphStyle("Info", parent=getSampleStyleSheet()["Normal"], fontSize=10, spaceAfter=4)
+    label_style = ParagraphStyle("Label", parent=info_style, textColor=colors.HexColor("#666666"))
+    value_style = ParagraphStyle("Value", parent=info_style, textColor=colors.black, fontName="Helvetica-Bold")
+
+    elements.extend(_header_empresa(tipo_doc="FACTURA DE COMPRA"))
+    tipo_style = ParagraphStyle("Tipo", fontSize=14, fontName="Helvetica-Bold", textColor=colors.HexColor("#1e3a5f"), spaceAfter=8)
+    nro = compra.numero_factura or f"#{compra.id}"
+    elements.append(Paragraph(f"COMPRA N° {compra.id}  |  Factura: {nro}", tipo_style))
+    elements.append(Spacer(1, 3*mm))
+
+    # Datos proveedor
+    header_data = [[Paragraph("<b>DATOS DEL PROVEEDOR</b>", ParagraphStyle("H", fontSize=9, textColor=colors.HexColor("#999999")))]]
+    header_tbl = Table(header_data, colWidths=[180*mm])
+    header_tbl.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#f3f4f6")),
+        ("TOPPADDING", (0,0), (-1,-1), 6), ("BOTTOMPADDING", (0,0), (-1,-1), 6),
+        ("LEFTPADDING", (0,0), (-1,-1), 10),
+    ]))
+    elements.append(header_tbl)
+
+    fecha_str = compra.fecha.strftime("%d/%m/%Y %H:%M") if compra.fecha else "-"
+    prov_data = [
+        [Paragraph("Proveedor:", label_style), Paragraph(prov.nombre if prov else "-", value_style)],
+        [Paragraph("CUIT:", label_style),      Paragraph(prov.cuit if prov else "-", info_style)],
+        [Paragraph("Teléfono:", label_style),  Paragraph(prov.telefono if prov else "-", info_style)],
+        [Paragraph("Fecha:", label_style),     Paragraph(fecha_str, info_style)],
+        [Paragraph("Método pago:", label_style), Paragraph((compra.metodo_pago or "-").capitalize(), info_style)],
+    ]
+    prov_tbl = Table(prov_data, colWidths=[40*mm, 140*mm])
+    prov_tbl.setStyle(TableStyle([
+        ("VALIGN", (0,0), (-1,-1), "TOP"),
+        ("TOPPADDING", (0,0), (-1,-1), 4), ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+    ]))
+    elements.append(prov_tbl)
+    elements.append(Spacer(1, 8*mm))
+
+    # Items
+    def p(txt, style): return Paragraph(str(txt), style)
+    def money(v):
+        try: return f"$ {float(v):,.0f}"
+        except: return "-"
+
+    normal = ParagraphStyle("N", fontSize=8, leading=11)
+    bold   = ParagraphStyle("B", fontSize=8, leading=11, fontName="Helvetica-Bold")
+    hdr_st = ParagraphStyle("H", fontSize=8, fontName="Helvetica-Bold", textColor=colors.white)
+
+    items = json.loads(compra.items) if compra.items else []
+    CW = [15*mm, 95*mm, 35*mm, 35*mm]
+    table_data = [[p("CANT.", hdr_st), p("DESCRIPCIÓN", hdr_st), p("P. UNIT.", hdr_st), p("SUBTOTAL", hdr_st)]]
+
+    for item in items:
+        cant   = item.get("cantidad", item.get("qty", 1))
+        desc   = item.get("descripcion", item.get("nombre", ""))
+        precio = item.get("precio_unitario", item.get("precio", 0))
+        sub    = float(precio) * int(cant)
+        table_data.append([p(str(cant), normal), p(desc, normal), p(money(precio), bold), p(money(sub), bold)])
+
+    table_data.append([p("", hdr_st), p("", hdr_st), p("TOTAL", hdr_st), p(money(compra.total or 0), hdr_st)])
+
+    table = Table(table_data, colWidths=CW)
+    n = len(table_data)
+    ts = TableStyle([
+        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#1e3a5f")),
+        ("TEXTCOLOR",  (0,0), (-1,0), colors.white),
+        ("BACKGROUND", (0,n-1), (-1,n-1), colors.HexColor("#1e3a5f")),
+        ("TEXTCOLOR",  (0,n-1), (-1,n-1), colors.white),
+        ("FONTNAME",   (0,n-1), (-1,n-1), "Helvetica-Bold"),
+        ("FONTSIZE",   (0,0),   (-1,-1),  8),
+        ("ALIGN",      (0,0),   (0,-1),   "CENTER"),
+        ("ALIGN",      (2,0),   (-1,-1),  "RIGHT"),
+        ("VALIGN",     (0,0),   (-1,-1),  "MIDDLE"),
+        ("GRID",       (0,0),   (-1,-1),  0.4, colors.HexColor("#e5e7eb")),
+        ("TOPPADDING",    (0,0), (-1,-1), 5),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 5),
+        ("LEFTPADDING",   (0,0), (-1,-1), 5),
+        ("RIGHTPADDING",  (0,0), (-1,-1), 5),
+    ])
+    for i in range(1, n - 1):
+        bg = colors.white if i % 2 == 0 else colors.HexColor("#f3f4f6")
+        ts.add("BACKGROUND", (0, i), (-1, i), bg)
+    table.setStyle(ts)
+    elements.append(table)
+
+    if compra.descripcion:
+        elements.append(Spacer(1, 10*mm))
+        elements.append(Paragraph(f"<b>Observaciones:</b> {compra.descripcion}", info_style))
+
+    doc.build(elements)
+    buffer.seek(0)
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename=compra_{compra_id}.pdf"},
+    )
+
+
 @router.get("/facturas-impagas-cliente/{cliente_id}")
 def facturas_impagas_cliente(cliente_id: int, db: Session = Depends(get_db)):
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
