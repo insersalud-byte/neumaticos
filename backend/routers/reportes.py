@@ -136,36 +136,112 @@ def generar_presupuesto_pdf(venta_id: int, db: Session = Depends(get_db)):
     elements.append(Spacer(1, 8*mm))
 
     items = json.loads(venta.items) if venta.items else []
-    table_data = [["CANT.", "DESCRIPCIÓN", "P. UNIT.", "SUBTOTAL"]]
-    for item in items:
-        cant = item.get("cantidad", 1)
-        desc = item.get("descripcion", "")
-        precio = item.get("precio_final", 0)
-        sub = cant * precio
-        table_data.append([str(cant), desc, f"$ {precio:,.0f}", f"$ {sub:,.0f}"])
 
-    table_data.append(["", "", "TOTAL:", f"$ {venta.total_venta:,.0f}"])
+    def p(txt, style): return Paragraph(str(txt), style)
+    def money(v, qty=1):
+        try:
+            n = float(v) * int(qty)
+            return f"$ {n:,.0f}" if n > 0 else "-"
+        except Exception:
+            return "-"
 
-    col_widths = [25*mm, 105*mm, 30*mm, 30*mm]
-    table = Table(table_data, colWidths=col_widths)
-    table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e3a5f")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 10),
-        ("ALIGN", (0, 0), (0, -1), "CENTER"),
-        ("ALIGN", (2, 0), (-1, -1), "RIGHT"),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("GRID", (0, 0), (-1, -2), 0.5, colors.HexColor("#e5e7eb")),
-        ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#1e3a5f")),
-        ("TEXTCOLOR", (0, -1), (-1, -1), colors.white),
-        ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
-        ("FONTSIZE", (0, -1), (-1, -1), 12),
-        ("TOPPADDING", (0, 0), (-1, -1), 8),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-        ("LEFTPADDING", (0, 0), (-1, -1), 8),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-    ]))
+    normal  = ParagraphStyle("N", fontSize=8, leading=11)
+    bold    = ParagraphStyle("B", fontSize=8, leading=11, fontName="Helvetica-Bold")
+    hdr_st  = ParagraphStyle("H", fontSize=8, fontName="Helvetica-Bold", textColor=colors.white)
+
+    tiene_sj = any(i.get("tipo") == "san_juan" for i in items)
+
+    if tiene_sj:
+        # Layout 5 columnas para cotizaciones San Juan
+        CW = [12*mm, 78*mm, 30*mm, 30*mm, 30*mm]
+        table_data = [[
+            p("CANT.",       hdr_st),
+            p("DESCRIPCIÓN", hdr_st),
+            p("CONTADO",     hdr_st),
+            p("3/6 CUOTAS",  hdr_st),
+            p("12 CUOTAS",   hdr_st),
+        ]]
+        for item in items:
+            cant      = item.get("cantidad", 1)
+            desc      = item.get("descripcion", "")
+            tipo      = item.get("tipo", "")
+            precio    = item.get("precio_final", 0)
+            contado   = item.get("contado",   0)
+            cuotas_6  = item.get("cuotas_6",  0)
+            cuotas_12 = item.get("cuotas_12", 0)
+            medida    = item.get("medida",    "")
+            if tipo == "san_juan":
+                desc_txt = f"{desc}  {medida}".strip()
+                table_data.append([
+                    p(str(cant),              normal),
+                    p(desc_txt,               normal),
+                    p(money(contado,   cant),  bold),
+                    p(money(cuotas_6,  cant),  bold),
+                    p(money(cuotas_12, cant),  bold),
+                ])
+            else:
+                sub = float(precio) * int(cant)
+                table_data.append([
+                    p(str(cant),                    normal),
+                    p(desc,                         normal),
+                    p(f"$ {float(precio):,.0f}",    bold),
+                    p(f"$ {sub:,.0f}",              bold),
+                    p("",                           normal),
+                ])
+        table_data.append([
+            p("", hdr_st), p("", hdr_st),
+            p("TOTAL", hdr_st),
+            p(f"$ {venta.total_venta:,.0f}", hdr_st),
+            p("", hdr_st),
+        ])
+    else:
+        # Layout normal 4 columnas
+        CW = [15*mm, 95*mm, 35*mm, 35*mm]
+        table_data = [[
+            p("CANT.",       hdr_st),
+            p("DESCRIPCIÓN", hdr_st),
+            p("P. UNIT.",    hdr_st),
+            p("SUBTOTAL",    hdr_st),
+        ]]
+        for item in items:
+            cant   = item.get("cantidad", 1)
+            desc   = item.get("descripcion", "")
+            precio = item.get("precio_final", 0)
+            sub    = float(precio) * int(cant)
+            table_data.append([
+                p(str(cant),                 normal),
+                p(desc,                      normal),
+                p(f"$ {float(precio):,.0f}", bold),
+                p(f"$ {sub:,.0f}",           bold),
+            ])
+        table_data.append([
+            p("", hdr_st), p("", hdr_st),
+            p("TOTAL", hdr_st),
+            p(f"$ {venta.total_venta:,.0f}", hdr_st),
+        ])
+
+    table = Table(table_data, colWidths=CW)
+    n_rows = len(table_data)
+    ts = TableStyle([
+        ("BACKGROUND",    (0,0),         (-1,0),         colors.HexColor("#1e3a5f")),
+        ("TEXTCOLOR",     (0,0),         (-1,0),         colors.white),
+        ("BACKGROUND",    (0,n_rows-1),  (-1,n_rows-1),  colors.HexColor("#1e3a5f")),
+        ("TEXTCOLOR",     (0,n_rows-1),  (-1,n_rows-1),  colors.white),
+        ("FONTNAME",      (0,n_rows-1),  (-1,n_rows-1),  "Helvetica-Bold"),
+        ("FONTSIZE",      (0,0),         (-1,-1),         8),
+        ("ALIGN",         (0,0),         (0,-1),          "CENTER"),
+        ("ALIGN",         (2,0),         (-1,-1),         "RIGHT"),
+        ("VALIGN",        (0,0),         (-1,-1),         "MIDDLE"),
+        ("GRID",          (0,0),         (-1,-1),         0.4, colors.HexColor("#e5e7eb")),
+        ("TOPPADDING",    (0,0),         (-1,-1),         5),
+        ("BOTTOMPADDING", (0,0),         (-1,-1),         5),
+        ("LEFTPADDING",   (0,0),         (-1,-1),         5),
+        ("RIGHTPADDING",  (0,0),         (-1,-1),         5),
+    ])
+    for i in range(1, n_rows - 1):
+        bg = colors.white if i % 2 == 0 else colors.HexColor("#f3f4f6")
+        ts.add("BACKGROUND", (0, i), (-1, i), bg)
+    table.setStyle(ts)
     elements.append(table)
 
     if venta.observaciones:
@@ -389,7 +465,7 @@ def facturas_impagas_cliente(cliente_id: int, db: Session = Depends(get_db)):
             {
                 "id": v.id,
                 "fecha": v.fecha_creacion.isoformat() if v.fecha_creacion else None,
-                "descripcion": f"Venta #{v.id}",
+                "descripcion": f"Factura N° {v.id}",
                 "total": v.total_venta,
                 "pagado": v.monto_abonado or 0,
                 "pendiente": v.monto_debe or 0,

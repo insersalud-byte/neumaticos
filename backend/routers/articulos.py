@@ -463,3 +463,30 @@ def eliminar_articulo(articulo_id: int, db: Session = Depends(get_db)):
     a.activo = False
     db.commit()
     return {"message": "Artículo eliminado"}
+
+
+@router.post("/actualizar-margen-marca")
+def actualizar_margen_marca(data: dict, db: Session = Depends(get_db)):
+    """Actualiza margen y recalcula precio_venta_final para todos los productos de una marca."""
+    marca = (data.get("marca") or "").strip()
+    margen = float(data.get("margen") or 0)
+    if not marca:
+        raise HTTPException(status_code=400, detail="Falta la marca")
+
+    productos = db.query(Producto).filter(
+        Producto.activo == True,
+        Producto.marca.ilike(f"%{marca}%")
+    ).all()
+
+    if not productos:
+        return {"message": f"No se encontraron productos de la marca '{marca}'", "actualizados": 0}
+
+    for p in productos:
+        p.margen_ganancia = margen
+        if p.precio_costo and p.precio_costo > 0:
+            nuevo_precio = round(p.precio_costo * (1 + margen / 100), 2)
+            p.precio_venta_final = nuevo_precio
+            p.precio_venta_contado = nuevo_precio
+
+    db.commit()
+    return {"message": f"{len(productos)} productos de '{marca}' actualizados con margen {margen}%", "actualizados": len(productos)}

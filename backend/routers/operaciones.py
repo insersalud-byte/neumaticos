@@ -797,7 +797,7 @@ def venta_mostrador(data: dict, db: Session = Depends(get_db)):
                 cliente_id=cliente_id,
                 tipo="cargo",
                 monto=debe,
-                descripcion=f"Venta #{venta.id} - Saldo pendiente",
+                descripcion=f"Factura N° {venta.id} - Saldo pendiente",
                 metodo_pago=metodo_pago,
                 venta_id=venta.id,
             )
@@ -915,7 +915,7 @@ def crear_operacion(data: dict, db: Session = Depends(get_db)):
                 cliente_id=cliente_id,
                 tipo="cargo",
                 monto=debe,
-                descripcion=f"Venta #{venta.id} - Saldo pendiente",
+                descripcion=f"Factura N° {venta.id} - Saldo pendiente",
                 metodo_pago=metodo_pago,
                 venta_id=venta.id,
             )
@@ -1035,7 +1035,7 @@ def actualizar_venta(venta_id: int, data: dict, db: Session = Depends(get_db)):
                     cliente_id=venta.cliente_id,
                     tipo="cargo",
                     monto=debe,
-                    descripcion=f"Venta #{venta.id} - Saldo pendiente",
+                    descripcion=f"Factura N° {venta.id} - Saldo pendiente",
                     metodo_pago=metodo_pago,
                     venta_id=venta.id,
                 )

@@ -7,6 +7,7 @@
   <script src="/admin/auth-guard.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 
   <style>
@@ -244,6 +245,23 @@
             <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold">Agregar Producto o Servicio</p>
             <button onclick="toggleItemLibre()" class="text-[10px] font-bold uppercase tracking-wider text-red-500 hover:text-red-400 transition flex items-center gap-1" id="btnToggleLibre">
               <i class="fas fa-plus-circle"></i> Item Libre
+            </button>
+          </div>
+          <!-- Accesos rápidos a catálogos -->
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <button onclick="abrirCatalogo('san_juan')"
+              style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+                     font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+                     color:#93c5fd;background:#1e3a5f;border:1px solid #1d4ed8;
+                     border-radius:8px;padding:8px 4px;cursor:pointer;transition:background .15s;">
+              <i class="fas fa-book-open"></i> San Juan
+            </button>
+            <button onclick="abrirCatalogo('ofertas')"
+              style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+                     font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+                     color:#86efac;background:#14532d;border:1px solid #15803d;
+                     border-radius:8px;padding:8px 4px;cursor:pointer;transition:background .15s;">
+              <i class="fas fa-tag"></i> Ofertas
             </button>
           </div>
           <div class="relative">
@@ -492,6 +510,150 @@
     </div>
   </div>
 
+  <!-- ═══════════════════════════════════════════════════════
+       MODAL SAN JUAN
+  ═══════════════════════════════════════════════════════ -->
+  <div id="modalSanJuan" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#09090b] border border-[#27272a] rounded-2xl w-full max-w-3xl max-h-[88vh] flex flex-col">
+      <!-- Header -->
+      <div class="flex items-center justify-between p-4 border-b border-[#27272a]">
+        <div class="flex items-center gap-3">
+          <span class="text-blue-400 text-lg"><i class="fas fa-book-open"></i></span>
+          <div>
+            <h3 class="font-black text-white text-base tracking-wide">CATÁLOGO SAN JUAN</h3>
+            <p class="text-[10px] text-gray-600 uppercase tracking-widest">Contado · 6 Cuotas · 12 Cuotas</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <!-- File picker -->
+          <input type="file" id="fileSJ" accept=".xlsx,.xls" class="hidden" onchange="handleExcelCatalogo(this,'san_juan')"/>
+          <button id="btnArchivoSJ" onclick="document.getElementById('fileSJ').click()"
+            class="flex items-center gap-1 text-[10px] font-bold uppercase border border-blue-800 text-blue-400 hover:text-blue-300 rounded px-2 py-1.5 transition truncate max-w-[180px]">
+            <i class="fas fa-upload mr-1"></i> Cargar Excel
+          </button>
+          <button onclick="cerrarCatalogo('san_juan')" class="text-gray-500 hover:text-white w-7 h-7 flex items-center justify-center">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Search bar -->
+      <div class="px-4 py-3 border-b border-[#18181b]">
+        <div class="relative">
+          <input id="inpMedidaSJ" type="text" placeholder="Ingresá la medida  ej: 175/65r14"
+            class="input-dark pr-10 text-sm" autocomplete="off"
+            oninput="buscarMedidaCatalogo('san_juan')"
+            onkeydown="if(event.key==='Escape')cerrarCatalogo('san_juan')"/>
+          <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 text-xs"></i>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="flex-1 overflow-y-auto">
+        <table class="w-full text-left">
+          <thead class="sticky top-0 bg-[#0d0d0f] z-10">
+            <tr class="text-[10px] text-gray-600 uppercase tracking-widest">
+              <th class="px-3 py-2 w-8">
+                <input type="checkbox" id="checkAllSJ" class="w-3.5 h-3.5 accent-blue-500 cursor-pointer" onchange="toggleSelectAllSJ()"/>
+              </th>
+              <th class="px-3 py-2">Descripción</th>
+              <th class="px-3 py-2">Medida</th>
+              <th class="px-3 py-2 text-green-500 text-right">Contado</th>
+              <th class="px-3 py-2 text-yellow-500 text-right">6 Cuotas</th>
+              <th class="px-3 py-2 text-orange-500 text-right">12 Cuotas</th>
+            </tr>
+          </thead>
+          <tbody id="resultsSJ">
+            <tr><td colspan="6" class="text-center py-8 text-gray-700 text-xs">
+              <i class="fas fa-upload mr-2 opacity-40"></i>Cargá un Excel y buscá por medida
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer -->
+      <div class="p-3 border-t border-[#27272a] flex items-center justify-between gap-2 bg-[#050505] rounded-b-2xl">
+        <p class="text-[10px] text-gray-600">Tildá productos — se agregan Contado, 6 y 12 cuotas al carrito</p>
+        <button onclick="agregarSeleccionadosSJ()"
+          style="background:#1e3a5f;border:1px solid #1d4ed8;color:#93c5fd;font-size:13px;font-weight:900;
+                 text-transform:uppercase;letter-spacing:.05em;border-radius:8px;padding:8px 28px;cursor:pointer;">
+          <i class="fas fa-check mr-2"></i> OK
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       MODAL OFERTAS
+  ═══════════════════════════════════════════════════════ -->
+  <div id="modalOfertas" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#09090b] border border-[#27272a] rounded-2xl w-full max-w-2xl max-h-[88vh] flex flex-col">
+      <!-- Header -->
+      <div class="flex items-center justify-between p-4 border-b border-[#27272a]">
+        <div class="flex items-center gap-3">
+          <span class="text-green-400 text-lg"><i class="fas fa-tag"></i></span>
+          <div>
+            <h3 class="font-black text-white text-base tracking-wide">OFERTAS</h3>
+            <p class="text-[10px] text-gray-600 uppercase tracking-widest">Hacé click en el precio para agregar al carrito</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="file" id="fileOf" accept=".xlsx,.xls" class="hidden" onchange="handleExcelCatalogo(this,'ofertas')"/>
+          <button id="btnArchivoOf" onclick="document.getElementById('fileOf').click()"
+            class="flex items-center gap-1 text-[10px] font-bold uppercase border border-green-800 text-green-400 hover:text-green-300 rounded px-2 py-1.5 transition truncate max-w-[180px]">
+            <i class="fas fa-upload mr-1"></i> Cargar Excel
+          </button>
+          <button onclick="cerrarCatalogo('ofertas')" class="text-gray-500 hover:text-white w-7 h-7 flex items-center justify-center">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Search bar -->
+      <div class="px-4 py-3 border-b border-[#18181b]">
+        <div class="relative">
+          <input id="inpMedidaOf" type="text" placeholder="Ingresá la medida  ej: 175/65r14"
+            class="input-dark pr-10 text-sm" autocomplete="off"
+            oninput="buscarMedidaCatalogo('ofertas')"
+            onkeydown="if(event.key==='Escape')cerrarCatalogo('ofertas')"/>
+          <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 text-xs"></i>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="flex-1 overflow-y-auto">
+        <table class="w-full text-left">
+          <thead class="sticky top-0 bg-[#0d0d0f] z-10">
+            <tr class="text-[10px] text-gray-600 uppercase tracking-widest">
+              <th class="px-3 py-2 w-8">
+                <input type="checkbox" id="checkAllOf" class="w-3.5 h-3.5 accent-green-500 cursor-pointer" onchange="toggleSelectAllOf()"/>
+              </th>
+              <th class="px-3 py-2">Medida</th>
+              <th class="px-3 py-2">Marca</th>
+              <th class="px-3 py-2">Descripción</th>
+              <th class="px-3 py-2 text-green-600 text-right">Precio</th>
+            </tr>
+          </thead>
+          <tbody id="resultsOf">
+            <tr><td colspan="5" class="text-center py-8 text-gray-700 text-xs">
+              <i class="fas fa-upload mr-2 opacity-40"></i>Cargá un Excel y buscá por medida
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer -->
+      <div class="p-3 border-t border-[#27272a] flex items-center justify-between gap-2 bg-[#050505] rounded-b-2xl">
+        <p class="text-[10px] text-gray-600">Tildá los productos y presioná OK para agregar al carrito</p>
+        <button onclick="agregarSeleccionadosOf()"
+          style="background:#14532d;border:1px solid #15803d;color:#86efac;font-size:12px;font-weight:800;
+                 text-transform:uppercase;letter-spacing:.05em;border-radius:8px;padding:8px 20px;cursor:pointer;">
+          <i class="fas fa-check mr-1"></i> OK
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ─── STATE ───────────────────────────────────────────
     let carrito = [];
@@ -699,7 +861,40 @@
           <i class="fas fa-shopping-cart mr-2 opacity-30"></i> Sin items</div>`;
         recalcular(); return;
       }
-      body.innerHTML = carrito.map((item, i) => `
+      body.innerHTML = carrito.map((item, i) => {
+        if (item._tipo === 'san_juan') {
+          return `
+        <div class="carrito-row px-3 py-2 border-b border-[#111]">
+          <div class="flex items-start justify-between gap-1 mb-1">
+            <div class="flex-1 min-w-0">
+              <p class="text-[11px] font-semibold text-white leading-tight truncate">${item.descripcion}</p>
+              <p class="text-[10px] text-blue-400 mono font-bold">${item.medida || ''}</p>
+            </div>
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <button onclick="cambiarQty(${i},-1)" class="w-5 h-5 rounded bg-[#18181b] text-gray-400 hover:text-white text-xs flex items-center justify-center">-</button>
+              <span class="mono text-xs w-5 text-center">${item.qty}</span>
+              <button onclick="cambiarQty(${i},1)" class="w-5 h-5 rounded bg-[#18181b] text-gray-400 hover:text-white text-xs flex items-center justify-center">+</button>
+              <button onclick="editarItem(${i})" class="text-gray-700 hover:text-blue-400 ml-1"><i class="fas fa-pencil-alt text-[10px]"></i></button>
+              <button onclick="quitarItem(${i})" class="text-gray-700 hover:text-red-500 ml-1"><i class="fas fa-times text-[10px]"></i></button>
+            </div>
+          </div>
+          <div class="flex gap-1">
+            <span style="flex:1;background:#052e16;border:1px solid #14532d;border-radius:5px;padding:2px 5px;text-align:center;">
+              <span style="display:block;font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">Contado</span>
+              <span style="font-size:10px;font-weight:800;color:#4ade80;font-family:monospace;">${currency(item.contado * item.qty)}</span>
+            </span>
+            <span style="flex:1;background:#1c1003;border:1px solid #713f12;border-radius:5px;padding:2px 5px;text-align:center;">
+              <span style="display:block;font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">3/6 Cuotas</span>
+              <span style="font-size:10px;font-weight:800;color:#fbbf24;font-family:monospace;">${currency(item.cuotas_6 * item.qty)}</span>
+            </span>
+            <span style="flex:1;background:#1c0a03;border:1px solid #7c2d12;border-radius:5px;padding:2px 5px;text-align:center;">
+              <span style="display:block;font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">12 Cuotas</span>
+              <span style="font-size:10px;font-weight:800;color:#fb923c;font-family:monospace;">${currency(item.cuotas_12 * item.qty)}</span>
+            </span>
+          </div>
+        </div>`;
+        }
+        return `
         <div class="carrito-row flex items-center gap-2 px-4 py-3">
           <div class="flex-1 min-w-0">
             <p class="text-sm font-semibold text-white truncate">${item.descripcion}</p>
@@ -711,13 +906,81 @@
             <button onclick="cambiarQty(${i},1)" class="w-6 h-6 rounded bg-[#18181b] text-gray-400 hover:text-white text-xs flex items-center justify-center">+</button>
           </div>
           <span class="mono text-sm text-white w-24 text-right">${currency(item.precio * item.qty)}</span>
+          <button onclick="editarItem(${i})" class="text-gray-700 hover:text-blue-400 ml-1"><i class="fas fa-pencil-alt text-xs"></i></button>
           <button onclick="quitarItem(${i})" class="text-gray-700 hover:text-red-500 ml-1"><i class="fas fa-times text-xs"></i></button>
-        </div>`).join('');
+        </div>`;
+      }).join('');
       recalcular();
     }
 
     function cambiarQty(i, delta) {
       carrito[i].qty = Math.max(1, carrito[i].qty + delta);
+      renderCarrito();
+    }
+
+    async function editarItem(i) {
+      const item = carrito[i];
+      const esSJ = item._tipo === 'san_juan';
+      const { value: vals } = await Swal.fire({
+        title: 'Editar ítem',
+        background: '#111',
+        color: '#fff',
+        html: `
+          <div style="display:flex;flex-direction:column;gap:10px;text-align:left;">
+            <div>
+              <label style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">Descripción</label>
+              <input id="edit-desc" class="swal2-input" style="margin:4px 0 0;font-size:13px;background:#1c1c1e;color:#fff;border:1px solid #3f3f46;"
+                value="${item.descripcion.replace(/"/g,'&quot;')}">
+            </div>
+            ${esSJ ? `
+            <div style="display:flex;gap:8px;">
+              <div style="flex:1;">
+                <label style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">Contado</label>
+                <input id="edit-contado" class="swal2-input" type="number" step="0.01" style="margin:4px 0 0;font-size:13px;background:#1c1c1e;color:#4ade80;border:1px solid #3f3f46;" value="${item.contado}">
+              </div>
+              <div style="flex:1;">
+                <label style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">6 Cuotas</label>
+                <input id="edit-c6" class="swal2-input" type="number" step="0.01" style="margin:4px 0 0;font-size:13px;background:#1c1c1e;color:#fbbf24;border:1px solid #3f3f46;" value="${item.cuotas_6}">
+              </div>
+              <div style="flex:1;">
+                <label style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">12 Cuotas</label>
+                <input id="edit-c12" class="swal2-input" type="number" step="0.01" style="margin:4px 0 0;font-size:13px;background:#1c1c1e;color:#fb923c;border:1px solid #3f3f46;" value="${item.cuotas_12}">
+              </div>
+            </div>` : `
+            <div>
+              <label style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">Precio unitario</label>
+              <input id="edit-precio" class="swal2-input" type="number" step="0.01" style="margin:4px 0 0;font-size:13px;background:#1c1c1e;color:#fff;border:1px solid #3f3f46;" value="${item.precio}">
+            </div>`}
+            <div>
+              <label style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">Cantidad</label>
+              <input id="edit-qty" class="swal2-input" type="number" min="1" step="1" style="margin:4px 0 0;font-size:13px;background:#1c1c1e;color:#fff;border:1px solid #3f3f46;" value="${item.qty}">
+            </div>
+          </div>`,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Guardar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#1d4ed8',
+        preConfirm: () => {
+          const desc = document.getElementById('edit-desc').value.trim();
+          const qty  = parseInt(document.getElementById('edit-qty').value) || 1;
+          if (!desc) { Swal.showValidationMessage('La descripción no puede estar vacía'); return false; }
+          if (qty < 1) { Swal.showValidationMessage('La cantidad debe ser al menos 1'); return false; }
+          if (esSJ) {
+            return {
+              descripcion: desc, qty,
+              contado:   parseFloat(document.getElementById('edit-contado').value) || 0,
+              cuotas_6:  parseFloat(document.getElementById('edit-c6').value) || 0,
+              cuotas_12: parseFloat(document.getElementById('edit-c12').value) || 0,
+            };
+          } else {
+            const precio = parseFloat(document.getElementById('edit-precio').value) || 0;
+            return { descripcion: desc, precio, qty };
+          }
+        }
+      });
+      if (!vals) return;
+      Object.assign(carrito[i], vals);
       renderCarrito();
     }
 
@@ -729,7 +992,7 @@
     // ─── TOTALES ──────────────────────────────────────────
     let totalCalculado = 0;
     function recalcular() {
-      const subtotal = carrito.reduce((s, c) => s + c.precio * c.qty, 0);
+      const subtotal = carrito.reduce((s, c) => c._tipo === 'san_juan' ? s : s + c.precio * c.qty, 0);
       const bonif = parseFloat(document.getElementById('inpBonif').value) || 0;
       const descuento = subtotal * (bonif / 100);
       const base = subtotal - descuento;
@@ -798,7 +1061,7 @@
         vehiculo_id: vehiculoId,
         kilometraje: parseInt(document.getElementById('inpKm').value) || 0,
         observaciones: document.getElementById('inpObs').value || '',
-        monto_bonificacion: carrito.reduce((s, c) => s + c.precio * c.qty, 0) * (bonif / 100),
+        monto_bonificacion: carrito.reduce((s, c) => c._tipo === 'san_juan' ? s : s + c.precio * c.qty, 0) * (bonif / 100),
         alicuota_iva: ivaVal,
         metodo_pago: metodo === 'tarjeta' ? 'Tarjeta' : metodo === 'cuenta_corriente' ? 'Cuenta Corriente' : metodo === 'transferencia' ? 'Transferencia' : 'Efectivo',
         coeficiente_id: planId,
@@ -810,7 +1073,12 @@
           referencia_id: c.id,
           descripcion: c.descripcion,
           cantidad: c.qty,
-          precio_final: c.precio
+          precio_final: c._tipo === 'san_juan' ? 0 : c.precio,
+          // campos extra para san_juan
+          medida: c.medida || '',
+          contado: c.contado || 0,
+          cuotas_6: c.cuotas_6 || 0,
+          cuotas_12: c.cuotas_12 || 0,
         }))
       };
     }
@@ -1408,6 +1676,342 @@
           
           sessionStorage.removeItem('ventaTaller');
         } catch(e) {}
+      }
+    }
+
+    // ─── CATALOGOS SAN JUAN / OFERTAS ────────────────────
+    const _cat = {
+      san_juan: { datos: [], resultados: [] },
+      ofertas:  { datos: [], resultados: [] }
+    };
+
+    function _normKey(k) {
+      return String(k).trim().toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, '_');
+    }
+
+    function _mapColumnas(header, tipo) {
+      const ALIAS_SJ = {
+        medida:    ['medida','medidas','talla','size','dimension','dimensiones','llanta'],
+        marca:     ['marca','brand','fabricante','fabricante_marca'],
+        descripcion:['descripcion','descripción','nombre','articulo','artículo','detalle','producto','modelo'],
+        contado:   ['contado','precio_contado','p_contado','efectivo','precio_efectivo','precio','price'],
+        cuotas_6:  ['cuotas_6','6_cuotas','6cuotas','precio_6','p_6','6c','seis_cuotas',
+                    '6_cuota','precio_6_cuotas','6 cuotas','precio 6 cuotas','6cuota'],
+        cuotas_12: ['cuotas_12','12_cuotas','12cuotas','precio_12','p_12','12c','doce_cuotas',
+                    '12_cuota','precio_12_cuotas','12 cuotas','precio 12 cuotas','12cuota'],
+      };
+      const ALIAS_OF = {
+        medida:     ['medida','medidas','talla','size','llanta'],
+        marca:      ['marca','brand','fabricante'],
+        descripcion:['descripcion','descripción','nombre','articulo','artículo','detalle','producto','modelo'],
+        precio:     ['precio','price','valor','importe','precio_venta','pvp','oferta'],
+      };
+      const ALIAS = tipo === 'san_juan' ? ALIAS_SJ : ALIAS_OF;
+      const map = {};
+      header.forEach((h, idx) => {
+        const nk = _normKey(h);
+        for (const [internal, variants] of Object.entries(ALIAS)) {
+          if (!(internal in map) && variants.some(v => _normKey(v) === nk)) {
+            map[internal] = idx;
+          }
+        }
+      });
+      return map;
+    }
+
+    function handleExcelCatalogo(input, tipo) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const wb = XLSX.read(e.target.result, { type: 'array' });
+          const sheet = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+          if (rows.length < 2) {
+            Swal.fire({ icon:'warning', title:'Excel vacío o sin datos', background:'#111', color:'#fff' });
+            return;
+          }
+          const colMap = _mapColumnas(rows[0], tipo);
+
+          const cleanNum = (v) => parseFloat(String(v||'0').replace(/[^0-9.,-]/g,'').replace(',','.')) || 0;
+
+          _cat[tipo].datos = rows.slice(1).map(row => {
+            const get = k => colMap[k] !== undefined ? String(row[colMap[k]] ?? '').trim() : '';
+            const item = {
+              medida:      get('medida'),
+              marca:       get('marca'),
+              descripcion: get('descripcion'),
+            };
+            if (tipo === 'san_juan') {
+              item.contado   = cleanNum(row[colMap['contado']]);
+              item.cuotas_6  = cleanNum(row[colMap['cuotas_6']]);
+              item.cuotas_12 = cleanNum(row[colMap['cuotas_12']]);
+            } else {
+              item.precio = cleanNum(row[colMap['precio']]);
+            }
+            return item;
+          }).filter(r => r.medida || r.marca || r.descripcion);
+
+          const btnId = tipo === 'san_juan' ? 'btnArchivoSJ' : 'btnArchivoOf';
+          document.getElementById(btnId).innerHTML =
+            `<i class="fas fa-check-circle text-green-400 mr-1"></i>${file.name}`;
+
+          // Auto-search if there's already a medida typed
+          buscarMedidaCatalogo(tipo);
+        } catch(err) {
+          Swal.fire({ icon:'error', title:'Error al leer Excel', text: err.message, background:'#111', color:'#fff' });
+        }
+      };
+      reader.readAsArrayBuffer(file);
+      // Reset input so same file can be reloaded
+      input.value = '';
+    }
+
+    async function abrirCatalogo(tipo) {
+      const id = tipo === 'san_juan' ? 'modalSanJuan' : 'modalOfertas';
+      document.getElementById(id).classList.remove('hidden');
+      const inpId = tipo === 'san_juan' ? 'inpMedidaSJ' : 'inpMedidaOf';
+      setTimeout(() => document.getElementById(inpId)?.focus(), 80);
+      // Auto-cargar archivo fijo si aún no está cargado
+      if (tipo === 'ofertas' && !_cat.ofertas.datos.length) {
+        await _autoCargarOfertas();
+      }
+      if (tipo === 'san_juan' && !_cat.san_juan.datos.length) {
+        await _autoCargarSanJuan();
+      }
+    }
+
+    async function _autoCargarOfertas() {
+      const btnId = 'btnArchivoOf';
+      try {
+        document.getElementById(btnId).innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Cargando...';
+        const resp = await fetch('/admin/catalogos/ofertas.xlsx');
+        if (!resp.ok) throw new Error('No se pudo cargar el archivo');
+        const arrayBuf = await resp.arrayBuffer();
+        const wb = XLSX.read(arrayBuf, { type: 'array' });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        if (rows.length < 2) throw new Error('Sin datos');
+
+        // Detectar columnas: DESCRIPCIÓN, MARCA, CONTADO
+        const header = rows[0].map(h => String(h).trim().toUpperCase());
+        const iDesc  = header.findIndex(h => h.includes('DESCRIP'));
+        const iMarca = header.findIndex(h => h.includes('MARCA'));
+        const iPrecio = header.findIndex(h => h.includes('CONTADO') || h.includes('PRECIO LISTA'));
+
+        const reMedida = /(\d{3}\/\d{2,3}[Rr]\d{2})/;
+
+        _cat.ofertas.datos = rows.slice(1).map(row => {
+          const desc  = String(row[iDesc]  ?? '').trim();
+          const marca = String(row[iMarca] ?? '').trim();
+          const precio = parseFloat(String(row[iPrecio] ?? '0').replace(',','.')) || 0;
+          const mMatch = desc.match(reMedida);
+          const medida = mMatch ? mMatch[1].toUpperCase() : '';
+          return { medida, marca, descripcion: desc, precio };
+        }).filter(r => r.medida || r.marca);
+
+        document.getElementById(btnId).innerHTML =
+          '<i class="fas fa-check-circle text-green-400 mr-1"></i>Ofertas cargadas';
+        buscarMedidaCatalogo('ofertas');
+      } catch(e) {
+        document.getElementById(btnId).innerHTML =
+          '<i class="fas fa-exclamation-triangle text-red-400 mr-1"></i>Error al cargar';
+      }
+    }
+
+    function cerrarCatalogo(tipo) {
+      const id = tipo === 'san_juan' ? 'modalSanJuan' : 'modalOfertas';
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    function _normMedida(m) {
+      return String(m).toLowerCase().replace(/\s+/g,'');
+    }
+
+    function buscarMedidaCatalogo(tipo) {
+      const inpId   = tipo === 'san_juan' ? 'inpMedidaSJ'  : 'inpMedidaOf';
+      const bodyId  = tipo === 'san_juan' ? 'resultsSJ'    : 'resultsOf';
+      const q       = _normMedida(document.getElementById(inpId).value);
+      const tbody   = document.getElementById(bodyId);
+
+      if (!_cat[tipo].datos.length) {
+        const cols = tipo === 'san_juan' ? 7 : 4;
+        tbody.innerHTML = `<tr><td colspan="${cols}" class="text-center py-8 text-gray-700 text-xs">
+          <i class="fas fa-upload mr-2 opacity-40"></i>Cargá un archivo Excel primero</td></tr>`;
+        return;
+      }
+      if (!q) {
+        const cols = tipo === 'san_juan' ? 7 : 4;
+        tbody.innerHTML = `<tr><td colspan="${cols}" class="text-center py-6 text-gray-600 text-xs">
+          Ingresá una medida para buscar</td></tr>`;
+        _cat[tipo].resultados = [];
+        return;
+      }
+
+      const resultados = _cat[tipo].datos.filter(r => {
+        const rm = _normMedida(r.medida);
+        return rm.includes(q) || q.includes(rm);
+      });
+      _cat[tipo].resultados = resultados;
+
+      if (!resultados.length) {
+        const cols = tipo === 'san_juan' ? 7 : 4;
+        tbody.innerHTML = `<tr><td colspan="${cols}" class="text-center py-6 text-gray-500 text-xs">
+          <i class="fas fa-search mr-2 opacity-50"></i>Sin resultados para "${q}"</td></tr>`;
+        return;
+      }
+
+      if (tipo === 'san_juan') {
+        const chkAllSJ = document.getElementById('checkAllSJ');
+        if (chkAllSJ) chkAllSJ.checked = false;
+
+        tbody.innerHTML = resultados.map((r, i) => {
+          return `<tr class="border-t border-[#1f1f22] hover:bg-[#111113]">
+            <td class="px-3 py-2.5">
+              <input type="checkbox" class="sj-check w-3.5 h-3.5 accent-blue-500 cursor-pointer" data-idx="${i}"/>
+            </td>
+            <td class="px-3 py-2.5 text-xs text-gray-300 max-w-[200px] truncate" title="${r.descripcion}">${r.descripcion || '-'}</td>
+            <td class="px-3 py-2.5 text-xs font-bold text-blue-300 whitespace-nowrap">${r.medida || '-'}</td>
+            <td class="px-2 py-2.5 text-right mono text-xs text-green-400 font-bold whitespace-nowrap">${r.contado > 0 ? currency(r.contado) : '-'}</td>
+            <td class="px-2 py-2.5 text-right mono text-xs text-yellow-400 font-bold whitespace-nowrap">${r.cuotas_6 > 0 ? currency(r.cuotas_6) : '-'}</td>
+            <td class="px-2 py-2.5 text-right mono text-xs text-orange-400 font-bold whitespace-nowrap">${r.cuotas_12 > 0 ? currency(r.cuotas_12) : '-'}</td>
+          </tr>`;
+        }).join('');
+      } else {
+        // reset select-all
+        const chkAll = document.getElementById('checkAllOf');
+        if (chkAll) chkAll.checked = false;
+
+        tbody.innerHTML = resultados.map((r, i) => {
+          return `<tr class="border-t border-[#1f1f22] hover:bg-[#111113]">
+            <td class="px-3 py-2.5">
+              <input type="checkbox" class="of-check w-3.5 h-3.5 accent-green-500 cursor-pointer" data-idx="${i}"/>
+            </td>
+            <td class="px-3 py-2.5 text-xs text-gray-400 whitespace-nowrap">${r.medida || '-'}</td>
+            <td class="px-3 py-2.5 text-xs font-bold text-white whitespace-nowrap">${r.marca || '-'}</td>
+            <td class="px-3 py-2.5 text-xs text-gray-400 max-w-[180px] truncate" title="${r.descripcion}">${r.descripcion || '-'}</td>
+            <td class="px-3 py-2.5 text-right">
+              <span class="mono text-xs text-green-400 font-bold">${r.precio > 0 ? currency(r.precio) : '-'}</span>
+            </td>
+          </tr>`;
+        }).join('');
+      }
+    }
+
+    function _agregarCat(tipo, r, campo) {
+      const precio = r[campo] || 0;
+      const label  = campo === 'contado' ? '[Contado]' : campo === 'cuotas_6' ? '[6C]' : campo === 'cuotas_12' ? '[12C]' : '';
+      const src    = tipo === 'san_juan' ? 'SJ' : 'OF';
+      const desc   = `[${src}] ${r.marca || ''} ${r.descripcion || ''} ${r.medida || ''} ${label}`.replace(/\s+/g,' ').trim();
+      const id     = `cat_${tipo}_${desc.toLowerCase().replace(/\s+/g,'_').substring(0,60)}`;
+      const existing = carrito.find(c => c.id === id);
+      if (existing) {
+        existing.qty++;
+      } else {
+        carrito.push({ id, _tipo: 'libre', descripcion: desc, precio, qty: 1 });
+      }
+      renderCarrito();
+      // brief visual flash on the button
+    }
+
+    function toggleSelectAllSJ() {
+      const checked = document.getElementById('checkAllSJ').checked;
+      document.querySelectorAll('#resultsSJ .sj-check').forEach(c => c.checked = checked);
+    }
+
+    function toggleSelectAllOf() {
+      const checked = document.getElementById('checkAllOf').checked;
+      document.querySelectorAll('#resultsOf .of-check').forEach(c => c.checked = checked);
+    }
+
+    function agregarSeleccionadosOf() {
+      const checks = document.querySelectorAll('#resultsOf .of-check:checked');
+      if (!checks.length) {
+        Swal.fire({ icon:'warning', title:'Seleccioná al menos un producto', background:'#111', color:'#fff', timer:1500, showConfirmButton:false });
+        return;
+      }
+      checks.forEach(chk => {
+        const r = _cat.ofertas.resultados[parseInt(chk.dataset.idx)];
+        if (r) _agregarCat('ofertas', r, 'precio');
+      });
+      checks.forEach(c => c.checked = false);
+      document.getElementById('checkAllOf').checked = false;
+      cerrarCatalogo('ofertas');
+      Swal.fire({ icon:'success', title:'Agregado al carrito', timer:700, showConfirmButton:false, background:'#111', color:'#fff' });
+    }
+
+    function agregarSeleccionadosSJ() {
+      const checks = document.querySelectorAll('#resultsSJ .sj-check:checked');
+      if (!checks.length) {
+        Swal.fire({ icon:'warning', title:'Seleccioná al menos un producto', background:'#111', color:'#fff', timer:1500, showConfirmButton:false });
+        return;
+      }
+      checks.forEach(chk => {
+        const r = _cat.san_juan.resultados[parseInt(chk.dataset.idx)];
+        if (!r) return;
+        const id = `sj_${r.descripcion}_${r.medida}`.toLowerCase().replace(/\s+/g,'_').substring(0,80);
+        const ex = carrito.find(c => c.id === id);
+        if (ex) { ex.qty++; }
+        else {
+          carrito.push({
+            id,
+            _tipo: 'san_juan',
+            descripcion: r.descripcion,
+            medida: r.medida,
+            precio: r.contado,       // contado = precio base para totales
+            contado: r.contado,
+            cuotas_6: r.cuotas_6,
+            cuotas_12: r.cuotas_12,
+            qty: 1
+          });
+        }
+      });
+      renderCarrito();
+      checks.forEach(c => c.checked = false);
+      document.getElementById('checkAllSJ').checked = false;
+      cerrarCatalogo('san_juan');
+      Swal.fire({ icon:'success', title:'Agregado al carrito', timer:700, showConfirmButton:false, background:'#111', color:'#fff' });
+    }
+
+    async function _autoCargarSanJuan() {
+      const btnId = 'btnArchivoSJ';
+      try {
+        document.getElementById(btnId).innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Cargando...';
+        const resp = await fetch('/admin/catalogos/san_juan.xlsx');
+        if (!resp.ok) throw new Error('No se pudo cargar el archivo');
+        const arrayBuf = await resp.arrayBuffer();
+        const wb = XLSX.read(arrayBuf, { type: 'array' });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        if (rows.length < 2) throw new Error('Sin datos');
+
+        const header = rows[0].map(h => String(h).trim().toUpperCase());
+        const iDesc    = header.findIndex(h => h.includes('DESCRIP'));
+        const iMedida  = header.findIndex(h => h.includes('MEDIDA'));
+        const iContado = header.findIndex(h => h.includes('CONTADO'));
+        const i6       = header.findIndex(h => h.includes('6'));
+        const i12      = header.findIndex(h => h.includes('12'));
+
+        const cleanNum = v => parseFloat(String(v||'0').replace(/[^0-9.,-]/g,'').replace(',','.')) || 0;
+
+        _cat.san_juan.datos = rows.slice(1).map(row => ({
+          descripcion: String(row[iDesc]  ?? '').trim(),
+          medida:      String(row[iMedida] ?? '').trim().toUpperCase(),
+          contado:     cleanNum(row[iContado]),
+          cuotas_6:    cleanNum(row[i6]),
+          cuotas_12:   cleanNum(row[i12]),
+          marca:       '',
+        })).filter(r => r.medida || r.descripcion);
+
+        document.getElementById(btnId).innerHTML =
+          '<i class="fas fa-check-circle text-green-400 mr-1"></i>San Juan cargado';
+        buscarMedidaCatalogo('san_juan');
+      } catch(e) {
+        document.getElementById(btnId).innerHTML =
+          '<i class="fas fa-exclamation-triangle text-red-400 mr-1"></i>Error al cargar';
       }
     }
   </script>

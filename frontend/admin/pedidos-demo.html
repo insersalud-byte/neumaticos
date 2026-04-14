@@ -157,6 +157,19 @@
         <h3 class="font-bold text-sm">Historial de Operaciones</h3>
         <button onclick="cargarHistorial()" class="text-xs text-blue-400 hover:text-blue-300"><i class="fas fa-sync-alt mr-1"></i> Refrescar</button>
       </div>
+      <div class="flex items-center gap-2 mb-4">
+        <select id="filtroCampo" style="background:#020817;border:1px solid #1e3a5f;color:#fff;border-radius:8px;padding:7px 10px;font-size:12px;cursor:pointer;">
+          <option value="nombre">Nombre</option>
+          <option value="patente">Patente</option>
+        </select>
+        <input id="filtroValor" type="text" placeholder="Buscar..."
+          style="flex:1;background:#020817;border:1px solid #1e3a5f;color:#fff;border-radius:8px;padding:7px 12px;font-size:12px;outline:none;"
+          oninput="filtrarHistorial()" onkeydown="if(event.key==='Escape'){this.value='';filtrarHistorial();}"/>
+        <button onclick="filtrarHistorial()"
+          style="background:#1e3a5f;border:1px solid #1d4ed8;color:#93c5fd;font-size:12px;font-weight:700;border-radius:8px;padding:7px 16px;cursor:pointer;">
+          <i class="fas fa-search mr-1"></i> Buscar
+        </button>
+      </div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
@@ -182,17 +195,39 @@
     function logout() { document.cookie='becubical_session=; max-age=0; path=/'; window.location.href='../login.html'; }
     const currency = new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',minimumFractionDigits:0});
 
+    let _historialData = [];
+
+    function filtrarHistorial() {
+      const campo = document.getElementById('filtroCampo').value;
+      const q = document.getElementById('filtroValor').value.trim().toLowerCase();
+      if (!q) { renderHistorial(_historialData); return; }
+      const filtrado = _historialData.filter(v => {
+        if (campo === 'nombre') return (v.cliente_nombre || '').toLowerCase().includes(q);
+        if (campo === 'patente') return (v.vehiculo_patente || '').toLowerCase().includes(q);
+        return false;
+      });
+      renderHistorial(filtrado);
+    }
+
     async function cargarHistorial() {
       try {
         const res = await fetch('/api/v1/operaciones');
         const data = await res.json();
-        const tbody = document.getElementById('tablaHistorial');
-        tbody.innerHTML = '';
+        _historialData = data;
+        filtrarHistorial();
+      } catch(e) {
+        document.getElementById('tablaHistorial').innerHTML = '<tr><td colspan="7" class="py-8 text-center text-red-500">Error al cargar</td></tr>';
+      }
+    }
+
+    function renderHistorial(data) {
+      const tbody = document.getElementById('tablaHistorial');
+      tbody.innerHTML = '';
 
         let ventas = 0, facturado = 0, cots = 0, deuda = 0;
 
         if (!data.length) {
-          tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-gray-600">Sin operaciones registradas</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-gray-600">Sin resultados</td></tr>';
           return;
         }
 
@@ -228,9 +263,6 @@
         document.getElementById('metFacturado').textContent = currency.format(facturado);
         document.getElementById('metCots').textContent = cots;
         document.getElementById('metDeuda').textContent = currency.format(deuda);
-      } catch(e) {
-        document.getElementById('tablaHistorial').innerHTML = '<tr><td colspan="7" class="py-8 text-center text-red-500">Error al cargar datos</td></tr>';
-      }
     }
 
     async function eliminarVenta(id, esCotizacion) {
@@ -262,63 +294,36 @@
     async function enviarWhatsApp(id, telefono) {
       const tel = telefono.replace(/\D/g, '');
       const num = tel ? `54${tel}` : '';
-      
+
       if (!tel || num === '54') {
-        Swal.fire({ icon: 'info', title: 'Sin teléfono', text: 'Esta cotización no tiene teléfono registrado', background: '#0f172a', color: '#fff' });
+        Swal.fire({ icon: 'info', title: 'Sin teléfono', text: 'Esta operación no tiene teléfono registrado', background: '#0f172a', color: '#fff' });
         return;
       }
-      
-      Swal.fire({ title: 'Descargando PDF...', text: 'Preparando archivo', background: '#0f172a', color: '#fff', showConfirmButton: false, allowOutsideClick: false });
-      
-      try {
-        // Descargar el PDF
-        const pdfUrl = `/api/v1/reportes/presupuesto/${id}`;
-        const response = await fetch(pdfUrl);
-        const blob = await response.blob();
-        
-        // Crear enlace de descarga
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Cotizacion_${id}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        
-        Swal.close();
-        
-        // Abrir WhatsApp con mensaje
-        const mensaje = encodeURIComponent(
-          `¡Hola! Te enviamos tu cotización de Giorda Neumáticos.\n\n` +
-          `Encontrás el PDF adjunto en tus descargas.\n\n` +
-          `¿Tenés alguna consulta? Estamos para ayudarte.`
-        );
-        
-        Swal.fire({
-          title: 'PDF descargado',
-          text: 'El archivo está en tu carpeta de descargas. Adjuntalo en WhatsApp.',
-          icon: 'success',
-          showCancelButton: true,
-          confirmButtonColor: '#25D366',
-          cancelButtonColor: '#6b7280',
-          background: '#0f172a',
-          color: '#fff',
-          confirmButtonText: '<i class="fab fa-whatsapp mr-1"></i> Abrir WhatsApp',
-          cancelButtonText: 'Cerrar'
-        }).then(result => {
-          if (result.isConfirmed) {
-            window.open(`https://wa.me/${num}?text=${mensaje}`, '_blank');
-          }
-        });
-        
-      } catch(e) {
-        Swal.close();
-        // Fallback: abrir PDF y WhatsApp
-        window.open(`/api/v1/reportes/presupuesto/${id}`, '_blank');
-        const mensaje = encodeURIComponent(`¡Hola! Te enviamos tu cotización de Giorda Neumáticos. ¿Tenés alguna consulta?`);
-        window.open(`https://wa.me/${num}?text=${mensaje}`, '_blank');
-      }
+
+      const pdfUrl = `${window.location.origin}/api/v1/reportes/presupuesto/${id}`;
+      const mensaje = encodeURIComponent(
+        `¡Hola! 👋\n\nTe enviamos tu cotización de Giorda Neumáticos.\n\n` +
+        `📄 Ver / descargar PDF:\n${pdfUrl}\n\n` +
+        `¿Tenés alguna consulta? Estamos para ayudarte.`
+      );
+
+      Swal.fire({
+        title: 'Enviar por WhatsApp',
+        html: `El link al PDF se incluye en el mensaje:<br>
+               <a href="${pdfUrl}" target="_blank" style="color:#60a5fa;font-size:12px;word-break:break-all">${pdfUrl}</a>`,
+        icon: 'success',
+        showCancelButton: true,
+        confirmButtonColor: '#25D366',
+        cancelButtonColor: '#6b7280',
+        background: '#0f172a',
+        color: '#fff',
+        confirmButtonText: '<i class="fab fa-whatsapp mr-1"></i> Abrir WhatsApp',
+        cancelButtonText: 'Cerrar'
+      }).then(result => {
+        if (result.isConfirmed) {
+          window.open(`https://wa.me/${num}?text=${mensaje}`, '_blank');
+        }
+      });
     }
 
     cargarHistorial();

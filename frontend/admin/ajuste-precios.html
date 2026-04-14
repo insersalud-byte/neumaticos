@@ -61,7 +61,7 @@
       <!-- Configuración del ajuste -->
       <div class="bg-[#0f172a] border border-emerald-900/30 rounded-2xl p-6 mb-6">
         <h3 class="font-bold text-white mb-4">Configuración del Ajuste</h3>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
             <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Tipo de Ajuste</label>
             <select id="tipoAjuste" class="w-full bg-[#020817] border border-[#1e3a5f] text-white rounded-lg px-3 py-2.5 text-sm" onchange="actualizarVista()">
@@ -80,6 +80,13 @@
             <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1" id="labelValor">Porcentaje (%)</label>
             <input id="valorAjuste" type="number" step="0.01" placeholder="0" value="10"
               class="w-full bg-[#020817] border border-[#1e3a5f] text-white rounded-lg px-3 py-2.5 text-sm" onchange="actualizarVista()"/>
+          </div>
+          <div>
+            <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Marca</label>
+            <input id="marcaFiltro" type="text" placeholder="Ej: Pirelli, Fate..." list="marcasSugeridas"
+              class="w-full bg-[#020817] border border-[#1e3a5f] text-white rounded-lg px-3 py-2.5 text-sm"
+              onkeydown="if(event.key==='Enter')cargarProductos()"/>
+            <datalist id="marcasSugeridas"></datalist>
           </div>
           <div>
             <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">Categoría</label>
@@ -153,18 +160,36 @@
 
     async function cargarProductos() {
       const categoria = document.getElementById('categoriaFiltro').value;
-      const buscar = '';
+      const marca = document.getElementById('marcaFiltro').value.trim();
       try {
-        const url = categoria 
-          ? `/api/v1/articulos?buscar=${buscar}&categoria=${categoria}`
-          : `/api/v1/articulos?buscar=${buscar}`;
-        const res = await fetch(url);
-        productos = await res.json();
+        const params = new URLSearchParams();
+        if (marca) params.set('buscar', marca);
+        if (categoria) params.set('categoria', categoria);
+        const res = await fetch('/api/v1/articulos?' + params.toString());
+        const data = await res.json();
+        // data puede ser {data:[...]} o array directo
+        let raw = Array.isArray(data) ? data : (data.data || []);
+        // Si hay marca, filtrar estrictamente por campo marca (el buscar es general)
+        if (marca) {
+          raw = raw.filter(p => (p.marca || '').toLowerCase().includes(marca.toLowerCase()));
+        }
+        productos = raw;
         renderProductos();
         actualizarVista();
       } catch(e) {
         document.getElementById('listaProductos').innerHTML = '<p class="text-red-500 p-4">Error al cargar productos</p>';
       }
+    }
+
+    async function cargarMarcas() {
+      try {
+        const res = await fetch('/api/v1/articulos?buscar=');
+        const data = await res.json();
+        const raw = Array.isArray(data) ? data : (data.data || []);
+        const marcas = [...new Set(raw.map(p => p.marca).filter(Boolean))].sort();
+        const dl = document.getElementById('marcasSugeridas');
+        dl.innerHTML = marcas.map(m => `<option value="${m}">`).join('');
+      } catch(e) {}
     }
 
     function renderProductos() {
@@ -178,7 +203,7 @@
           <input type="checkbox" class="producto-check w-4 h-4 accent-emerald-500" data-index="${i}" checked/>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-bold text-white truncate">${p.nombre || p.descripcion || 'Producto ' + p.id}</p>
-            <p class="text-xs text-gray-500">SKU: ${p.sku || 'N/A'}</p>
+            <p class="text-xs text-gray-500">${p.marca ? '<span class="text-blue-400">'+p.marca+'</span> · ' : ''}SKU: ${p.sku || 'N/A'}</p>
           </div>
           <div class="text-right min-w-[80px]">
             <p class="text-xs text-gray-500">Actual</p>
@@ -309,6 +334,7 @@
     document.querySelectorAll('.producto-check, #selectAll').forEach(el => el.addEventListener('change', actualizarVista));
     
     cargarCategorias();
+    cargarMarcas();
     toggleMenu('productos');
   </script>
 </body>
