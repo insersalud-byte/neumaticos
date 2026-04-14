@@ -8,6 +8,7 @@
     <script src="/admin/auth-guard.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         body{font-family:'Inter',sans-serif;background:#000;color:#fff}
@@ -69,7 +70,7 @@
                     <p class="text-gray-500 mt-1">Gestiona la mano de obra y servicios intangibles.</p>
                 </div>
                 <div class="flex gap-3">
-                    <input type="file" id="inputImportar" accept=".csv,.txt" class="hidden" onchange="procesarArchivo(this)">
+                    <input type="file" id="inputImportar" accept=".xlsx,.csv,.txt" class="hidden" onchange="procesarArchivo(this)">
                     <button onclick="document.getElementById('inputImportar').click()" id="btnImportar"
                         class="bg-gray-700 hover:bg-gray-600 text-white px-5 py-2.5 rounded-lg font-bold shadow-lg transition flex items-center gap-2">
                         <i class="fas fa-file-excel text-green-400"></i> Importar Excel
@@ -144,24 +145,57 @@
         const originalText = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Leyendo...';
+
+        const esExcel = file.name.match(/\.xlsx?$/i);
         const reader = new FileReader();
+
         reader.onload = async function(e) {
-            const text = e.target.result;
-            const lines = text.split('\n').filter(l => l.trim());
-            const lista = [];
-            for (const line of lines) {
-                const parts = line.split(/[,;]/).map(p => p.trim().replace(/^"|"$/g, ''));
-                if (parts.length >= 2) {
-                    const nombre = parts[0];
-                    const precio = parseFloat(parts[1]) || 0;
-                    const descripcion = parts[2] || '';
-                    if (nombre && nombre.toLowerCase() !== 'nombre') {
+            let lista = [];
+            try {
+                if (esExcel) {
+                    const wb = XLSX.read(e.target.result, { type: 'array' });
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                    if (rows.length < 2) throw new Error('sin datos');
+
+                    // Detectar columnas por header
+                    const hdr = rows[0].map(h => String(h).trim().toUpperCase());
+                    const iNombre  = hdr.findIndex(h => h.includes('NOMBRE') || h.includes('SERVICIO') || h.includes('DESCRIP'));
+                    const iPrecio  = hdr.findIndex(h => h.includes('PRECIO') || h.includes('VALOR') || h.includes('MONTO') || h.includes('IMPORTE'));
+                    const iDesc    = hdr.findIndex(h => h.includes('DETALLE') || h.includes('OBSERV') || h.includes('NOTA'));
+
+                    if (iNombre === -1) throw new Error('No se encontró columna de nombre/servicio. Asegurate de tener una columna "Nombre" o "Servicio".');
+
+                    for (let r = 1; r < rows.length; r++) {
+                        const row = rows[r];
+                        const nombre = String(row[iNombre] || '').trim();
+                        if (!nombre) continue;
+                        const precio = iPrecio >= 0 ? (parseFloat(row[iPrecio]) || 0) : 0;
+                        const descripcion = iDesc >= 0 ? String(row[iDesc] || '').trim() : '';
                         lista.push({ nombre, precio_sugerido: precio, descripcion });
                     }
+                } else {
+                    // CSV / TXT
+                    const lines = e.target.result.split('\n').filter(l => l.trim());
+                    for (const line of lines) {
+                        const parts = line.split(/[,;]/).map(p => p.trim().replace(/^"|"$/g, ''));
+                        if (parts.length >= 2) {
+                            const nombre = parts[0];
+                            const precio = parseFloat(parts[1]) || 0;
+                            const descripcion = parts[2] || '';
+                            if (nombre && nombre.toLowerCase() !== 'nombre') {
+                                lista.push({ nombre, precio_sugerido: precio, descripcion });
+                            }
+                        }
+                    }
                 }
+            } catch (ex) {
+                Swal.fire({ icon: 'error', title: 'Error al leer el archivo', text: ex.message || 'Verificá el formato.', background: '#111', color: '#fff' });
+                input.value = ''; btn.disabled = false; btn.innerHTML = originalText; return;
             }
+
             if (!lista.length) {
-                Swal.fire({ icon: 'warning', title: 'Sin datos válidos', text: 'Verificá el formato del archivo.', background: '#111', color: '#fff' });
+                Swal.fire({ icon: 'warning', title: 'Sin datos válidos', text: 'El archivo no contiene filas con datos.', background: '#111', color: '#fff' });
                 input.value = ''; btn.disabled = false; btn.innerHTML = originalText; return;
             }
             const confirm = await Swal.fire({
@@ -172,7 +206,9 @@
             if (confirm.isConfirmed) await subirServiciosMasivos(lista);
             input.value = ''; btn.disabled = false; btn.innerHTML = originalText;
         };
-        reader.readAsText(file);
+
+        if (esExcel) reader.readAsArrayBuffer(file);
+        else reader.readAsText(file);
     }
 
     async function subirServiciosMasivos(lista) {
