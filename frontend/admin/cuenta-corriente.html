@@ -204,9 +204,9 @@
 
                     <div>
                         <label class="block text-xs text-gray-400 mb-1">Monto a pagar ($)</label>
-                        <input type="number" id="pagoMonto" min="0" step="1" placeholder="0"
+                        <input type="text" id="pagoMonto" inputmode="decimal" placeholder="0"
                             class="w-full bg-[#111] border border-gray-700 text-white text-sm rounded-lg p-2.5 outline-none focus:border-cyan-500 font-mono"
-                            oninput="distribuirMonto()"/>
+                            oninput="distribuirMonto()" onkeyup="distribuirMonto()" onchange="distribuirMonto()"/>
                     </div>
 
                     <div>
@@ -234,8 +234,8 @@
                             class="w-full bg-[#111] border border-gray-700 text-white text-sm rounded-lg p-2.5 outline-none focus:border-cyan-500">
                     </div>
 
-                    <div class="bg-[#18181b] p-3 rounded-lg border border-gray-800 flex justify-between items-center">
-                        <span class="text-xs text-gray-400">Total a imputar:</span>
+                    <div class="mt-4 flex items-center justify-between border-t border-white/5 pt-3">
+                        <span class="text-xs text-gray-400">Total a pagar:</span>
                         <span id="displayTotalImputar" class="font-bold text-cyan-400 text-lg">$0</span>
                     </div>
 
@@ -306,10 +306,17 @@
                 <!-- Registrar pago -->
                 <div class="bg-[#222] rounded-xl p-4 border border-gray-800 space-y-3">
                     <p class="text-sm font-bold text-white">Registrar Pago al Proveedor</p>
-                    <div>
+                    <div class="bg-white/5 border border-white/10 rounded-xl p-4">
                         <label class="block text-xs text-gray-400 mb-1">Monto ($)</label>
-                        <input type="number" id="provPagoMonto" placeholder="0"
-                            class="w-full bg-[#111] border border-gray-700 text-white text-sm rounded-lg p-2.5 outline-none focus:border-orange-500">
+                        <div class="relative">
+                            <input type="text" id="provPagoMonto" inputmode="decimal" placeholder="0"
+                                class="w-full bg-[#111] border border-gray-700 text-white text-base rounded-lg p-3 outline-none focus:border-orange-500 font-mono"
+                                oninput="distribuirMontoProv()" onkeyup="distribuirMontoProv()" onchange="distribuirMontoProv()">
+                        </div>
+                        <div class="mt-4 flex items-center justify-between border-t border-white/5 pt-3">
+                            <span class="text-xs text-gray-400">Total a pagar:</span>
+                            <span id="displayTotalImputarProv" class="font-bold text-orange-400 text-lg">$0</span>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-xs text-gray-400 mb-1">Método</label>
@@ -481,7 +488,9 @@
         document.getElementById('pagoClienteId').value = clienteId;
         document.getElementById('pagoMetodo').value = 'efectivo';
         document.getElementById('pagoObservaciones').value = '';
-        document.getElementById('displayTotalImputar').textContent = '$0';
+        document.getElementById('pagoMonto').value = '';
+        const dispTotal = document.getElementById('displayTotalImputar');
+        if (dispTotal) dispTotal.textContent = '$0';
         document.getElementById('clienteImpagas').innerHTML = '<p class="text-gray-500 text-sm italic">Cargando...</p>';
 
         // Cargar facturas adeudadas
@@ -495,7 +504,10 @@
                 cont.innerHTML = facturas.map(f => `
                 <div class="bg-[#111] border border-gray-800 rounded-lg p-3">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs text-gray-400">Factura N° ${f.id} — ${f.fecha}</span>
+                        <a href="/api/v1/reportes/presupuesto/${f.id}" target="_blank"
+                           class="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1">
+                            <i class="fas fa-file-pdf text-red-500"></i> Factura N° ${f.id} — ${f.fecha}
+                        </a>
                         <span class="text-xs font-mono text-white">Total: ${currency.format(f.total)}</span>
                     </div>
                     <div class="flex items-center gap-2">
@@ -508,13 +520,15 @@
                                 <div class="bg-green-500 h-1.5 rounded-full" style="width:${Math.min(100,(f.abonado/f.total*100)).toFixed(0)}%"></div>
                             </div>
                         </div>
-                        <input type="number" min="0" max="${f.debe}" step="1"
+                        <input type="text" inputmode="decimal"
                             class="w-28 bg-[#222] border border-cyan-800 text-white text-sm rounded-lg p-1.5 outline-none text-right font-mono imputar-input"
                             data-venta-id="${f.id}" data-debe="${f.debe}"
-                            placeholder="${currency.format(f.debe)}"
-                            oninput="actualizarTotalImputar()"/>
+                            placeholder="${f.debe.toFixed(0)}"
+                            oninput="actualizarTotalImputar()" onkeyup="actualizarTotalImputar()"/>
                     </div>
                 </div>`).join('');
+                // Re-distribuir si el usuario ya había ingresado un monto antes de que cargaran las facturas
+                distribuirMonto();
             }
         } catch(e) {
             document.getElementById('clienteImpagas').innerHTML = '<p class="text-red-500 text-sm">Error al cargar facturas.</p>';
@@ -608,23 +622,50 @@
         if (metodo !== 'tarjeta') document.getElementById('pagoPlanTarjeta').value = '';
     }
 
+    function parsearMonto(val) {
+        if (!val) return 0;
+        // Reemplazar coma por punto y quitar cualquier otro caracter no numérico (excepto punto)
+        const limpio = val.toString().replace(',', '.').replace(/[^0-9.]/g, '');
+        return parseFloat(limpio) || 0;
+    }
+
     function actualizarTotalImputar() {
+        const inputs = document.querySelectorAll('.imputar-input');
         let total = 0;
-        document.querySelectorAll('.imputar-input').forEach(inp => {
-            const v = parseFloat(inp.value) || 0;
-            const max = parseFloat(inp.dataset.debe) || 0;
-            total += Math.min(v, max);
-        });
-        document.getElementById('displayTotalImputar').textContent = currency.format(total);
+        if (inputs.length > 0) {
+            inputs.forEach(inp => { total += parsearMonto(inp.value); });
+            // Si el usuario edita un input individual, sincronizar el campo principal
+            if (document.activeElement && document.activeElement.classList.contains('imputar-input')) {
+                const inputMonto = document.getElementById('pagoMonto');
+                if (inputMonto) inputMonto.value = total > 0 ? total.toFixed(2).replace('.00', '') : '';
+            }
+        } else {
+            total = parsearMonto(document.getElementById('pagoMonto').value);
+        }
+        const disp = document.getElementById('displayTotalImputar');
+        if (disp) disp.textContent = currency.format(total);
     }
 
     function distribuirMonto() {
-        let restante = parseFloat(document.getElementById('pagoMonto').value) || 0;
-        document.querySelectorAll('.imputar-input').forEach(inp => {
+        const inputMonto = document.getElementById('pagoMonto');
+        if (!inputMonto) return;
+        let restante = parsearMonto(inputMonto.value);
+
+        const inputs = document.querySelectorAll('.imputar-input');
+        if (inputs.length === 0) {
+            // Sin facturas específicas: el total es directamente el monto ingresado
+            const disp = document.getElementById('displayTotalImputar');
+            if (disp) disp.textContent = currency.format(restante);
+            return;
+        }
+        inputs.forEach(inp => {
             const debe = parseFloat(inp.dataset.debe) || 0;
-            if (restante <= 0) { inp.value = ''; return; }
+            if (restante <= 0) {
+                inp.value = '';
+                return;
+            }
             const aplicar = Math.min(restante, debe);
-            inp.value = aplicar;
+            inp.value = aplicar > 0 ? aplicar.toFixed(2).replace('.00', '') : '';
             restante -= aplicar;
         });
         actualizarTotalImputar();
@@ -635,7 +676,7 @@
 
         const imputaciones = [];
         document.querySelectorAll('.imputar-input').forEach(inp => {
-            const monto = parseFloat(inp.value) || 0;
+            const monto = parsearMonto(inp.value);
             const debe  = parseFloat(inp.dataset.debe) || 0;
             if (monto > 0) {
                 imputaciones.push({ venta_id: parseInt(inp.dataset.ventaId), monto: Math.min(monto, debe) });
@@ -643,7 +684,12 @@
         });
 
         if (!imputaciones.length) {
-            Swal.fire({ icon:'warning', title:'Ingresá montos', text:'Escribí el monto a pagar en al menos una factura', background:'#111', color:'#fff' });
+            // Sin facturas específicas: intentar pago general si hay un monto ingresado
+            const montoGeneral = parsearMonto(document.getElementById('pagoMonto').value);
+            if (montoGeneral > 0) {
+                return procesarPago();
+            }
+            Swal.fire({ icon:'warning', title:'Ingresá un monto', text:'Escribí el monto a pagar o distribuilo en las facturas adeudadas', background:'#111', color:'#fff' });
             return;
         }
 
@@ -694,7 +740,7 @@
 
     async function procesarPago() {
         if (!clienteActual) return;
-        const monto = parseFloat(document.getElementById('pagoMonto').value);
+        const monto = parsearMonto(document.getElementById('pagoMonto').value);
         if (!monto || monto <= 0) {
             Swal.fire({ icon: 'error', title: 'Error', text: 'Ingresá un monto válido', background: '#111', color: '#fff' });
             return;
@@ -776,40 +822,7 @@
         window.open(`/api/v1/reportes/resumen-cuenta/${clienteActual}`, '_blank');
     }
 
-    async function cargarFacturasImpagasCliente(clienteId) {
-        const div = document.getElementById('clienteImpagas');
-        try {
-            const res = await fetch(`/api/v1/reportes/facturas-impagas-cliente/${clienteId}`);
-            const data = await res.json();
-            const impagas = data.facturas_impagas || [];
-            if (!impagas.length) {
-                div.innerHTML = '<p class="text-green-400 text-sm"><i class="fas fa-check-circle mr-1"></i>Sin facturas impagas</p>';
-            } else {
-                div.innerHTML = impagas.map(f => {
-                    const fecha = f.fecha ? new Date(f.fecha).toLocaleDateString('es-AR') : '';
-                    return `<div class="bg-[#222] rounded-lg p-2.5 border border-gray-800 flex items-center justify-between">
-                        <div>
-                            <p class="text-xs text-white font-semibold">${f.descripcion}</p>
-                            <p class="text-[10px] text-gray-500">${fecha} | Total: ${currency.format(f.total||0)}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-xs text-gray-500">Pagado: ${currency.format(f.pagado||0)}</p>
-                            <p class="text-sm font-bold text-red-400">Debe: ${currency.format(f.pendiente||0)}</p>
-                        </div>
-                    </div>`;
-                }).join('');
-            }
-        } catch(e) {
-            div.innerHTML = '<p class="text-red-500 text-sm">Error al cargar facturas</p>';
-        }
-    }
 
-    // Patch abrirDetalle to also load impagas
-    const _originalAbrirDetalle = abrirDetalle;
-    abrirDetalle = async function(clienteId) {
-        await _originalAbrirDetalle(clienteId);
-        cargarFacturasImpagasCliente(clienteId);
-    };
 
     // ─── TABS ──────────────────────────────────────────────────
     function switchTab(tab) {
@@ -910,6 +923,7 @@
             document.getElementById('provModalNombre').textContent = p.nombre || 'Proveedor';
             document.getElementById('provModalCuit').textContent = `CUIT: ${p.cuit || '---'}`;
             document.getElementById('provModalSaldo').textContent = currency.format(p.saldo_deudor || 0);
+            document.getElementById('displayTotalImputarProv').textContent = '$0';
 
             // Movimientos
             const movs = dataMov.movimientos || [];
@@ -955,17 +969,18 @@
                                class="text-xs text-cyan-400 hover:text-cyan-300 font-semibold">
                                <i class="fas fa-file-pdf mr-1 text-red-400"></i>${f.numero_factura || 'Compra #' + f.id}
                             </a>
-                            <span class="text-[10px] text-gray-500">${fecha}</span>
+                            <input type="number" value="" step="0.01"
+                                class="w-24 bg-[#111] border border-orange-800 text-white text-xs rounded p-1 outline-none text-right font-mono prov-imputar-input"
+                                data-compra-id="${f.id}" data-pendiente="${f.pendiente}"
+                                oninput="actualizarTotalImputarProv()"/>
                         </div>
                         <div class="flex justify-between text-[10px] mb-1">
                             <span class="text-gray-400">Total: <strong class="text-white">${currency.format(f.total||0)}</strong></span>
-                            <span class="text-gray-400">Pagado: <strong class="text-green-400">${currency.format(f.pagado||0)}</strong></span>
                             <span class="text-gray-400">Pendiente: <strong class="text-orange-400">${currency.format(f.pendiente||0)}</strong></span>
                         </div>
-                        <div class="w-full bg-gray-800 rounded-full h-1.5">
+                        <div class="w-full bg-gray-800 rounded-full h-1.5 mt-1">
                             <div class="${pctColor} h-1.5 rounded-full transition-all" style="width:${pct}%"></div>
                         </div>
-                        <p class="text-[10px] text-gray-600 mt-0.5 text-right">${pct}% abonado</p>
                     </div>`;
                 }).join('');
             }
@@ -987,9 +1002,48 @@
         document.getElementById('chequeRow').classList.toggle('hidden', document.getElementById('provPagoMetodo').value !== 'cheque');
     }
 
+    function actualizarTotalImputarProv() {
+        const inputMonto = document.getElementById('provPagoMonto');
+        const inputs = document.querySelectorAll('.prov-imputar-input');
+        let total = 0;
+        
+        if (inputs.length > 0) {
+            inputs.forEach(inp => { total += parsearMonto(inp.value); });
+            if (document.activeElement && document.activeElement.classList.contains('prov-imputar-input')) {
+                inputMonto.value = total > 0 ? total.toFixed(2).replace('.00', '') : '';
+            } else if (total === 0) {
+                total = parsearMonto(inputMonto.value);
+            }
+        } else {
+            total = parsearMonto(inputMonto.value);
+        }
+        
+        const disp = document.getElementById('displayTotalImputarProv');
+        if (disp) disp.textContent = currency.format(total);
+    }
+
+    function distribuirMontoProv() {
+        const inputMonto = document.getElementById('provPagoMonto');
+        if (!inputMonto) return;
+        let restante = parsearMonto(inputMonto.value);
+        
+        const inputs = document.querySelectorAll('.prov-imputar-input');
+        inputs.forEach(inp => {
+            const pendiente = parseFloat(inp.dataset.pendiente) || 0;
+            if (restante <= 0) {
+                inp.value = '';
+                return;
+            }
+            const aplicar = Math.min(restante, pendiente);
+            inp.value = aplicar > 0 ? aplicar.toFixed(2).replace('.00', '') : '';
+            restante -= aplicar;
+        });
+        actualizarTotalImputarProv();
+    }
+
     async function procesarPagoProveedor() {
         if (!provActualId) return;
-        const monto = parseFloat(document.getElementById('provPagoMonto').value);
+        const monto = parsearMonto(document.getElementById('provPagoMonto').value);
         if (!monto || monto <= 0) {
             Swal.fire({ icon: 'error', title: 'Error', text: 'Ingresá un monto válido', background: '#111', color: '#fff' });
             return;

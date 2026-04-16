@@ -40,26 +40,86 @@ EMPRESA_INFO = {
     "email": "giordaneumaticos@hotmail.com",
 }
 
+_COLOR_HEADER  = colors.HexColor("#1e3a5f")
+_COLOR_ROW_ALT = colors.HexColor("#f3f4f6")
+_COLOR_GRID    = colors.HexColor("#e5e7eb")
+
+_SS = getSampleStyleSheet()
+_ST_INFO   = ParagraphStyle("Info",  parent=_SS["Normal"], fontSize=10, spaceAfter=4)
+_ST_LABEL  = ParagraphStyle("Label", parent=_ST_INFO, textColor=colors.HexColor("#666666"))
+_ST_VALUE  = ParagraphStyle("Value", parent=_ST_INFO, textColor=colors.black, fontName="Helvetica-Bold")
+_ST_NORMAL = ParagraphStyle("N", fontSize=8, leading=11)
+_ST_BOLD   = ParagraphStyle("B", fontSize=8, leading=11, fontName="Helvetica-Bold")
+_ST_HDR    = ParagraphStyle("H", fontSize=8, fontName="Helvetica-Bold", textColor=colors.white)
+_ST_TIPO   = ParagraphStyle("Tipo", fontSize=14, fontName="Helvetica-Bold", textColor=_COLOR_HEADER, spaceAfter=8)
+_ST_SEC    = ParagraphStyle("Sec", fontSize=9, textColor=colors.HexColor("#999999"))
+
+
+def _p(txt, style):
+    return Paragraph(str(txt), style)
+
+
+def _money(v, qty=1):
+    try:
+        n = float(v) * int(qty)
+        return f"$ {n:,.0f}" if n > 0 else "-"
+    except Exception:
+        return "-"
+
+
+def _section_header(title):
+    tbl = Table([[Paragraph(f"<b>{title}</b>", _ST_SEC)]], colWidths=[180*mm])
+    tbl.setStyle(TableStyle([
+        ("BACKGROUND",    (0, 0), (-1, -1), _COLOR_ROW_ALT),
+        ("TOPPADDING",    (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 10),
+    ]))
+    return tbl
+
+
+def _items_table_style(n_rows):
+    ts = TableStyle([
+        ("BACKGROUND",    (0, 0),        (-1, 0),        _COLOR_HEADER),
+        ("TEXTCOLOR",     (0, 0),        (-1, 0),        colors.white),
+        ("BACKGROUND",    (0, n_rows-1), (-1, n_rows-1), _COLOR_HEADER),
+        ("TEXTCOLOR",     (0, n_rows-1), (-1, n_rows-1), colors.white),
+        ("FONTNAME",      (0, n_rows-1), (-1, n_rows-1), "Helvetica-Bold"),
+        ("FONTSIZE",      (0, 0),        (-1, -1),        8),
+        ("ALIGN",         (0, 0),        (0, -1),         "CENTER"),
+        ("ALIGN",         (2, 0),        (-1, -1),        "RIGHT"),
+        ("VALIGN",        (0, 0),        (-1, -1),        "MIDDLE"),
+        ("GRID",          (0, 0),        (-1, -1),        0.4, _COLOR_GRID),
+        ("TOPPADDING",    (0, 0),        (-1, -1),        5),
+        ("BOTTOMPADDING", (0, 0),        (-1, -1),        5),
+        ("LEFTPADDING",   (0, 0),        (-1, -1),        5),
+        ("RIGHTPADDING",  (0, 0),        (-1, -1),        5),
+    ])
+    for i in range(1, n_rows - 1):
+        bg = colors.white if i % 2 == 0 else _COLOR_ROW_ALT
+        ts.add("BACKGROUND", (0, i), (-1, i), bg)
+    return ts
+
+
+_ST_FACTURA    = ParagraphStyle("Factura",   fontSize=28, fontName="Helvetica-Bold", textColor=_COLOR_HEADER, alignment=1)
+_ST_SIN_FISCAL = ParagraphStyle("SinFiscal", fontSize=9,  textColor=colors.HexColor("#888888"), alignment=1)
+_ST_NOMBRE_EMP = ParagraphStyle("Nombre",    fontSize=14, fontName="Helvetica-Bold", textColor=_COLOR_HEADER, alignment=1)
+_ST_DATOS_EMP  = ParagraphStyle("Datos",     fontSize=9,  textColor=colors.HexColor("#444444"), leading=13, alignment=1)
+
 
 def _header_empresa(tipo_doc="FACTURA"):
     elements = []
 
-    factura_style = ParagraphStyle("Factura", fontSize=28, fontName="Helvetica-Bold", textColor=colors.HexColor("#1e3a5f"), alignment=1)
-    sin_fiscal_style = ParagraphStyle("SinFiscal", fontSize=9, textColor=colors.HexColor("#888888"), alignment=1)
-    nombre_style = ParagraphStyle("Nombre", fontSize=14, fontName="Helvetica-Bold", textColor=colors.HexColor("#1e3a5f"), alignment=1)
-    datos_style = ParagraphStyle("Datos", fontSize=9, textColor=colors.HexColor("#444444"), leading=13, alignment=1)
-
-    # Columna derecha: tipo doc + datos empresa
     col_texto = [
-        Paragraph(tipo_doc, factura_style),
+        Paragraph(tipo_doc, _ST_FACTURA),
         Spacer(1, 2*mm),
-        Paragraph("*** SIN VALOR FISCAL ***", sin_fiscal_style),
+        Paragraph("*** SIN VALOR FISCAL ***", _ST_SIN_FISCAL),
         Spacer(1, 4*mm),
-        Paragraph("GIORDA NEUMATICOS", nombre_style),
+        Paragraph("GIORDA NEUMATICOS", _ST_NOMBRE_EMP),
         Spacer(1, 2*mm),
-        Paragraph(f"Dirección: {EMPRESA_INFO['direccion']}", datos_style),
-        Paragraph(f"Tel: {EMPRESA_INFO['telefono']} | WhatsApp: {EMPRESA_INFO['whatsapp']}", datos_style),
-        Paragraph(f"Email: {EMPRESA_INFO['email']}", datos_style),
+        Paragraph(f"Dirección: {EMPRESA_INFO['direccion']}", _ST_DATOS_EMP),
+        Paragraph(f"Tel: {EMPRESA_INFO['telefono']} | WhatsApp: {EMPRESA_INFO['whatsapp']}", _ST_DATOS_EMP),
+        Paragraph(f"Email: {EMPRESA_INFO['email']}", _ST_DATOS_EMP),
     ]
 
     if LOGO_IO:
@@ -97,156 +157,99 @@ def generar_presupuesto_pdf(venta_id: int, db: Session = Depends(get_db)):
     doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=15*mm, bottomMargin=20*mm, leftMargin=15*mm, rightMargin=15*mm)
     elements = []
 
-    info_style = ParagraphStyle("Info", parent=getSampleStyleSheet()["Normal"], fontSize=10, spaceAfter=4)
-    label_style = ParagraphStyle("Label", parent=info_style, textColor=colors.HexColor("#666666"))
-    value_style = ParagraphStyle("Value", parent=info_style, textColor=colors.black, fontName="Helvetica-Bold")
-
     tipo = "COTIZACIÓN" if venta.es_cotizacion else "FACTURA"
     elements.extend(_header_empresa(tipo_doc=tipo))
-    tipo_style = ParagraphStyle("Tipo", fontSize=14, fontName="Helvetica-Bold", textColor=colors.HexColor("#1e3a5f"), spaceAfter=8)
-    elements.append(Paragraph(f"{tipo} N° {venta.id}", tipo_style))
+    elements.append(Paragraph(f"{tipo} N° {venta.id}", _ST_TIPO))
     elements.append(Spacer(1, 3*mm))
 
-    header_data = [
-        [Paragraph("<b>DATOS DEL CLIENTE</b>", ParagraphStyle("H", fontSize=9, textColor=colors.HexColor("#999999")))],
-    ]
-    cliente_table = Table(header_data, colWidths=[180*mm])
-    cliente_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f3f4f6")),
-        ("TOPPADDING", (0, 0), (-1, -1), 6),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-        ("LEFTPADDING", (0, 0), (-1, -1), 10),
-        ("ROUNDEDCORNERS", [4]),
-    ]))
-    elements.append(cliente_table)
-
+    elements.append(_section_header("DATOS DEL CLIENTE"))
     cliente_data = [
-        [Paragraph("Cliente:", label_style), Paragraph(venta.cliente_nombre or "Consumidor Final", value_style)],
-        [Paragraph("Teléfono:", label_style), Paragraph(venta.cliente_telefono or "-", info_style)],
-        [Paragraph("Vehículo:", label_style), Paragraph(f"{venta.vehiculo_patente or '-'} {venta.vehiculo_modelo or ''}" + (f" | {venta.kilometraje:,} km" if venta.kilometraje else ""), value_style)],
-        [Paragraph("Fecha:", label_style), Paragraph(venta.fecha_creacion.strftime("%d/%m/%Y %H:%M") if venta.fecha_creacion else "-", info_style)],
+        [_p("Cliente:",   _ST_LABEL), _p(venta.cliente_nombre or "Consumidor Final", _ST_VALUE)],
+        [_p("Teléfono:",  _ST_LABEL), _p(venta.cliente_telefono or "-", _ST_INFO)],
+        [_p("Vehículo:",  _ST_LABEL), _p(f"{venta.vehiculo_patente or '-'} {venta.vehiculo_modelo or ''}" + (f" | {venta.kilometraje:,} km" if venta.kilometraje else ""), _ST_VALUE)],
+        [_p("Fecha:",     _ST_LABEL), _p(venta.fecha_creacion.strftime("%d/%m/%Y %H:%M") if venta.fecha_creacion else "-", _ST_INFO)],
     ]
-    cliente_table2 = Table(cliente_data, colWidths=[40*mm, 140*mm])
-    cliente_table2.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("TOPPADDING", (0, 0), (-1, -1), 4),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-    ]))
-    elements.append(cliente_table2)
+    cliente_tbl = Table(cliente_data, colWidths=[40*mm, 140*mm])
+    cliente_tbl.setStyle(TableStyle([("VALIGN",(0,0),(-1,-1),"TOP"),("TOPPADDING",(0,0),(-1,-1),4),("BOTTOMPADDING",(0,0),(-1,-1),4)]))
+    elements.append(cliente_tbl)
     elements.append(Spacer(1, 8*mm))
 
     items = json.loads(venta.items) if venta.items else []
-
-    def p(txt, style): return Paragraph(str(txt), style)
-    def money(v, qty=1):
-        try:
-            n = float(v) * int(qty)
-            return f"$ {n:,.0f}" if n > 0 else "-"
-        except Exception:
-            return "-"
-
-    normal  = ParagraphStyle("N", fontSize=8, leading=11)
-    bold    = ParagraphStyle("B", fontSize=8, leading=11, fontName="Helvetica-Bold")
-    hdr_st  = ParagraphStyle("H", fontSize=8, fontName="Helvetica-Bold", textColor=colors.white)
-
     tiene_sj = any(i.get("tipo") == "san_juan" for i in items)
 
     if tiene_sj:
-        # Layout 5 columnas para cotizaciones San Juan
         CW = [12*mm, 78*mm, 30*mm, 30*mm, 30*mm]
         table_data = [[
-            p("CANT.",       hdr_st),
-            p("DESCRIPCIÓN", hdr_st),
-            p("CONTADO",     hdr_st),
-            p("3/6 CUOTAS",  hdr_st),
-            p("12 CUOTAS",   hdr_st),
+            _p("CANT.",       _ST_HDR),
+            _p("DESCRIPCIÓN", _ST_HDR),
+            _p("CONTADO",     _ST_HDR),
+            _p("3/6 CUOTAS",  _ST_HDR),
+            _p("12 CUOTAS",   _ST_HDR),
         ]]
         for item in items:
-            cant      = item.get("cantidad", 1)
-            desc      = item.get("descripcion", "")
-            tipo      = item.get("tipo", "")
-            precio    = item.get("precio_final", 0)
-            contado   = item.get("contado",   0)
-            cuotas_6  = item.get("cuotas_6",  0)
-            cuotas_12 = item.get("cuotas_12", 0)
-            medida    = item.get("medida",    "")
+            cant      = int(item.get("cantidad") or 1)
+            desc      = item.get("descripcion", "") or ""
+            tipo      = item.get("tipo", "") or ""
+            precio    = float(item.get("precio_final") or 0)
+            contado   = item.get("contado",   0) or 0
+            cuotas_6  = item.get("cuotas_6",  0) or 0
+            cuotas_12 = item.get("cuotas_12", 0) or 0
+            medida    = item.get("medida",    "") or ""
             if tipo == "san_juan":
-                desc_txt = f"{desc}  {medida}".strip()
                 table_data.append([
-                    p(str(cant),              normal),
-                    p(desc_txt,               normal),
-                    p(money(contado,   cant),  bold),
-                    p(money(cuotas_6,  cant),  bold),
-                    p(money(cuotas_12, cant),  bold),
+                    _p(str(cant),                   _ST_NORMAL),
+                    _p(f"{desc}  {medida}".strip(), _ST_NORMAL),
+                    _p(_money(contado,   cant),      _ST_BOLD),
+                    _p(_money(cuotas_6,  cant),      _ST_BOLD),
+                    _p(_money(cuotas_12, cant),      _ST_BOLD),
                 ])
             else:
-                sub = float(precio) * int(cant)
+                sub = precio * cant
                 table_data.append([
-                    p(str(cant),                    normal),
-                    p(desc,                         normal),
-                    p(f"$ {float(precio):,.0f}",    bold),
-                    p(f"$ {sub:,.0f}",              bold),
-                    p("",                           normal),
+                    _p(str(cant),          _ST_NORMAL),
+                    _p(desc,               _ST_NORMAL),
+                    _p(f"$ {precio:,.0f}", _ST_BOLD),
+                    _p(f"$ {sub:,.0f}",    _ST_BOLD),
+                    _p("",                 _ST_NORMAL),
                 ])
         table_data.append([
-            p("", hdr_st), p("", hdr_st),
-            p("TOTAL", hdr_st),
-            p(f"$ {venta.total_venta:,.0f}", hdr_st),
-            p("", hdr_st),
+            _p("", _ST_HDR), _p("", _ST_HDR),
+            _p("TOTAL", _ST_HDR),
+            _p(f"$ {venta.total_venta:,.0f}", _ST_HDR),
+            _p("", _ST_HDR),
         ])
     else:
-        # Layout normal 4 columnas
         CW = [15*mm, 95*mm, 35*mm, 35*mm]
         table_data = [[
-            p("CANT.",       hdr_st),
-            p("DESCRIPCIÓN", hdr_st),
-            p("P. UNIT.",    hdr_st),
-            p("SUBTOTAL",    hdr_st),
+            _p("CANT.",       _ST_HDR),
+            _p("DESCRIPCIÓN", _ST_HDR),
+            _p("P. UNIT.",    _ST_HDR),
+            _p("SUBTOTAL",    _ST_HDR),
         ]]
         for item in items:
-            cant   = item.get("cantidad", 1)
-            desc   = item.get("descripcion", "")
-            precio = item.get("precio_final", 0)
-            sub    = float(precio) * int(cant)
+            cant   = int(item.get("cantidad") or 1)
+            desc   = item.get("descripcion", "") or ""
+            precio = float(item.get("precio_final") or 0)
+            sub    = precio * cant
             table_data.append([
-                p(str(cant),                 normal),
-                p(desc,                      normal),
-                p(f"$ {float(precio):,.0f}", bold),
-                p(f"$ {sub:,.0f}",           bold),
+                _p(str(cant),           _ST_NORMAL),
+                _p(desc,                _ST_NORMAL),
+                _p(f"$ {precio:,.0f}",  _ST_BOLD),
+                _p(f"$ {sub:,.0f}",     _ST_BOLD),
             ])
         table_data.append([
-            p("", hdr_st), p("", hdr_st),
-            p("TOTAL", hdr_st),
-            p(f"$ {venta.total_venta:,.0f}", hdr_st),
+            _p("", _ST_HDR), _p("", _ST_HDR),
+            _p("TOTAL", _ST_HDR),
+            _p(f"$ {venta.total_venta:,.0f}", _ST_HDR),
         ])
 
     table = Table(table_data, colWidths=CW)
-    n_rows = len(table_data)
-    ts = TableStyle([
-        ("BACKGROUND",    (0,0),         (-1,0),         colors.HexColor("#1e3a5f")),
-        ("TEXTCOLOR",     (0,0),         (-1,0),         colors.white),
-        ("BACKGROUND",    (0,n_rows-1),  (-1,n_rows-1),  colors.HexColor("#1e3a5f")),
-        ("TEXTCOLOR",     (0,n_rows-1),  (-1,n_rows-1),  colors.white),
-        ("FONTNAME",      (0,n_rows-1),  (-1,n_rows-1),  "Helvetica-Bold"),
-        ("FONTSIZE",      (0,0),         (-1,-1),         8),
-        ("ALIGN",         (0,0),         (0,-1),          "CENTER"),
-        ("ALIGN",         (2,0),         (-1,-1),         "RIGHT"),
-        ("VALIGN",        (0,0),         (-1,-1),         "MIDDLE"),
-        ("GRID",          (0,0),         (-1,-1),         0.4, colors.HexColor("#e5e7eb")),
-        ("TOPPADDING",    (0,0),         (-1,-1),         5),
-        ("BOTTOMPADDING", (0,0),         (-1,-1),         5),
-        ("LEFTPADDING",   (0,0),         (-1,-1),         5),
-        ("RIGHTPADDING",  (0,0),         (-1,-1),         5),
-    ])
-    for i in range(1, n_rows - 1):
-        bg = colors.white if i % 2 == 0 else colors.HexColor("#f3f4f6")
-        ts.add("BACKGROUND", (0, i), (-1, i), bg)
-    table.setStyle(ts)
+    table.setStyle(_items_table_style(len(table_data)))
     elements.append(table)
 
     if venta.observaciones:
         elements.append(Spacer(1, 10*mm))
-        elements.append(Paragraph(f"<b>Observaciones:</b> {venta.observaciones}", info_style))
+        elements.append(Paragraph(f"<b>Observaciones:</b> {venta.observaciones}", _ST_INFO))
 
     doc.build(elements)
     buffer.seek(0)
@@ -449,102 +452,59 @@ def resumen_proveedor_pdf(proveedor_id: int, db: Session = Depends(get_db)):
 
 @router.get("/compra/{compra_id}")
 def ver_factura_compra_pdf(compra_id: int, db: Session = Depends(get_db)):
-    compra = db.query(CompraProveedor).filter(CompraProveedor.id == compra_id).first()
+    compra = (
+        db.query(CompraProveedor, Proveedor)
+        .outerjoin(Proveedor, Proveedor.id == CompraProveedor.proveedor_id)
+        .filter(CompraProveedor.id == compra_id)
+        .first()
+    )
     if not compra:
         raise HTTPException(status_code=404, detail="Compra no encontrada")
-
-    prov = db.query(Proveedor).filter(Proveedor.id == compra.proveedor_id).first()
+    compra, prov = compra
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=15*mm, bottomMargin=20*mm, leftMargin=15*mm, rightMargin=15*mm)
     elements = []
 
-    info_style = ParagraphStyle("Info", parent=getSampleStyleSheet()["Normal"], fontSize=10, spaceAfter=4)
-    label_style = ParagraphStyle("Label", parent=info_style, textColor=colors.HexColor("#666666"))
-    value_style = ParagraphStyle("Value", parent=info_style, textColor=colors.black, fontName="Helvetica-Bold")
-
-    elements.extend(_header_empresa(tipo_doc="FACTURA DE COMPRA"))
-    tipo_style = ParagraphStyle("Tipo", fontSize=14, fontName="Helvetica-Bold", textColor=colors.HexColor("#1e3a5f"), spaceAfter=8)
     nro = compra.numero_factura or f"#{compra.id}"
-    elements.append(Paragraph(f"COMPRA N° {compra.id}  |  Factura: {nro}", tipo_style))
+    elements.extend(_header_empresa(tipo_doc="FACTURA DE COMPRA"))
+    elements.append(Paragraph(f"COMPRA N° {compra.id}  |  Factura: {nro}", _ST_TIPO))
     elements.append(Spacer(1, 3*mm))
 
-    # Datos proveedor
-    header_data = [[Paragraph("<b>DATOS DEL PROVEEDOR</b>", ParagraphStyle("H", fontSize=9, textColor=colors.HexColor("#999999")))]]
-    header_tbl = Table(header_data, colWidths=[180*mm])
-    header_tbl.setStyle(TableStyle([
-        ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#f3f4f6")),
-        ("TOPPADDING", (0,0), (-1,-1), 6), ("BOTTOMPADDING", (0,0), (-1,-1), 6),
-        ("LEFTPADDING", (0,0), (-1,-1), 10),
-    ]))
-    elements.append(header_tbl)
-
+    elements.append(_section_header("DATOS DEL PROVEEDOR"))
     fecha_str = compra.fecha.strftime("%d/%m/%Y %H:%M") if compra.fecha else "-"
     prov_data = [
-        [Paragraph("Proveedor:", label_style), Paragraph(prov.nombre if prov else "-", value_style)],
-        [Paragraph("CUIT:", label_style),      Paragraph(prov.cuit if prov else "-", info_style)],
-        [Paragraph("Teléfono:", label_style),  Paragraph(prov.telefono if prov else "-", info_style)],
-        [Paragraph("Fecha:", label_style),     Paragraph(fecha_str, info_style)],
-        [Paragraph("Método pago:", label_style), Paragraph((compra.metodo_pago or "-").capitalize(), info_style)],
+        [_p("Proveedor:",   _ST_LABEL), _p(prov.nombre    if prov else "-", _ST_VALUE)],
+        [_p("CUIT:",        _ST_LABEL), _p(prov.cuit      if prov else "-", _ST_INFO)],
+        [_p("Teléfono:",    _ST_LABEL), _p(prov.telefono  if prov else "-", _ST_INFO)],
+        [_p("Fecha:",       _ST_LABEL), _p(fecha_str,                        _ST_INFO)],
+        [_p("Método pago:", _ST_LABEL), _p((compra.metodo_pago or "-").capitalize(), _ST_INFO)],
     ]
     prov_tbl = Table(prov_data, colWidths=[40*mm, 140*mm])
-    prov_tbl.setStyle(TableStyle([
-        ("VALIGN", (0,0), (-1,-1), "TOP"),
-        ("TOPPADDING", (0,0), (-1,-1), 4), ("BOTTOMPADDING", (0,0), (-1,-1), 4),
-    ]))
+    prov_tbl.setStyle(TableStyle([("VALIGN",(0,0),(-1,-1),"TOP"),("TOPPADDING",(0,0),(-1,-1),4),("BOTTOMPADDING",(0,0),(-1,-1),4)]))
     elements.append(prov_tbl)
     elements.append(Spacer(1, 8*mm))
 
-    # Items
-    def p(txt, style): return Paragraph(str(txt), style)
-    def money(v):
-        try: return f"$ {float(v):,.0f}"
-        except: return "-"
-
-    normal = ParagraphStyle("N", fontSize=8, leading=11)
-    bold   = ParagraphStyle("B", fontSize=8, leading=11, fontName="Helvetica-Bold")
-    hdr_st = ParagraphStyle("H", fontSize=8, fontName="Helvetica-Bold", textColor=colors.white)
-
     items = json.loads(compra.items) if compra.items else []
     CW = [15*mm, 95*mm, 35*mm, 35*mm]
-    table_data = [[p("CANT.", hdr_st), p("DESCRIPCIÓN", hdr_st), p("P. UNIT.", hdr_st), p("SUBTOTAL", hdr_st)]]
+    table_data = [[_p("CANT.", _ST_HDR), _p("DESCRIPCIÓN", _ST_HDR), _p("P. UNIT.", _ST_HDR), _p("SUBTOTAL", _ST_HDR)]]
 
     for item in items:
         cant   = item.get("cantidad", item.get("qty", 1))
         desc   = item.get("descripcion", item.get("nombre", ""))
         precio = item.get("costo_unitario", item.get("precio_unitario", item.get("precio", 0)))
         sub    = float(precio or 0) * int(cant or 1)
-        table_data.append([p(str(cant), normal), p(desc, normal), p(money(precio), bold), p(money(sub), bold)])
+        table_data.append([_p(str(cant), _ST_NORMAL), _p(desc, _ST_NORMAL), _p(_money(precio), _ST_BOLD), _p(_money(sub), _ST_BOLD)])
 
-    table_data.append([p("", hdr_st), p("", hdr_st), p("TOTAL", hdr_st), p(money(compra.total or 0), hdr_st)])
+    table_data.append([_p("", _ST_HDR), _p("", _ST_HDR), _p("TOTAL", _ST_HDR), _p(_money(compra.total or 0), _ST_HDR)])
 
     table = Table(table_data, colWidths=CW)
-    n = len(table_data)
-    ts = TableStyle([
-        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#1e3a5f")),
-        ("TEXTCOLOR",  (0,0), (-1,0), colors.white),
-        ("BACKGROUND", (0,n-1), (-1,n-1), colors.HexColor("#1e3a5f")),
-        ("TEXTCOLOR",  (0,n-1), (-1,n-1), colors.white),
-        ("FONTNAME",   (0,n-1), (-1,n-1), "Helvetica-Bold"),
-        ("FONTSIZE",   (0,0),   (-1,-1),  8),
-        ("ALIGN",      (0,0),   (0,-1),   "CENTER"),
-        ("ALIGN",      (2,0),   (-1,-1),  "RIGHT"),
-        ("VALIGN",     (0,0),   (-1,-1),  "MIDDLE"),
-        ("GRID",       (0,0),   (-1,-1),  0.4, colors.HexColor("#e5e7eb")),
-        ("TOPPADDING",    (0,0), (-1,-1), 5),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 5),
-        ("LEFTPADDING",   (0,0), (-1,-1), 5),
-        ("RIGHTPADDING",  (0,0), (-1,-1), 5),
-    ])
-    for i in range(1, n - 1):
-        bg = colors.white if i % 2 == 0 else colors.HexColor("#f3f4f6")
-        ts.add("BACKGROUND", (0, i), (-1, i), bg)
-    table.setStyle(ts)
+    table.setStyle(_items_table_style(len(table_data)))
     elements.append(table)
 
     if compra.descripcion:
         elements.append(Spacer(1, 10*mm))
-        elements.append(Paragraph(f"<b>Observaciones:</b> {compra.descripcion}", info_style))
+        elements.append(Paragraph(f"<b>Observaciones:</b> {compra.descripcion}", _ST_INFO))
 
     doc.build(elements)
     buffer.seek(0)
