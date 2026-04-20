@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from core.database import get_db
 from models.models import Cliente, MovimientoCuenta, Venta
+from datetime import datetime
 
 router = APIRouter(prefix="/api/v1/cuenta-corriente", tags=["cuenta-corriente"])
 
@@ -176,6 +177,41 @@ def registrar_pago(data: dict, db: Session = Depends(get_db)):
         "message": "Pago registrado",
         "nuevo_saldo": cliente.saldo_deudor,
     }
+
+
+@router.post("/movimiento-manual")
+def movimiento_manual(data: dict, db: Session = Depends(get_db)):
+    """Inserta un movimiento histórico con fecha y tipo definidos manualmente."""
+    cliente_id = data.get("cliente_id")
+    monto = float(data.get("monto", 0))
+    tipo = data.get("tipo", "cargo")  # cargo | pago
+    descripcion = data.get("descripcion", "")
+    fecha_str = data.get("fecha")  # "2025-12-26"
+
+    if not cliente_id or monto <= 0:
+        raise HTTPException(status_code=400, detail="Datos inválidos")
+
+    cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
+    if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+
+    mov = MovimientoCuenta(
+        cliente_id=cliente_id,
+        tipo=tipo,
+        monto=monto,
+        descripcion=descripcion,
+    )
+    if fecha_str:
+        mov.fecha = datetime.strptime(fecha_str, "%Y-%m-%d")
+    db.add(mov)
+
+    if tipo == "cargo":
+        cliente.saldo_deudor = (cliente.saldo_deudor or 0) + monto
+    else:
+        cliente.saldo_deudor = max(0, (cliente.saldo_deudor or 0) - monto)
+
+    db.commit()
+    return {"ok": True, "nuevo_saldo": cliente.saldo_deudor}
 
 
 @router.post("/migrar-columnas-clientes")
