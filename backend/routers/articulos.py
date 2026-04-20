@@ -186,13 +186,15 @@ def importar_excel(data: dict, db: Session = Depends(get_db)):
             stock_val = float(g(art, "stock", default=0) or 0)
 
             # Auto-crear categoría y usar nombre CANÓNICO de la BD
-            categoria = categoria_raw
-            if categoria_raw:
+            # Normalizar: quitar espacios extra y capitalizar para evitar duplicados
+            categoria_raw_norm = " ".join(categoria_raw.split()).title() if categoria_raw else ""
+            categoria = categoria_raw_norm
+            if categoria_raw_norm:
                 cat_obj = db.query(Categoria).filter(
-                    func.lower(Categoria.nombre) == categoria_raw.lower()
+                    func.lower(func.trim(Categoria.nombre)) == categoria_raw_norm.lower()
                 ).first()
                 if not cat_obj:
-                    cat_obj = Categoria(nombre=categoria_raw)
+                    cat_obj = Categoria(nombre=categoria_raw_norm)
                     db.add(cat_obj)
                     db.flush()
                 categoria = cat_obj.nombre  # nombre exacto de la BD
@@ -289,6 +291,44 @@ def normalizar_categorias(db: Session = Depends(get_db)):
     return {"normalizados": actualizados}
 
 
+@router.post("/deduplicar-categorias")
+def deduplicar_categorias(db: Session = Depends(get_db)):
+    """Unifica categorías duplicadas (mismo nombre ignorando mayúsculas/espacios).
+    Conserva la de menor id y reasigna todos los productos a ella."""
+    todas = db.query(Categoria).order_by(Categoria.id).all()
+
+    # Agrupar por nombre normalizado
+    grupos: dict[str, list] = {}
+    for cat in todas:
+        key = cat.nombre.strip().lower()
+        grupos.setdefault(key, []).append(cat)
+
+    cats_eliminadas = 0
+    productos_reasignados = 0
+
+    for key, grupo in grupos.items():
+        if len(grupo) <= 1:
+            continue
+        # Conservar la categoría con menor id (la más antigua)
+        canonical = grupo[0]
+        duplicados = grupo[1:]
+
+        for dup in duplicados:
+            # Reasignar productos del duplicado al canonical
+            prods = db.query(Producto).filter(Producto.categoria == dup.nombre).all()
+            for p in prods:
+                p.categoria = canonical.nombre
+                productos_reasignados += 1
+            db.delete(dup)
+            cats_eliminadas += 1
+
+    db.commit()
+    return {
+        "categorias_eliminadas": cats_eliminadas,
+        "productos_reasignados": productos_reasignados,
+    }
+
+
 @router.delete("/limpiar-vacios")
 def limpiar_articulos_vacios(db: Session = Depends(get_db)):
     """Elimina definitivamente artículos sin descripción ni código."""
@@ -348,11 +388,13 @@ def listar_categorias(db: Session = Depends(get_db)):
 
 @router.post("/categorias")
 def crear_categoria(data: dict, db: Session = Depends(get_db)):
-    nombre = data.get("nombre", "").strip()
+    nombre = " ".join(data.get("nombre", "").strip().split()).title()
     if not nombre:
         raise HTTPException(status_code=400, detail="El nombre es requerido")
-    
-    existente = db.query(Categoria).filter(Categoria.nombre.ilike(nombre)).first()
+
+    existente = db.query(Categoria).filter(
+        func.lower(func.trim(Categoria.nombre)) == nombre.lower()
+    ).first()
     if existente:
         raise HTTPException(status_code=400, detail="Ya existe una categoría con ese nombre")
     
