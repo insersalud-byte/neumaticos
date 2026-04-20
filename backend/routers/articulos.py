@@ -329,6 +329,20 @@ def deduplicar_categorias(db: Session = Depends(get_db)):
     }
 
 
+@router.get("/marcas")
+def listar_marcas(db: Session = Depends(get_db)):
+    rows = (
+        db.query(Producto.marca)
+        .filter(Producto.activo == True)
+        .filter(Producto.marca != None)
+        .filter(Producto.marca != "")
+        .distinct()
+        .order_by(Producto.marca)
+        .all()
+    )
+    return [r[0] for r in rows]
+
+
 @router.delete("/limpiar-vacios")
 def limpiar_articulos_vacios(db: Session = Depends(get_db)):
     """Elimina definitivamente artículos sin descripción ni código."""
