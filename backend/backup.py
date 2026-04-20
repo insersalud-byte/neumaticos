@@ -6,7 +6,8 @@ from datetime import datetime
 DB_PATH = os.path.join(os.path.dirname(__file__), "giorda.db")
 BACKUP_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "Backups_GiordaOS")
 
-os.makedirs(BACKUP_DIR, exist_ok=True)
+if os.environ.get("VERCEL") != "1":
+    os.makedirs(BACKUP_DIR, exist_ok=True)
 
 def hacer_backup():
     fecha = datetime.now().strftime("%Y%m%d_%H%M%S")
