@@ -158,6 +158,11 @@
                         </thead>
                         <tbody id="tabla-articulos" class="divide-y divide-[#27272a]"></tbody>
                     </table>
+                    <!-- Paginación -->
+                    <div id="paginacion" class="flex items-center justify-between px-4 py-3 border-t border-[#27272a]">
+                        <span id="pag-info" class="text-xs text-gray-500"></span>
+                        <div id="pag-botones" class="flex gap-1"></div>
+                    </div>
                 </div>
             </div>
 
@@ -372,6 +377,9 @@
     let editandoId = null;
     let categoriasCache = [];
     let excelData = null;
+    let todosArticulos = [];
+    let paginaActual = 1;
+    const POR_PAGINA = 50;
 
     // ── TABS ──────────────────────────────────────────────
     function toggleAdministrar() {
@@ -410,45 +418,88 @@
             const params = new URLSearchParams();
             if (buscar) params.append('buscar', buscar);
             if (cat) params.append('categoria', cat);
-            
+
             const res = await fetch(`/api/v1/articulos?${params}`);
             const data = await res.json();
-            
-            let total = 0, conStock = 0, sinStock = 0, valor = 0;
-            
-            const tbody = document.getElementById('tabla-articulos');
-            tbody.innerHTML = (data.data || data).map(a => {
+            todosArticulos = data.data || data;
+            paginaActual = 1;
+
+            // Estadísticas sobre todos los artículos
+            let conStock = 0, sinStock = 0, valor = 0;
+            todosArticulos.forEach(a => {
                 const stock = a.stock_real || 0;
-                const compra = a.precio_costo || 0;
-                const venta = a.precio_venta || 0;
-                const ganancia = compra > 0 ? ((venta - compra) / compra * 100).toFixed(1) : 0;
-                
-                total++;
-                if (stock > 0) conStock++;
-                else sinStock++;
-                valor += stock * compra;
-                
-                return `<tr class="hover:bg-white/5">
-                    <td class="px-4 py-3 text-gray-400 font-mono text-xs">${a.codigo || '-'}</td>
-                    <td class="px-4 py-3 text-white font-semibold">${a.descripcion}</td>
-                    <td class="px-4 py-3 text-gray-400">${a.categoria || '-'}</td>
-                    <td class="px-4 py-3 text-right ${stock > 0 ? 'text-green-400' : 'text-red-400'}">${stock}</td>
-                    <td class="px-4 py-3 text-right text-gray-400 font-mono">$${compra.toLocaleString('es-AR')}</td>
-                    <td class="px-4 py-3 text-right text-blue-400 font-mono">${ganancia}%</td>
-                    <td class="px-4 py-3 text-right text-emerald-400 font-mono font-bold">$${venta.toLocaleString('es-AR')}</td>
-                    <td class="px-4 py-3 text-center">
-                        <button onclick="editarArticulo(${a.id})" class="text-blue-400 hover:text-blue-300 mr-2" title="Editar"><i class="fas fa-edit"></i></button>
-                        <button onclick="eliminarArticulo(${a.id})" class="text-red-400 hover:text-red-300" title="Eliminar"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>`;
-            }).join('');
-            
-            document.getElementById('stat-total').textContent = total;
+                if (stock > 0) conStock++; else sinStock++;
+                valor += stock * (a.precio_costo || 0);
+            });
+            document.getElementById('stat-total').textContent = todosArticulos.length;
             document.getElementById('stat-con-stock').textContent = conStock;
             document.getElementById('stat-sin-stock').textContent = sinStock;
             document.getElementById('stat-valor').textContent = '$' + valor.toLocaleString('es-AR');
-            
+
+            renderPagina();
         } catch(e) { console.error(e); }
+    }
+
+    function renderPagina() {
+        const total = todosArticulos.length;
+        const totalPags = Math.max(1, Math.ceil(total / POR_PAGINA));
+        paginaActual = Math.min(paginaActual, totalPags);
+        const desde = (paginaActual - 1) * POR_PAGINA;
+        const pagina = todosArticulos.slice(desde, desde + POR_PAGINA);
+
+        document.getElementById('tabla-articulos').innerHTML = pagina.map(a => {
+            const stock = a.stock_real || 0;
+            const compra = a.precio_costo || 0;
+            const venta = a.precio_venta || 0;
+            const ganancia = compra > 0 ? ((venta - compra) / compra * 100).toFixed(1) : 0;
+            return `<tr class="hover:bg-white/5">
+                <td class="px-4 py-3 text-gray-400 font-mono text-xs">${a.codigo || '-'}</td>
+                <td class="px-4 py-3 text-white font-semibold">${a.descripcion}</td>
+                <td class="px-4 py-3 text-gray-400">${a.categoria || '-'}</td>
+                <td class="px-4 py-3 text-right ${stock > 0 ? 'text-green-400' : 'text-red-400'}">${stock}</td>
+                <td class="px-4 py-3 text-right text-gray-400 font-mono">$${compra.toLocaleString('es-AR')}</td>
+                <td class="px-4 py-3 text-right text-blue-400 font-mono">${ganancia}%</td>
+                <td class="px-4 py-3 text-right text-emerald-400 font-mono font-bold">$${venta.toLocaleString('es-AR')}</td>
+                <td class="px-4 py-3 text-center">
+                    <button onclick="editarArticulo(${a.id})" class="text-blue-400 hover:text-blue-300 mr-2" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button onclick="eliminarArticulo(${a.id})" class="text-red-400 hover:text-red-300" title="Eliminar"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`;
+        }).join('');
+
+        // Info
+        const fin = Math.min(desde + POR_PAGINA, total);
+        document.getElementById('pag-info').textContent = `Mostrando ${desde + 1}–${fin} de ${total} artículos`;
+
+        // Botones de página
+        const container = document.getElementById('pag-botones');
+        const btnClass = (activo) => activo
+            ? 'w-8 h-8 rounded-lg text-xs font-bold bg-emerald-600 text-white'
+            : 'w-8 h-8 rounded-lg text-xs font-bold bg-[#27272a] text-gray-400 hover:bg-[#3f3f46] hover:text-white';
+
+        let html = `<button onclick="irPagina(1)" class="${btnClass(false)} px-2" ${paginaActual===1?'disabled':''}>«</button>
+                    <button onclick="irPagina(${paginaActual-1})" class="${btnClass(false)} px-2" ${paginaActual===1?'disabled':''}>‹</button>`;
+
+        // Rango de páginas a mostrar
+        let start = Math.max(1, paginaActual - 2);
+        let end   = Math.min(totalPags, start + 4);
+        start     = Math.max(1, end - 4);
+
+        for (let p = start; p <= end; p++) {
+            html += `<button onclick="irPagina(${p})" class="${btnClass(p===paginaActual)}">${p}</button>`;
+        }
+
+        html += `<button onclick="irPagina(${paginaActual+1})" class="${btnClass(false)} px-2" ${paginaActual===totalPags?'disabled':''}>›</button>
+                 <button onclick="irPagina(${totalPags})" class="${btnClass(false)} px-2" ${paginaActual===totalPags?'disabled':''}>»</button>`;
+
+        container.innerHTML = html;
+    }
+
+    function irPagina(p) {
+        const totalPags = Math.ceil(todosArticulos.length / POR_PAGINA);
+        paginaActual = Math.max(1, Math.min(p, totalPags));
+        renderPagina();
+        document.getElementById('tabla-articulos').closest('.bg-\\[\\#18181b\\]').scrollIntoView({behavior:'smooth', block:'start'});
     }
 
     async function abrirModalArticulo(id = null) {
