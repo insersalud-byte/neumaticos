@@ -446,6 +446,7 @@
                                 <th class="px-3 py-2 text-left">Descripcion</th>
                                 <th class="px-3 py-2 text-left">Metodo</th>
                                 <th class="px-3 py-2 text-right">Monto</th>
+                                <th class="px-3 py-2 text-center">Acc.</th>
                             </tr>
                         </thead>
                         <tbody id="modal-movimientos" class="divide-y divide-[#27272a]"></tbody>
@@ -745,6 +746,7 @@
                 let desc = m.descripcion || '';
                 if (m.numero_cheque) desc += ` (Ch: ${m.numero_cheque})`;
                 const tr = document.createElement('tr');
+                tr.id = `mov-row-${m.id}`;
                 tr.className = 'hover:bg-white/5';
                 tr.innerHTML = `
                     <td class="px-3 py-2 text-gray-400">${fecha}</td>
@@ -752,6 +754,9 @@
                     <td class="px-3 py-2 text-gray-300">${desc}</td>
                     <td class="px-3 py-2 text-gray-400">${metodo}</td>
                     <td class="px-3 py-2 text-right ${color} font-mono font-bold">${signo}$${m.monto.toLocaleString('es-AR')}</td>
+                    <td class="px-3 py-2 text-center">
+                        <button onclick="eliminarMovimiento(${m.id})" title="Eliminar movimiento" class="text-red-500 hover:text-red-300 transition-colors text-xs px-1">&#x2715;</button>
+                    </td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -785,6 +790,31 @@
     function imprimirProv() {
         if (!provActualId) return;
         window.open(`/api/v1/reportes/resumen-proveedor/${provActualId}`, '_blank');
+    }
+
+    async function eliminarMovimiento(movId) {
+        const confirm = await Swal.fire({
+            icon: 'warning',
+            title: '¿Eliminar movimiento?',
+            text: 'Esta acción revertirá el efecto en el saldo del proveedor. Si es un CARGO, también se eliminará la compra completa.',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            background: '#111',
+            color: '#fff',
+            confirmButtonColor: '#ef4444',
+        });
+        if (!confirm.isConfirmed) return;
+        try {
+            const res = await fetch(`/api/v1/compras/movimientos/${movId}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Error al eliminar');
+            Swal.fire({ icon: 'success', title: 'Eliminado', text: `Nuevo saldo: $${(data.nuevo_saldo||0).toLocaleString('es-AR')}`, background: '#111', color: '#fff', timer: 2000, showConfirmButton: false });
+            // Refrescar el modal del proveedor
+            if (provActualId) abrirDetalleProv(provActualId);
+        } catch(e) {
+            Swal.fire({ icon: 'error', title: 'Error', text: e.message, background: '#111', color: '#fff' });
+        }
     }
 
     function cerrarModalProv() {

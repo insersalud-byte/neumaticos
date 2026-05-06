@@ -378,6 +378,43 @@ def pagar_proveedor(prov_id: int, data: dict, db: Session = Depends(get_db)):
     }
 
 
+@router.delete("/movimientos/{mov_id}")
+def eliminar_movimiento(mov_id: int, db: Session = Depends(get_db)):
+    """Elimina un movimiento y revierte su efecto en el saldo del proveedor.
+    Para movimientos tipo cargo: también elimina la compra asociada y todos sus movimientos.
+    Eliminar primero los pagos, luego el cargo."""
+    mov = db.query(MovimientoProveedor).filter(MovimientoProveedor.id == mov_id).first()
+    if not mov:
+        raise HTTPException(status_code=404, detail="Movimiento no encontrado")
+
+    prov = db.query(Proveedor).filter(Proveedor.id == mov.proveedor_id).first()
+    if not prov:
+        raise HTTPException(status_code=404, detail="Proveedor no encontrado")
+
+    if mov.tipo == "pago":
+        prov.saldo_deudor = (prov.saldo_deudor or 0) + mov.monto
+        db.delete(mov)
+
+    elif mov.tipo == "cargo":
+        compra = None
+        if mov.compra_id:
+            compra = db.query(CompraProveedor).filter(CompraProveedor.id == mov.compra_id).first()
+        if compra and compra.metodo_pago == "cuenta_corriente":
+            prov.saldo_deudor = max(0, (prov.saldo_deudor or 0) - compra.total)
+        # Borrar todos los movimientos vinculados a esta compra
+        if mov.compra_id:
+            db.query(MovimientoProveedor).filter(
+                MovimientoProveedor.compra_id == mov.compra_id
+            ).delete(synchronize_session=False)
+        else:
+            db.delete(mov)
+        if compra:
+            db.delete(compra)
+
+    db.commit()
+    return {"message": "Movimiento eliminado", "nuevo_saldo": prov.saldo_deudor}
+
+
 @router.get("/proveedores/{prov_id}/facturas-impagas")
 def facturas_impagas_proveedor(prov_id: int, db: Session = Depends(get_db)):
     import json as _json
