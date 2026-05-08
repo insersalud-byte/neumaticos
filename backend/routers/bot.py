@@ -1,13 +1,16 @@
 """
 API pública para el asistente de WhatsApp.
 
-Endpoint único optimizado: devuelve catálogo + servicios + info de empresa
-en un formato que el LLM puede leer directamente.
+Endpoints:
+- /catalogo  → JSON estructurado
+- /contexto  → texto markdown listo para inyectar al prompt del LLM
+- /buscar    → búsqueda de un producto puntual
+- /empresa   → datos de contacto
 
-Sin auth (lectura pública). Si querés restringirlo, agregá un header X-Bot-Key
-y validalo contra una variable de entorno.
+Auth opcional: si BOT_API_KEY está seteada en variables de entorno,
+exige el header X-Bot-Key. Si no, queda abierto (lectura pública).
 """
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
@@ -27,41 +30,81 @@ EMPRESA = {
     "metodos_pago": "Efectivo, débito, crédito en cuotas, Mercado Pago",
 }
 
+# Palabras genéricas que no aportan a la búsqueda
+STOPWORDS = {
+    "neumatico", "neumático", "neumaticos", "neumáticos",
+    "cubierta", "cubiertas", "rueda", "ruedas",
+    "el", "la", "los", "las", "un", "una", "unos", "unas",
+    "de", "del", "para", "con", "sin", "y", "o",
+    "tienen", "tienes", "hay", "tenes", "tenés",
+    "precio", "precios", "costo", "costos",
+}
 
-def _verify_key(x_bot_key: str | None) -> bool:
-    """Si BOT_API_KEY está seteada en env, exige el header. Si no, deja pasar."""
+
+def require_api_key(x_bot_key: str | None = Header(None, alias="X-Bot-Key")):
+    """Dep que valida X-Bot-Key si BOT_API_KEY está seteada."""
     expected = os.environ.get("BOT_API_KEY")
     if not expected:
-        return True
-    return x_bot_key == expected
+        return  # API abierta
+    if x_bot_key != expected:
+        raise HTTPException(status_code=401, detail="API key inválida o ausente")
 
 
-@router.get("/catalogo")
+def _filter_terms(query: str) -> list[str]:
+    return [
+        t for t in query.strip().lower().split()
+        if t and t not in STOPWORDS and len(t) >= 2
+    ]
+
+
+def _build_search_query(base_query, terms: list[str]):
+    for t in terms:
+        like = f"%{t}%"
+        base_query = base_query.filter(
+            or_(
+                Producto.marca.ilike(like),
+                Producto.modelo.ilike(like),
+                Producto.medida.ilike(like),
+                Producto.descripcion.ilike(like),
+                Producto.categoria.ilike(like),
+            )
+        )
+    return base_query
+
+
+def _precio_contado(p: Producto) -> int:
+    # None-safe: 0 es un precio válido, no caer al precio de lista
+    if p.precio_venta_contado is not None and p.precio_venta_contado > 0:
+        return round(p.precio_venta_contado)
+    if p.precio_venta_final is not None and p.precio_venta_final > 0:
+        return round(p.precio_venta_final)
+    return 0
+
+
+@router.get("/catalogo", dependencies=[Depends(require_api_key)])
 def catalogo_json(
-    buscar: str = Query("", description="Filtra productos por marca/modelo/medida"),
+    buscar: str = Query("", description="Filtra por marca/modelo/medida"),
     solo_con_stock: bool = Query(True),
     limite: int = Query(80, le=200),
     db: Session = Depends(get_db),
 ):
-    """JSON estructurado con todo lo que el bot necesita."""
-    q = db.query(Producto).filter(Producto.activo == True, Producto.publicar_web == True)
+    q = db.query(Producto).filter(
+        Producto.activo == True, Producto.publicar_web == True
+    )
     if solo_con_stock:
         q = q.filter(Producto.stock_real > 0)
-    if buscar:
-        terms = buscar.strip().split()
-        for t in terms:
-            like = f"%{t}%"
-            q = q.filter(
-                or_(
-                    Producto.marca.ilike(like),
-                    Producto.modelo.ilike(like),
-                    Producto.medida.ilike(like),
-                    Producto.descripcion.ilike(like),
-                    Producto.categoria.ilike(like),
-                )
-            )
 
-    productos = q.limit(limite).all()
+    terms = _filter_terms(buscar)
+    if terms:
+        q_filtered = _build_search_query(q, terms)
+        productos = q_filtered.limit(limite).all()
+        # Fallback: si los términos eran muy específicos y no encontramos nada,
+        # devolvemos algo en vez de vacío para que el modelo pueda ofrecer alternativas
+        if not productos and len(terms) > 1:
+            productos = q.limit(min(20, limite)).all()
+    else:
+        productos = q.limit(limite).all()
+
     servicios = db.query(Servicio).filter(Servicio.activo == True).all()
 
     return {
@@ -75,7 +118,7 @@ def catalogo_json(
                 "descripcion": p.descripcion,
                 "categoria": p.categoria,
                 "tipo": p.tipo,
-                "precio_contado": round(p.precio_venta_contado or p.precio_venta_final or 0),
+                "precio_contado": _precio_contado(p),
                 "precio_lista": round(p.precio_venta_final or 0),
                 "precio_6_cuotas": round(p.precio_cuota_6 or 0),
                 "precio_12_cuotas": round(p.precio_cuota_12 or 0),
@@ -92,34 +135,41 @@ def catalogo_json(
     }
 
 
-@router.get("/contexto", response_class=PlainTextResponse)
+@router.get(
+    "/contexto",
+    response_class=PlainTextResponse,
+    dependencies=[Depends(require_api_key)],
+)
 def contexto_texto(
-    buscar: str = Query("", description="Filtra productos por marca/modelo/medida"),
+    buscar: str = Query(""),
+    solo_con_stock: bool = Query(True, description="Si True, solo lista productos con stock>0"),
     limite: int = Query(60, le=200),
     db: Session = Depends(get_db),
 ):
     """
-    Devuelve el catálogo como TEXTO plano formateado, ideal para inyectar
-    directamente en el prompt del modelo (es lo que el bot consume).
+    Catálogo como texto markdown listo para inyectar al prompt del LLM.
     """
-    q = db.query(Producto).filter(
-        Producto.activo == True,
-        Producto.publicar_web == True,
-        Producto.stock_real > 0,
+    q_base = db.query(Producto).filter(
+        Producto.activo == True, Producto.publicar_web == True
     )
-    if buscar:
-        terms = buscar.strip().split()
-        for t in terms:
-            like = f"%{t}%"
-            q = q.filter(
-                or_(
-                    Producto.marca.ilike(like),
-                    Producto.modelo.ilike(like),
-                    Producto.medida.ilike(like),
-                )
-            )
 
-    productos = q.limit(limite).all()
+    terms = _filter_terms(buscar)
+    if terms:
+        q_search = _build_search_query(q_base, terms)
+    else:
+        q_search = q_base
+
+    if solo_con_stock:
+        productos_disp = q_search.filter(Producto.stock_real > 0).limit(limite).all()
+        productos_agotados = (
+            q_search.filter(Producto.stock_real <= 0).limit(20).all()
+            if buscar  # solo mostrar agotados si el cliente buscó algo específico
+            else []
+        )
+    else:
+        productos_disp = q_search.limit(limite).all()
+        productos_agotados = []
+
     servicios = db.query(Servicio).filter(Servicio.activo == True).all()
 
     lines: list[str] = []
@@ -140,23 +190,33 @@ def contexto_texto(
             lines.append(f"| {s.nombre} | {precio} |")
         lines.append("")
 
-    if productos:
+    fmt = lambda n: f"${n:,}".replace(",", ".") if n else "—"
+
+    if productos_disp:
         lines.append("## Productos disponibles (con stock)")
         lines.append("| Marca | Modelo | Medida | Precio contado | 6 cuotas | 12 cuotas | Stock |")
         lines.append("|---|---|---|---|---|---|---|")
-        for p in productos:
-            pc = round(p.precio_venta_contado or p.precio_venta_final or 0)
+        for p in productos_disp:
+            pc = _precio_contado(p)
             p6 = round(p.precio_cuota_6 or 0)
             p12 = round(p.precio_cuota_12 or 0)
-            fmt = lambda n: f"${n:,}".replace(",", ".") if n else "—"
             lines.append(
                 f"| {p.marca or '—'} | {p.modelo or '—'} | {p.medida or '—'} | "
                 f"{fmt(pc)} | {fmt(p6)} | {fmt(p12)} | {p.stock_real} |"
             )
         lines.append("")
 
-    if not productos and buscar:
+    if productos_agotados:
+        lines.append("## Productos sin stock momentáneo (consultar reposición)")
+        lines.append("| Marca | Modelo | Medida |")
+        lines.append("|---|---|---|")
+        for p in productos_agotados:
+            lines.append(f"| {p.marca or '—'} | {p.modelo or '—'} | {p.medida or '—'} |")
+        lines.append("")
+
+    if not productos_disp and not productos_agotados and buscar:
         lines.append(f"_Sin resultados para: '{buscar}'_")
+        lines.append("")
 
     lines.append("---")
     lines.append(f"Para sacar turno: {EMPRESA['turnos']}")
@@ -164,26 +224,18 @@ def contexto_texto(
     return "\n".join(lines)
 
 
-@router.get("/buscar")
+@router.get("/buscar", dependencies=[Depends(require_api_key)])
 def buscar_producto(
-    q: str = Query(..., min_length=2, description="Término a buscar"),
+    q: str = Query(..., min_length=2),
     db: Session = Depends(get_db),
 ):
-    """Búsqueda específica para que el bot consulte productos puntuales."""
-    terms = q.strip().split()
+    terms = _filter_terms(q)
     query = db.query(Producto).filter(
         Producto.activo == True, Producto.publicar_web == True
     )
-    for t in terms:
-        like = f"%{t}%"
-        query = query.filter(
-            or_(
-                Producto.marca.ilike(like),
-                Producto.modelo.ilike(like),
-                Producto.medida.ilike(like),
-                Producto.descripcion.ilike(like),
-            )
-        )
+    if terms:
+        query = _build_search_query(query, terms)
+
     resultados = query.limit(20).all()
     return {
         "consulta": q,
@@ -194,7 +246,7 @@ def buscar_producto(
                 "modelo": p.modelo,
                 "medida": p.medida,
                 "descripcion": p.descripcion,
-                "precio_contado": round(p.precio_venta_contado or p.precio_venta_final or 0),
+                "precio_contado": _precio_contado(p),
                 "precio_6_cuotas": round(p.precio_cuota_6 or 0),
                 "precio_12_cuotas": round(p.precio_cuota_12 or 0),
                 "stock": p.stock_real,
@@ -205,7 +257,6 @@ def buscar_producto(
     }
 
 
-@router.get("/empresa")
+@router.get("/empresa", dependencies=[Depends(require_api_key)])
 def info_empresa():
-    """Datos básicos de la empresa para el bot."""
     return EMPRESA
