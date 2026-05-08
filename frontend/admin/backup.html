@@ -113,6 +113,81 @@
       </div>
     </div>
 
+    <!-- API del Asistente WhatsApp -->
+    <div class="bg-gradient-to-br from-[#0f172a] to-[#0a1628] border border-green-700/30 rounded-2xl p-5 mb-6">
+      <div class="flex items-start gap-4 mb-4">
+        <div class="w-12 h-12 bg-green-900/40 rounded-xl flex items-center justify-center shrink-0">
+          <i class="fab fa-whatsapp text-green-400 text-2xl"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-bold text-white mb-1 flex items-center gap-2">
+            API del Asistente WhatsApp
+            <span class="text-[10px] bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full font-semibold">PÚBLICA</span>
+          </h3>
+          <p class="text-sm text-gray-400">Pegá esta URL en el campo "API de datos" del bot de WhatsApp. El asistente la consulta cada vez que recibe un mensaje y responde con catálogo, precios y stock <strong>en vivo</strong>.</p>
+        </div>
+      </div>
+
+      <!-- URL principal -->
+      <div class="bg-black/40 border border-green-900/30 rounded-xl p-3 mb-3">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">URL para el asistente</span>
+          <span class="text-[10px] text-green-400">Catálogo + servicios + empresa</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <code id="botApiUrl" class="flex-1 text-sm text-green-300 font-mono break-all bg-black/40 px-3 py-2 rounded-lg select-all"></code>
+          <button onclick="copiarApi('botApiUrl', this)" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg flex items-center gap-2 transition shrink-0" title="Copiar al portapapeles">
+            <i class="fas fa-copy"></i> Copiar
+          </button>
+          <a id="botApiTest" href="#" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg flex items-center gap-2 transition shrink-0" title="Probar en navegador">
+            <i class="fas fa-external-link-alt"></i> Probar
+          </a>
+        </div>
+      </div>
+
+      <!-- URLs alternativas -->
+      <details class="mt-3">
+        <summary class="text-xs text-gray-400 cursor-pointer hover:text-gray-200 select-none">
+          <i class="fas fa-chevron-right text-[10px] mr-1"></i> Ver más endpoints (búsqueda, JSON)
+        </summary>
+        <div class="mt-3 space-y-2 pl-4">
+          <div class="bg-black/40 border border-blue-900/30 rounded-lg p-3">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] text-blue-400 uppercase font-bold">JSON estructurado</span>
+              <button onclick="copiarApi('apiCatalogo', this)" class="text-[10px] text-blue-400 hover:text-blue-300"><i class="fas fa-copy"></i> Copiar</button>
+            </div>
+            <code id="apiCatalogo" class="text-xs text-blue-300 font-mono break-all"></code>
+          </div>
+          <div class="bg-black/40 border border-purple-900/30 rounded-lg p-3">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] text-purple-400 uppercase font-bold">Búsqueda específica</span>
+              <button onclick="copiarApi('apiBuscar', this)" class="text-[10px] text-purple-400 hover:text-purple-300"><i class="fas fa-copy"></i> Copiar</button>
+            </div>
+            <code id="apiBuscar" class="text-xs text-purple-300 font-mono break-all"></code>
+            <p class="text-[10px] text-gray-500 mt-1">Ej: <code class="text-purple-300">?q=185/65R15</code></p>
+          </div>
+          <div class="bg-black/40 border border-yellow-900/30 rounded-lg p-3">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] text-yellow-400 uppercase font-bold">Solo datos de empresa</span>
+              <button onclick="copiarApi('apiEmpresa', this)" class="text-[10px] text-yellow-400 hover:text-yellow-300"><i class="fas fa-copy"></i> Copiar</button>
+            </div>
+            <code id="apiEmpresa" class="text-xs text-yellow-300 font-mono break-all"></code>
+          </div>
+        </div>
+      </details>
+
+      <!-- Instrucciones rápidas -->
+      <div class="mt-4 bg-black/30 border border-gray-800 rounded-xl p-3">
+        <p class="text-[11px] text-gray-400 leading-relaxed">
+          <i class="fas fa-lightbulb text-yellow-500 mr-1"></i>
+          <strong class="text-gray-300">Cómo conectarlo:</strong> abrí el dashboard del bot →
+          <code class="text-green-400">⚙️ IA</code> →
+          pestaña <code class="text-green-400">🔌 API de datos</code> →
+          pegá la URL → <code class="text-green-400">Probar URL</code> → <code class="text-green-400">Guardar</code>.
+        </p>
+      </div>
+    </div>
+
     <!-- Lista de backups -->
     <div class="bg-[#0f172a] border border-blue-900/20 rounded-2xl p-5">
       <div class="flex items-center justify-between mb-4">
@@ -215,6 +290,55 @@
     }
 
     cargarBackups();
+
+    // ── API del Asistente WhatsApp ─────────────────────────────────
+    function inicializarApiBot() {
+      const base = window.location.origin;
+      const urls = {
+        botApiUrl: `${base}/api/v1/bot/contexto`,
+        apiCatalogo: `${base}/api/v1/bot/catalogo`,
+        apiBuscar: `${base}/api/v1/bot/buscar?q=`,
+        apiEmpresa: `${base}/api/v1/bot/empresa`,
+      };
+      Object.entries(urls).forEach(([id, url]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = url;
+      });
+      const test = document.getElementById('botApiTest');
+      if (test) test.href = urls.botApiUrl;
+    }
+
+    async function copiarApi(elementId, btn) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const text = el.textContent.trim();
+      try {
+        await navigator.clipboard.writeText(text);
+        const original = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> ¡Copiado!';
+        btn.classList.add('bg-emerald-600');
+        setTimeout(() => {
+          btn.innerHTML = original;
+          btn.classList.remove('bg-emerald-600');
+        }, 1500);
+      } catch (e) {
+        // Fallback: select text for manual copy
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        Swal.fire({
+          icon: 'info',
+          title: 'Copiá manualmente',
+          text: 'Tu navegador no permite copiar automáticamente. La URL ya está seleccionada — usá Ctrl+C.',
+          background: '#0f172a',
+          color: '#fff',
+        });
+      }
+    }
+
+    inicializarApiBot();
   </script>
 </body>
 </html>

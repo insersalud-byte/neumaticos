@@ -8,7 +8,7 @@ from core.auth import hash_password
 from models.models import (
     Usuario, CoeficienteFinanciacion, Servicio
 )
-from routers import auth, operaciones, finanzas, crm, reportes, taller, cuenta_corriente, compras, articulos, sueldos, backup
+from routers import auth, operaciones, finanzas, crm, reportes, taller, cuenta_corriente, compras, articulos, sueldos, backup, bot
 
 IS_VERCEL = os.environ.get("VERCEL") == "1"
 
@@ -38,6 +38,7 @@ app.include_router(compras.router)
 app.include_router(articulos.router)
 app.include_router(sueldos.router)
 app.include_router(backup.router)
+app.include_router(bot.router)
 
 # Static files — only mount when running locally (VPS/dev), not on Vercel
 if not IS_VERCEL:
