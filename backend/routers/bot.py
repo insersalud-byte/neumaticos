@@ -17,6 +17,79 @@ from sqlalchemy import or_
 from core.database import get_db
 from models.models import Producto, Servicio
 import os
+import re
+
+# Marcas conocidas de neumáticos para extraer de la descripción
+MARCAS_CONOCIDAS = [
+    "PIRELLI", "FATE", "BRIDGESTONE", "FIRESTONE", "GOODYEAR", "MICHELIN",
+    "CONTINENTAL", "DUNLOP", "YOKOHAMA", "HANKOOK", "KUMHO", "NEXEN",
+    "GT RADIAL", "HABILEAD", "WANLI", "LINGLONG", "ROADCRUZA", "SAILUN",
+    "TRIANGLE", "MAXXIS", "DURABLE", "XBRI", "SUNSET", "FRASLE", "LPR",
+    "BOSCH",
+]
+# Patrones para medidas. Probamos en orden: floating (31x10.50R15), estándar (175/65R14)
+MEDIDA_RES = [
+    re.compile(r'\b(?:LT|P)?(\d{2,3})[xX](\d{1,2}\.\d{1,2})[rR](\d{2})\b'),       # 31x10.50R15
+    re.compile(r'\b(?:LT|P)?(\d{2,3})[/](\d{2,3})[rR](\d{2})\b', re.IGNORECASE),  # 175/65R14
+]
+def _buscar_medida(texto):
+    for rgx in MEDIDA_RES:
+        m = rgx.search(texto)
+        if m:
+            return m, m.group(0).upper().replace('X', 'x')
+    return None, ''
+
+def _normalizar_producto(p: Producto) -> dict:
+    """
+    Para NEUMÁTICOS: si marca/modelo/medida están vacíos, los extrae desde
+    `descripcion`. Para repuestos y otros productos, devuelve los campos tal cual
+    están en la DB (no se inventa nada).
+    Detección de neumático: tipo='neumatico' O se encuentra una medida en la descripcion.
+    """
+    marca = (p.marca or "").strip()
+    modelo = (p.modelo or "").strip()
+    medida = (p.medida or "").strip()
+    desc = (p.descripcion or "").strip()
+    tipo = (p.tipo or "").strip().lower()
+
+    # Buscar medida en descripcion (solo si falta)
+    medida_match = None
+    medida_desc = ""
+    if desc:
+        medida_match, medida_desc = _buscar_medida(desc)
+
+    # ¿Es neumático? Sólo normalizamos si SÍ.
+    es_neumatico = tipo == "neumatico" or bool(medida_match)
+    if not es_neumatico:
+        # Repuestos, accesorios, etc → devolver tal cual
+        return {"marca": marca, "modelo": modelo, "medida": medida}
+
+    # 1. Extraer medida si falta
+    if not medida and medida_desc:
+        medida = medida_desc
+
+    # 2. Extraer marca si falta
+    if not marca and desc:
+        upper_desc = desc.upper()
+        for mk in MARCAS_CONOCIDAS:
+            if mk in upper_desc:
+                marca = mk.title()
+                break
+
+    # 3. Construir modelo desde lo que queda en descripcion
+    if not modelo and desc:
+        sin_medida = desc
+        if medida_match:
+            sin_medida = (sin_medida[:medida_match.start()] + sin_medida[medida_match.end():]).strip()
+        if marca:
+            sin_medida = re.sub(re.escape(marca), "", sin_medida, flags=re.IGNORECASE).strip()
+        sin_medida = re.sub(r'\b\d{2,3}[A-Z]\b', '', sin_medida).strip()
+        sin_medida = re.sub(r'^[\s\-_]+|[\s\-_]+$', '', sin_medida).strip()
+        sin_medida = re.sub(r'\s+', ' ', sin_medida)
+        if sin_medida and len(sin_medida) >= 2:
+            modelo = sin_medida
+
+    return {"marca": marca, "modelo": modelo, "medida": medida}
 
 router = APIRouter(prefix="/api/v1/bot", tags=["bot"])
 
@@ -107,25 +180,26 @@ def catalogo_json(
 
     servicios = db.query(Servicio).filter(Servicio.activo == True).all()
 
+    def serializar(p):
+        norm = _normalizar_producto(p)
+        return {
+            "id": p.id,
+            "marca": norm["marca"],
+            "modelo": norm["modelo"],
+            "medida": norm["medida"],
+            "descripcion": p.descripcion,
+            "categoria": p.categoria,
+            "tipo": p.tipo,
+            "precio_contado": _precio_contado(p),
+            "precio_lista": round(p.precio_venta_final or 0),
+            "precio_6_cuotas": round(p.precio_cuota_6 or 0),
+            "precio_12_cuotas": round(p.precio_cuota_12 or 0),
+            "stock": p.stock_real,
+        }
+
     return {
         "empresa": EMPRESA,
-        "productos": [
-            {
-                "id": p.id,
-                "marca": p.marca,
-                "modelo": p.modelo,
-                "medida": p.medida,
-                "descripcion": p.descripcion,
-                "categoria": p.categoria,
-                "tipo": p.tipo,
-                "precio_contado": _precio_contado(p),
-                "precio_lista": round(p.precio_venta_final or 0),
-                "precio_6_cuotas": round(p.precio_cuota_6 or 0),
-                "precio_12_cuotas": round(p.precio_cuota_12 or 0),
-                "stock": p.stock_real,
-            }
-            for p in productos
-        ],
+        "productos": [serializar(p) for p in productos],
         "servicios": [
             {"nombre": s.nombre, "precio": round(s.precio_sugerido or 0), "descripcion": s.descripcion}
             for s in servicios
@@ -197,11 +271,12 @@ def contexto_texto(
         lines.append("| Marca | Modelo | Medida | Precio contado | 6 cuotas | 12 cuotas | Stock |")
         lines.append("|---|---|---|---|---|---|---|")
         for p in productos_disp:
+            n = _normalizar_producto(p)
             pc = _precio_contado(p)
             p6 = round(p.precio_cuota_6 or 0)
             p12 = round(p.precio_cuota_12 or 0)
             lines.append(
-                f"| {p.marca or '—'} | {p.modelo or '—'} | {p.medida or '—'} | "
+                f"| {n['marca'] or '—'} | {n['modelo'] or '—'} | {n['medida'] or '—'} | "
                 f"{fmt(pc)} | {fmt(p6)} | {fmt(p12)} | {p.stock_real} |"
             )
         lines.append("")
@@ -211,7 +286,8 @@ def contexto_texto(
         lines.append("| Marca | Modelo | Medida |")
         lines.append("|---|---|---|")
         for p in productos_agotados:
-            lines.append(f"| {p.marca or '—'} | {p.modelo or '—'} | {p.medida or '—'} |")
+            n = _normalizar_producto(p)
+            lines.append(f"| {n['marca'] or '—'} | {n['modelo'] or '—'} | {n['medida'] or '—'} |")
         lines.append("")
 
     if not productos_disp and not productos_agotados and buscar:
@@ -237,23 +313,24 @@ def buscar_producto(
         query = _build_search_query(query, terms)
 
     resultados = query.limit(20).all()
+    productos_out = []
+    for p in resultados:
+        n = _normalizar_producto(p)
+        productos_out.append({
+            "marca": n["marca"],
+            "modelo": n["modelo"],
+            "medida": n["medida"],
+            "descripcion": p.descripcion,
+            "precio_contado": _precio_contado(p),
+            "precio_6_cuotas": round(p.precio_cuota_6 or 0),
+            "precio_12_cuotas": round(p.precio_cuota_12 or 0),
+            "stock": p.stock_real,
+            "disponible": p.stock_real > 0,
+        })
     return {
         "consulta": q,
         "encontrados": len(resultados),
-        "productos": [
-            {
-                "marca": p.marca,
-                "modelo": p.modelo,
-                "medida": p.medida,
-                "descripcion": p.descripcion,
-                "precio_contado": _precio_contado(p),
-                "precio_6_cuotas": round(p.precio_cuota_6 or 0),
-                "precio_12_cuotas": round(p.precio_cuota_12 or 0),
-                "stock": p.stock_real,
-                "disponible": p.stock_real > 0,
-            }
-            for p in resultados
-        ],
+        "productos": productos_out,
     }
 
 
