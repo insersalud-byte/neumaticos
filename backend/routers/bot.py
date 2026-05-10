@@ -337,3 +337,83 @@ def buscar_producto(
 @router.get("/empresa", dependencies=[Depends(require_api_key)])
 def info_empresa():
     return EMPRESA
+
+
+@router.get("/diagnostico")
+def diagnostico_db(
+    db: Session = Depends(get_db),
+):
+    """
+    Diagnóstico de productos: cuántos hay activos, publicados, con stock,
+    cuántos por marca encontrada en descripcion (Goodyear, Pirelli, etc.).
+    Útil para saber por qué algunos productos no aparecen en el bot.
+    """
+    todos_activos = db.query(Producto).filter(Producto.activo == True).all()
+    publicados = [p for p in todos_activos if p.publicar_web]
+    no_publicados = [p for p in todos_activos if not p.publicar_web]
+
+    # Buscar marcas de neumáticos conocidas en TODOS los productos activos
+    marcas_test = ["GOODYEAR", "BRIDGESTONE", "FATE", "MICHELIN", "CONTINENTAL", "FIRESTONE", "DUNLOP", "YOKOHAMA", "PIRELLI", "HANKOOK", "NEXEN"]
+    detalle_marcas = {}
+    for marca in marcas_test:
+        en_publicados = sum(1 for p in publicados if marca in (p.descripcion or "").upper() or marca in (p.marca or "").upper())
+        en_no_publicados = sum(1 for p in no_publicados if marca in (p.descripcion or "").upper() or marca in (p.marca or "").upper())
+        detalle_marcas[marca] = {
+            "publicados": en_publicados,
+            "no_publicados": en_no_publicados,
+            "total": en_publicados + en_no_publicados,
+        }
+
+    # Productos con "oferta" en descripcion o categoria
+    ofertas = [p for p in todos_activos if "oferta" in (p.descripcion or "").lower() or "oferta" in (p.categoria or "").lower()]
+
+    return {
+        "total_activos": len(todos_activos),
+        "publicados_web": len(publicados),
+        "no_publicados_web": len(no_publicados),
+        "con_stock": sum(1 for p in todos_activos if p.stock_real > 0),
+        "marcas_neumaticos": detalle_marcas,
+        "productos_oferta": {
+            "cantidad": len(ofertas),
+            "ejemplos": [
+                {"id": p.id, "descripcion": p.descripcion, "publicar_web": p.publicar_web, "stock": p.stock_real}
+                for p in ofertas[:10]
+            ],
+        },
+    }
+
+
+@router.post("/publicar-todos")
+def publicar_todos(
+    aplicar: bool = False,
+    solo_con_stock: bool = True,
+    db: Session = Depends(get_db),
+):
+    """
+    Marca como publicar_web=True a todos los productos activos.
+    Por defecto solo aplica a los que tienen stock>0 para no exponer agotados sin info.
+
+    Modo dry-run por defecto. Pasá ?aplicar=true para ejecutar.
+    """
+    q = db.query(Producto).filter(
+        Producto.activo == True,
+        Producto.publicar_web == False,
+    )
+    if solo_con_stock:
+        q = q.filter(Producto.stock_real > 0)
+
+    productos = q.all()
+
+    if aplicar:
+        for p in productos:
+            p.publicar_web = True
+        db.commit()
+
+    return {
+        "modo": "aplicado" if aplicar else "dry-run (pasá ?aplicar=true para ejecutar)",
+        "productos_a_publicar": len(productos),
+        "ejemplos": [
+            {"id": p.id, "descripcion": p.descripcion, "stock": p.stock_real}
+            for p in productos[:10]
+        ],
+    }
