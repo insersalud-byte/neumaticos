@@ -367,10 +367,18 @@ def diagnostico_db(
     # Productos con "oferta" en descripcion o categoria
     ofertas = [p for p in todos_activos if "oferta" in (p.descripcion or "").lower() or "oferta" in (p.categoria or "").lower()]
 
+    # Muestra de valores raw del campo publicar_web (para debug)
+    sample_no_pub = no_publicados[:5]
+    raw_publicar_web = [
+        {"id": p.id, "valor_raw": repr(p.publicar_web), "tipo": type(p.publicar_web).__name__, "stock": p.stock_real, "desc": (p.descripcion or "")[:60]}
+        for p in sample_no_pub
+    ]
+
     return {
         "total_activos": len(todos_activos),
         "publicados_web": len(publicados),
         "no_publicados_web": len(no_publicados),
+        "raw_no_publicados_sample": raw_publicar_web,
         "con_stock": sum(1 for p in todos_activos if p.stock_real > 0),
         "marcas_neumaticos": detalle_marcas,
         "productos_oferta": {
