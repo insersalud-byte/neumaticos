@@ -617,10 +617,10 @@
         }
     }
 
-    async function guardarArticulo() {
+    async function guardarArticulo(modoDuplicado = "") {
         const codigo = document.getElementById('art-codigo').value.trim();
         const descripcion = document.getElementById('art-descripcion').value.trim();
-        
+
         if (!descripcion) {
             return Swal.fire({icon:'warning', title:'Falta descripción', background:'#111', color:'#fff'});
         }
@@ -637,6 +637,7 @@
             proveedor: (document.getElementById('art-proveedor') || {value:''}).value.trim(),
             publicar_web: (document.getElementById('art-publicar-web') || {value:'true'}).value === 'true'
         };
+        if (modoDuplicado) payload.modo_duplicado = modoDuplicado;
 
         // Manejar foto si se subió
         const fotoInput = document.getElementById('art-foto');
@@ -647,18 +648,26 @@
         try {
             const url = editandoId ? `/api/v1/articulos/${editandoId}` : '/api/v1/articulos';
             const method = editandoId ? 'PUT' : 'POST';
-            
+
             const res = await fetch(url, {
                 method,
                 headers: {'Content-Type':'application/json'},
                 body: JSON.stringify(payload)
             });
 
-            if (!res.ok) throw new Error();
+            const data = await res.json().catch(() => ({}));
+
+            // ¿El backend detectó duplicado y pide confirmación?
+            if (data.requiere_confirmacion) {
+                return await manejarConflictoDuplicado(data);
+            }
+
+            if (!res.ok) throw new Error(data.message || 'Error al guardar');
 
             await Swal.fire({
                 icon:'success',
-                title: editandoId ? 'Artículo actualizado' : 'Artículo creado',
+                title: editandoId ? 'Artículo actualizado'
+                       : (data.accion === 'actualizado' ? 'Existente actualizado' : 'Artículo creado'),
                 background:'#111', color:'#fff',
                 timer: 1500, showConfirmButton: false
             });
@@ -666,8 +675,42 @@
             cerrarModalArticulo();
             cargarArticulos();
         } catch(e) {
-            Swal.fire({icon:'error', title:'Error', background:'#111', color:'#fff'});
+            Swal.fire({icon:'error', title:'Error', text: e.message, background:'#111', color:'#fff'});
         }
+    }
+
+    async function manejarConflictoDuplicado(data) {
+        const candidatosHtml = data.candidatos.map(c => `
+            <div style="border:1px solid #444;padding:.5rem;margin:.3rem 0;border-radius:6px;text-align:left">
+                <strong>${c.descripcion || '(sin desc)'}</strong>
+                <small style="color:#9ca3af">id ${c.id}</small><br>
+                <small>${c.marca || '—'} ${c.modelo || ''} ${c.medida || ''}</small><br>
+                <small>$${(c.precio_contado||0).toLocaleString('es-AR')} · stock ${c.stock_real || 0}</small>
+            </div>
+        `).join('');
+
+        const titulo = data.tipo === 'duplicado_exacto'
+            ? '⚠️ Producto duplicado encontrado'
+            : '🔍 Posibles duplicados';
+
+        const result = await Swal.fire({
+            title: titulo,
+            html: `<p>${data.mensaje}</p><div style="max-height:300px;overflow-y:auto">${candidatosHtml}</div>`,
+            background:'#111', color:'#fff',
+            showCancelButton: true,
+            showDenyButton: true,
+            confirmButtonText: 'Solo modificar precio/stock',
+            confirmButtonColor: '#10b981',
+            denyButtonText: 'Sobrescribir todo',
+            denyButtonColor: '#f59e0b',
+            cancelButtonText: 'Crear nuevo igual',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+        });
+
+        if (result.isConfirmed) return await guardarArticulo('modificar');
+        if (result.isDenied) return await guardarArticulo('sobrescribir');
+        if (result.dismiss === Swal.DismissReason.cancel) return await guardarArticulo('crear_igual');
     }
 
     function toBase64(file) {

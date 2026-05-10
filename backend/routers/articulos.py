@@ -1,10 +1,120 @@
+import re
+import unicodedata
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from core.database import get_db
 from models.models import Producto, Categoria
 
 router = APIRouter(prefix="/api/v1/articulos", tags=["articulos"])
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ANTI-DUPLICADOS: helpers compartidos por crear, importar Excel y bot
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _normalizar_texto(s: str) -> str:
+    """Normaliza un string para comparación: lowercase, sin tildes, espacios colapsados."""
+    if not s:
+        return ""
+    s = unicodedata.normalize("NFD", str(s))
+    s = "".join(c for c in s if unicodedata.category(c) != "Mn")
+    s = s.lower().strip()
+    s = " ".join(s.split())
+    return s
+
+
+def _normalizar_medida(s: str) -> str:
+    """175/65 R14 → 17565R14 (canonical sin separadores) para comparar."""
+    if not s:
+        return ""
+    return re.sub(r'[^0-9a-zA-Z]', '', str(s).upper())
+
+
+def buscar_producto_existente(db: Session, codigo="", descripcion="", marca="", modelo="", medida=""):
+    """
+    Busca productos existentes que coincidan total o parcialmente.
+
+    Devuelve dict:
+      - exacto:     producto que matchea por codigo, descripcion exacta, o marca+modelo+medida
+      - candidatos: lista de productos que parcialmente coinciden (misma medida+marca, etc.)
+
+    Si hay un exacto, candidatos viene vacío. Si no hay exacto, candidatos puede tener varios.
+    """
+    codigo = (codigo or "").strip()
+    desc_norm = _normalizar_texto(descripcion)
+    marca_norm = _normalizar_texto(marca)
+    modelo_norm = _normalizar_texto(modelo)
+    medida_norm = _normalizar_medida(medida)
+
+    # 1. Match exacto por código
+    if codigo:
+        ex = db.query(Producto).filter(
+            Producto.activo == True,
+            Producto.codigo == codigo,
+        ).first()
+        if ex:
+            return {"exacto": ex, "candidatos": []}
+
+    # 2. Match exacto por descripción normalizada
+    if desc_norm:
+        candidatos_desc = db.query(Producto).filter(Producto.activo == True).all()
+        for p in candidatos_desc:
+            if _normalizar_texto(p.descripcion) == desc_norm:
+                return {"exacto": p, "candidatos": []}
+
+    # 3. Match exacto por marca+modelo+medida (los 3 con valor)
+    if marca_norm and modelo_norm and medida_norm:
+        candidatos_mmm = db.query(Producto).filter(Producto.activo == True).all()
+        for p in candidatos_mmm:
+            if (_normalizar_texto(p.marca) == marca_norm and
+                _normalizar_texto(p.modelo) == modelo_norm and
+                _normalizar_medida(p.medida) == medida_norm):
+                return {"exacto": p, "candidatos": []}
+
+    # 4. Candidatos parciales: misma marca+medida (mismo modelo o no)
+    candidatos = []
+    if marca_norm and medida_norm:
+        for p in db.query(Producto).filter(Producto.activo == True).all():
+            p_marca = _normalizar_texto(p.marca)
+            p_medida = _normalizar_medida(p.medida)
+            if p_marca == marca_norm and p_medida == medida_norm:
+                candidatos.append(p)
+    elif medida_norm and desc_norm:
+        # Sin marca: matchear descripcion que contenga la medida y comparte palabras
+        palabras_desc = set(desc_norm.split())
+        for p in db.query(Producto).filter(Producto.activo == True).all():
+            if _normalizar_medida(p.medida) == medida_norm:
+                palabras_p = set(_normalizar_texto(p.descripcion).split())
+                comunes = palabras_desc & palabras_p
+                if len(comunes) >= 2:
+                    candidatos.append(p)
+
+    return {"exacto": None, "candidatos": candidatos[:10]}
+
+
+def aplicar_actualizacion_parcial(producto: Producto, datos: dict, modo: str = "modificar_campos"):
+    """
+    Aplica datos a un producto existente.
+      - modo='modificar_campos': solo actualiza precio_costo, precio_venta, stock,
+        margen_ganancia, proveedor (los campos de "negocio"). No toca descripcion/marca/modelo/medida.
+      - modo='sobrescribir': actualiza todos los campos provistos.
+    """
+    if modo == "sobrescribir":
+        if "descripcion" in datos and datos["descripcion"]: producto.descripcion = datos["descripcion"]
+        if "marca" in datos and datos["marca"]: producto.marca = datos["marca"]
+        if "modelo" in datos and datos["modelo"]: producto.modelo = datos["modelo"]
+        if "medida" in datos and datos["medida"]: producto.medida = datos["medida"]
+        if "categoria" in datos and datos["categoria"]: producto.categoria = datos["categoria"]
+        if "codigo" in datos and datos["codigo"]: producto.codigo = datos["codigo"]
+    # Campos comerciales (siempre se actualizan si vienen)
+    for campo in ("precio_costo", "costo_base", "precio_venta_contado", "precio_venta_final",
+                  "precio_cuota_6", "precio_cuota_12", "margen_ganancia", "proveedor",
+                  "stock_real", "stock_local"):
+        if campo in datos and datos[campo] is not None:
+            setattr(producto, campo, datos[campo])
+    producto.activo = True
+
 
 # ── RUTAS ESPECÍFICAS (antes de las con parámetros) ──
 
@@ -52,19 +162,63 @@ def listar_articulos(
 
 @router.post("")
 def crear_articulo(data: dict, db: Session = Depends(get_db)):
+    """
+    Crea un artículo CON DETECCIÓN DE DUPLICADOS.
+
+    Si ya existe uno con mismo código/descripcion/marca+modelo+medida:
+      - Sin flag → devuelve 409 con info del existente y candidatos
+      - Con flag 'modo_duplicado'='sobrescribir' → actualiza todos los campos
+      - Con flag 'modo_duplicado'='modificar' → solo actualiza precio/stock/costo/margen
+      - Con flag 'modo_duplicado'='crear_igual' → crea un nuevo registro forzado
+    """
     precio_costo = data.get("precio_costo", 0)
     precio_venta = data.get("precio_venta", 0)
-    
+    modo_duplicado = data.get("modo_duplicado", "")  # 'sobrescribir' | 'modificar' | 'crear_igual'
+
+    busq = buscar_producto_existente(
+        db,
+        codigo=data.get("codigo", ""),
+        descripcion=data.get("descripcion", ""),
+        marca=data.get("marca", ""),
+        modelo=data.get("modelo", ""),
+        medida=data.get("medida", ""),
+    )
+
+    # Caso 1: hay match exacto y NO se eligió cómo manejarlo → 409
+    if busq["exacto"] and modo_duplicado not in ("sobrescribir", "modificar", "crear_igual"):
+        ex = busq["exacto"]
+        return _respuesta_conflicto([ex], data, exacto=True)
+
+    # Caso 2: hay candidatos parciales y NO se eligió → preguntar
+    if not busq["exacto"] and busq["candidatos"] and modo_duplicado not in ("sobrescribir", "modificar", "crear_igual"):
+        return _respuesta_conflicto(busq["candidatos"], data, exacto=False)
+
+    # Caso 3: actualizar el match exacto
+    if busq["exacto"] and modo_duplicado in ("sobrescribir", "modificar"):
+        modo = "sobrescribir" if modo_duplicado == "sobrescribir" else "modificar_campos"
+        datos_norm = dict(data)
+        datos_norm["precio_venta_contado"] = precio_venta
+        datos_norm["precio_venta_final"] = precio_venta
+        datos_norm["costo_base"] = precio_costo
+        aplicar_actualizacion_parcial(busq["exacto"], datos_norm, modo=modo)
+        db.commit()
+        db.refresh(busq["exacto"])
+        return {"id": busq["exacto"].id, "message": f"Artículo existente actualizado ({modo_duplicado})", "accion": "actualizado"}
+
+    # Caso 4: crear nuevo (no hay duplicado, o user eligió 'crear_igual')
     a = Producto(
         codigo=data.get("codigo", ""),
         descripcion=data.get("descripcion", ""),
         marca=data.get("marca", ""),
+        modelo=data.get("modelo", ""),
+        medida=data.get("medida", ""),
         categoria=data.get("categoria", ""),
         proveedor=data.get("proveedor", ""),
         precio_costo=precio_costo,
         precio_venta_contado=precio_venta,
         precio_venta_final=precio_venta,
         costo_base=precio_costo,
+        margen_ganancia=data.get("margen_ganancia", 0),
         stock_real=data.get("stock_real", 0),
         stock_local=data.get("stock_local", 0),
         activo=True,
@@ -74,7 +228,41 @@ def crear_articulo(data: dict, db: Session = Depends(get_db)):
     db.add(a)
     db.commit()
     db.refresh(a)
-    return {"id": a.id, "message": "Artículo creado"}
+    return {"id": a.id, "message": "Artículo creado", "accion": "creado"}
+
+
+def _respuesta_conflicto(candidatos, data_ingresada, exacto=False):
+    """Construye respuesta 409 con candidatos para que el frontend pregunte qué hacer."""
+    payload = {
+        "requiere_confirmacion": True,
+        "tipo": "duplicado_exacto" if exacto else "duplicado_sospechoso",
+        "mensaje": (
+            "Ya existe un producto idéntico. ¿Querés sobrescribirlo o solo modificar precio/stock?"
+            if exacto else
+            "Encontré productos similares. ¿Es alguno de estos o creo uno nuevo?"
+        ),
+        "data_ingresada": data_ingresada,
+        "candidatos": [
+            {
+                "id": p.id,
+                "codigo": p.codigo,
+                "descripcion": p.descripcion,
+                "marca": p.marca,
+                "modelo": p.modelo,
+                "medida": p.medida,
+                "precio_contado": int(p.precio_venta_contado or 0),
+                "stock_real": p.stock_real or 0,
+                "categoria": p.categoria,
+            }
+            for p in candidatos
+        ],
+        "opciones": {
+            "sobrescribir": "Reemplaza todos los datos del existente con los nuevos",
+            "modificar": "Solo actualiza precio/stock/costo/ganancia, mantiene marca/modelo/medida",
+            "crear_igual": "Crea un nuevo registro aparte (no recomendado)",
+        },
+    }
+    return payload
 
 
 @router.post("/importar-excel")
@@ -199,33 +387,57 @@ def importar_excel(data: dict, db: Session = Depends(get_db)):
                     db.flush()
                 categoria = cat_obj.nombre  # nombre exacto de la BD
 
-            # Buscar existente
-            existente = None
-            if codigo:
-                existente = db.query(Producto).filter(Producto.codigo == codigo).first()
-            if not existente and descripcion:
-                existente = db.query(Producto).filter(
-                    func.lower(Producto.descripcion) == descripcion.lower()
-                ).first()
+            # Anti-duplicados: usar helper centralizado
+            busq = buscar_producto_existente(
+                db, codigo=codigo, descripcion=descripcion, marca=marca, modelo=modelo
+            )
+            existente = busq["exacto"]
 
             if existente:
+                # Hay match exacto → actualizar según opc_existente
                 if opc_existente == "actualizar":
-                    if descripcion:
-                        existente.descripcion = descripcion
-                    if marca:
-                        existente.marca = marca
+                    # Sobrescribir todo (legacy)
+                    if descripcion: existente.descripcion = descripcion
+                    if marca: existente.marca = marca
+                    if modelo: existente.modelo = modelo
                     existente.precio_costo = precio_costo
                     existente.costo_base = precio_costo
                     existente.precio_venta_contado = precio_venta
                     existente.precio_venta_final = precio_venta
-                    if categoria:
-                        existente.categoria = categoria
+                    existente.margen_ganancia = margen
+                    if categoria: existente.categoria = categoria
                     if opc_stock != "no_actualizar":
                         existente.stock_real = stock_val
                         existente.stock_local = stock_val
-                    existente.activo = True  # reactivar si estaba borrado
+                    existente.activo = True
                     actualizados += 1
+                elif opc_existente == "modificar":
+                    # Solo actualizar precio/stock/costo/margen, no toca descripcion/marca/modelo
+                    existente.precio_costo = precio_costo
+                    existente.costo_base = precio_costo
+                    existente.precio_venta_contado = precio_venta
+                    existente.precio_venta_final = precio_venta
+                    existente.margen_ganancia = margen
+                    if opc_stock != "no_actualizar":
+                        existente.stock_real = stock_val
+                        existente.stock_local = stock_val
+                    existente.activo = True
+                    actualizados += 1
+                elif opc_existente == "omitir":
+                    omitidos += 1
+            elif busq["candidatos"]:
+                # Coincidencia parcial → omitir y dejar para revisión manual
+                omitidos += 1
+                errores.append({
+                    "fila": descripcion or codigo,
+                    "motivo": "Posible duplicado parcial — revisar manualmente",
+                    "candidatos": [
+                        {"id": p.id, "descripcion": p.descripcion, "marca": p.marca, "modelo": p.modelo, "medida": p.medida}
+                        for p in busq["candidatos"][:3]
+                    ],
+                })
             else:
+                # No hay duplicado → crear nuevo
                 nuevo = Producto(
                     codigo=codigo,
                     descripcion=descripcion,
@@ -236,6 +448,7 @@ def importar_excel(data: dict, db: Session = Depends(get_db)):
                     costo_base=precio_costo,
                     precio_venta_contado=precio_venta,
                     precio_venta_final=precio_venta,
+                    margen_ganancia=margen,
                     stock_real=stock_val,
                     stock_local=stock_val,
                     activo=True,
