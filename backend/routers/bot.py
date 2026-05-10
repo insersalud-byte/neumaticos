@@ -27,16 +27,31 @@ MARCAS_CONOCIDAS = [
     "TRIANGLE", "MAXXIS", "DURABLE", "XBRI", "SUNSET", "FRASLE", "LPR",
     "BOSCH",
 ]
-# Patrones para medidas. Probamos en orden: floating (31x10.50R15), estándar (175/65R14)
+# Patrones para medidas. Probamos en orden de más específico a menos.
+# Soporta: 31x10.50R15, 175/65R14, 175/65 R14, 175 / 65 R14, 175 65 R 14, etc.
 MEDIDA_RES = [
-    re.compile(r'\b(?:LT|P)?(\d{2,3})[xX](\d{1,2}\.\d{1,2})[rR](\d{2})\b'),       # 31x10.50R15
-    re.compile(r'\b(?:LT|P)?(\d{2,3})[/](\d{2,3})[rR](\d{2})\b', re.IGNORECASE),  # 175/65R14
+    # 31x10.50R15 (flotante)
+    re.compile(r'\b(?:LT|P)?(\d{2,3})\s*[xX]\s*(\d{1,2}\.\d{1,2})\s*[rR]\s*(\d{2})\b'),
+    # 175/65R14, 175/65 R14, 175 / 65 R 14, 175/65 R 14C (camionetas)
+    re.compile(r'\b(?:LT|P)?(\d{2,3})\s*/\s*(\d{2,3})\s*[rR]\s*(\d{2})C?\b', re.IGNORECASE),
+    # 175 65 R14 (sin slash, solo espacios)
+    re.compile(r'\b(?:LT|P)?(\d{3})\s+(\d{2})\s*[rR]\s*(\d{2})\b', re.IGNORECASE),
 ]
 def _buscar_medida(texto):
+    """Devuelve (match, medida_normalizada). La medida queda en formato canónico
+    sin espacios: '175/65R14', '31x10.50R15', etc."""
     for rgx in MEDIDA_RES:
         m = rgx.search(texto)
         if m:
-            return m, m.group(0).upper().replace('X', 'x')
+            # Reconstruir normalizado a partir de los grupos capturados
+            g = m.groups()
+            prefijo = (m.group(0)[:2].upper() if m.group(0).upper().startswith(('LT', 'P')) and m.group(0)[1].isalpha() else '')
+            # Detectar si era el formato flotante (segundo grupo con punto)
+            if g[1] and '.' in g[1]:
+                medida_norm = f"{prefijo}{g[0]}x{g[1]}R{g[2]}"
+            else:
+                medida_norm = f"{prefijo}{g[0]}/{g[1]}R{g[2]}"
+            return m, medida_norm
     return None, ''
 
 def _normalizar_producto(p: Producto) -> dict:
@@ -83,8 +98,12 @@ def _normalizar_producto(p: Producto) -> dict:
             sin_medida = (sin_medida[:medida_match.start()] + sin_medida[medida_match.end():]).strip()
         if marca:
             sin_medida = re.sub(re.escape(marca), "", sin_medida, flags=re.IGNORECASE).strip()
+        # Sacar códigos de carga/velocidad: "82T", "82 T", "95/93 T", "88 H", "112 H"
+        sin_medida = re.sub(r'\b\d{2,3}\s*/\s*\d{2,3}\s*[A-Z]\b', '', sin_medida).strip()
+        sin_medida = re.sub(r'\b\d{2,3}\s+[A-Z]\b', '', sin_medida).strip()
         sin_medida = re.sub(r'\b\d{2,3}[A-Z]\b', '', sin_medida).strip()
-        sin_medida = re.sub(r'^[\s\-_]+|[\s\-_]+$', '', sin_medida).strip()
+        # Sacar separadores y palabras de tipo (XL, A/S, U/P, etc no se sacan)
+        sin_medida = re.sub(r'^[\s\-_|]+|[\s\-_|]+$', '', sin_medida).strip()
         sin_medida = re.sub(r'\s+', ' ', sin_medida)
         if sin_medida and len(sin_medida) >= 2:
             modelo = sin_medida
