@@ -395,9 +395,10 @@ def publicar_todos(
 
     Modo dry-run por defecto. Pasá ?aplicar=true para ejecutar.
     """
+    # Trata NULL y False como "no publicado"
     q = db.query(Producto).filter(
         Producto.activo == True,
-        Producto.publicar_web == False,
+        Producto.publicar_web != True,
     )
     if solo_con_stock:
         q = q.filter(Producto.stock_real > 0)
