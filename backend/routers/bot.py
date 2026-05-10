@@ -158,7 +158,7 @@ def _precio_contado(p: Producto) -> int:
 def catalogo_json(
     buscar: str = Query("", description="Filtra por marca/modelo/medida"),
     solo_con_stock: bool = Query(True),
-    limite: int = Query(80, le=200),
+    limite: int = Query(80, le=1000),
     db: Session = Depends(get_db),
 ):
     q = db.query(Producto).filter(
@@ -217,7 +217,7 @@ def catalogo_json(
 def contexto_texto(
     buscar: str = Query(""),
     solo_con_stock: bool = Query(True, description="Si True, solo lista productos con stock>0"),
-    limite: int = Query(60, le=200),
+    limite: int = Query(60, le=1000),
     db: Session = Depends(get_db),
 ):
     """
