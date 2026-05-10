@@ -158,12 +158,14 @@ def _precio_contado(p: Producto) -> int:
 def catalogo_json(
     buscar: str = Query("", description="Filtra por marca/modelo/medida"),
     solo_con_stock: bool = Query(True),
+    solo_publicados: bool = Query(False, description="Si True, solo trae publicar_web=True (legacy)"),
     limite: int = Query(80, le=1000),
     db: Session = Depends(get_db),
 ):
-    q = db.query(Producto).filter(
-        Producto.activo == True, Producto.publicar_web == True
-    )
+    # Por defecto el bot accede a TODA la DB activa, no solo a los publicados en web
+    q = db.query(Producto).filter(Producto.activo == True)
+    if solo_publicados:
+        q = q.filter(Producto.publicar_web == True)
     if solo_con_stock:
         q = q.filter(Producto.stock_real > 0)
 
@@ -217,15 +219,17 @@ def catalogo_json(
 def contexto_texto(
     buscar: str = Query(""),
     solo_con_stock: bool = Query(True, description="Si True, solo lista productos con stock>0"),
+    solo_publicados: bool = Query(False, description="Si True, solo trae publicar_web=True (legacy)"),
     limite: int = Query(60, le=1000),
     db: Session = Depends(get_db),
 ):
     """
     Catálogo como texto markdown listo para inyectar al prompt del LLM.
+    Por defecto trae TODA la DB activa (no solo publicados en web).
     """
-    q_base = db.query(Producto).filter(
-        Producto.activo == True, Producto.publicar_web == True
-    )
+    q_base = db.query(Producto).filter(Producto.activo == True)
+    if solo_publicados:
+        q_base = q_base.filter(Producto.publicar_web == True)
 
     terms = _filter_terms(buscar)
     if terms:
@@ -306,9 +310,7 @@ def buscar_producto(
     db: Session = Depends(get_db),
 ):
     terms = _filter_terms(q)
-    query = db.query(Producto).filter(
-        Producto.activo == True, Producto.publicar_web == True
-    )
+    query = db.query(Producto).filter(Producto.activo == True)
     if terms:
         query = _build_search_query(query, terms)
 
