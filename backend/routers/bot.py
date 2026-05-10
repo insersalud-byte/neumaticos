@@ -403,10 +403,11 @@ def publicar_todos(
 
     Modo dry-run por defecto. Pasá ?aplicar=true para ejecutar.
     """
-    # Trata NULL y False como "no publicado"
+    # Trata NULL y False como "no publicado". `!= True` no matchea NULL en SQL.
+    from sqlalchemy import or_ as _or
     q = db.query(Producto).filter(
         Producto.activo == True,
-        Producto.publicar_web != True,
+        _or(Producto.publicar_web == False, Producto.publicar_web.is_(None)),
     )
     if solo_con_stock:
         q = q.filter(Producto.stock_real > 0)
