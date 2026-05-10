@@ -329,6 +329,89 @@ def deduplicar_categorias(db: Session = Depends(get_db)):
     }
 
 
+@router.post("/deduplicar-productos")
+def deduplicar_productos(
+    aplicar: bool = False,
+    db: Session = Depends(get_db),
+):
+    """
+    Encuentra productos duplicados y los unifica.
+
+    Criterio de duplicado: misma descripcion (normalizada: lowercase + sin espacios extras)
+    O misma combinación marca+modelo+medida cuando los 3 están cargados.
+
+    Estrategia de unificación:
+    - Conserva el producto con menor id (el más antiguo)
+    - Suma el stock de los duplicados al producto canónico
+    - Los duplicados quedan desactivados (activo=False)
+
+    Modo dry-run por defecto: pasá ?aplicar=true para ejecutar los cambios.
+    """
+    productos_activos = db.query(Producto).filter(Producto.activo == True).order_by(Producto.id).all()
+
+    def norm_desc(s: str) -> str:
+        return " ".join((s or "").strip().lower().split())
+
+    grupos: dict[str, list] = {}
+    for p in productos_activos:
+        keys = []
+        if p.descripcion:
+            keys.append(f"desc::{norm_desc(p.descripcion)}")
+        if p.marca and p.modelo and p.medida:
+            mmm = f"{p.marca.strip().lower()}|{p.modelo.strip().lower()}|{p.medida.strip().lower()}"
+            keys.append(f"mmm::{mmm}")
+        for k in keys:
+            grupos.setdefault(k, []).append(p)
+
+    duplicados_detectados = []
+    productos_eliminados = 0
+    stock_reasignado = 0
+    productos_ya_procesados = set()
+
+    for key, grupo in grupos.items():
+        if len(grupo) <= 1:
+            continue
+        # Filtrar productos ya procesados en otro grupo (cross-key duplicates)
+        grupo_filtrado = [p for p in grupo if p.id not in productos_ya_procesados]
+        if len(grupo_filtrado) <= 1:
+            continue
+
+        canonical = grupo_filtrado[0]
+        duplicados = grupo_filtrado[1:]
+        info_grupo = {
+            "key": key,
+            "canonical_id": canonical.id,
+            "canonical_descripcion": canonical.descripcion,
+            "duplicados": [],
+        }
+
+        for dup in duplicados:
+            info_grupo["duplicados"].append({
+                "id": dup.id,
+                "descripcion": dup.descripcion,
+                "stock_movido": dup.stock_real or 0,
+            })
+            if aplicar:
+                canonical.stock_real = (canonical.stock_real or 0) + (dup.stock_real or 0)
+                stock_reasignado += dup.stock_real or 0
+                dup.activo = False
+                productos_eliminados += 1
+            productos_ya_procesados.add(dup.id)
+        productos_ya_procesados.add(canonical.id)
+        duplicados_detectados.append(info_grupo)
+
+    if aplicar:
+        db.commit()
+
+    return {
+        "modo": "aplicado" if aplicar else "dry-run (pasá ?aplicar=true para ejecutar)",
+        "grupos_con_duplicados": len(duplicados_detectados),
+        "productos_eliminados": productos_eliminados,
+        "stock_reasignado": stock_reasignado,
+        "detalle": duplicados_detectados,
+    }
+
+
 @router.get("/marcas")
 def listar_marcas(db: Session = Depends(get_db)):
     rows = (
