@@ -393,6 +393,52 @@ def diagnostico_db(
     }
 
 
+@router.post("/normalizar-productos-db")
+def normalizar_productos_db(
+    aplicar: bool = False,
+    db: Session = Depends(get_db),
+):
+    """
+    Recorre todos los productos activos y rellena marca/modelo/medida en la DB
+    cuando están vacíos, extrayendo la info desde descripción.
+    Solo aplica a neumáticos (cuando se detecta una medida).
+
+    Modo dry-run por defecto. Pasar ?aplicar=true para escribir.
+    """
+    productos = db.query(Producto).filter(Producto.activo == True).all()
+    cambios = []
+    actualizados = 0
+    for p in productos:
+        norm = _normalizar_producto(p)
+        # Sólo actualizamos campos que estaban vacíos
+        nueva_marca = norm["marca"] if not (p.marca or "").strip() and norm["marca"] else None
+        nuevo_modelo = norm["modelo"] if not (p.modelo or "").strip() and norm["modelo"] else None
+        nueva_medida = norm["medida"] if not (p.medida or "").strip() and norm["medida"] else None
+        if not (nueva_marca or nuevo_modelo or nueva_medida):
+            continue
+        cambios.append({
+            "id": p.id,
+            "descripcion": p.descripcion,
+            "marca": {"antes": p.marca, "despues": nueva_marca} if nueva_marca else None,
+            "modelo": {"antes": p.modelo, "despues": nuevo_modelo} if nuevo_modelo else None,
+            "medida": {"antes": p.medida, "despues": nueva_medida} if nueva_medida else None,
+        })
+        if aplicar:
+            if nueva_marca: p.marca = nueva_marca
+            if nuevo_modelo: p.modelo = nuevo_modelo
+            if nueva_medida: p.medida = nueva_medida
+            actualizados += 1
+    if aplicar:
+        db.commit()
+    return {
+        "modo": "aplicado" if aplicar else "dry-run (pasá ?aplicar=true para ejecutar)",
+        "productos_recorridos": len(productos),
+        "productos_a_actualizar": len(cambios),
+        "actualizados": actualizados,
+        "muestra": cambios[:15],
+    }
+
+
 @router.post("/publicar-todos")
 def publicar_todos(
     aplicar: bool = False,
