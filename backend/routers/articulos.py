@@ -555,32 +555,42 @@ def recategorizar_por_marca_real(
     import re as _re
 
     # Mapeo descripción → (marca_canónica, categoría_canónica)
-    # El orden importa: patrones más específicos primero.
+    # IMPORTANTE: el orden es crítico. Lo más específico va primero.
+    # 1. PASTILLAS/REPUESTOS van PRIMERO para que no caigan en reglas de neumáticos.
+    # 2. Marcas con patrones únicos antes que marcas con palabras genéricas.
     REGLAS = [
-        (_re.compile(r"\bGOODYEAR\b|\bASSURANCE\b|\bEFFICIENTGRIP\b|\bEAGLE F1\b|\bWRANGLER\b|\bWRL\.?\b|\bFORTERA\b|\bFORTITUDE\b|\bOPTILIFE\b|\bDURAPLUS\b|\bEXCELLENCE\b|\bASSU\b", _re.IGNORECASE), "Goodyear", "Goodyear"),
+        # ── Repuestos (no neumáticos) ──
+        (_re.compile(r"\bPASTILLAS?\b", _re.IGNORECASE), None, "pastillas de freno"),
+        (_re.compile(r"\bFRASLE\b", _re.IGNORECASE), "Frasle", "pastillas de freno"),
+
+        # ── Goodyear (incluido Cargo Marathon) ──
+        (_re.compile(r"\bGOODYEAR\b|\bASSURANCE\b|\bASSU\b|\bEFFICIENTGRIP\b|\bEAGLE\s*F1\b|\bWRANGLER\b|\bWRL\.?\b|\bFORTERA\b|\bFORTITUDE\b|\bOPTILIFE\b|\bDURAPLUS\b|\bEXCELLENCE\b|\bCARGO\s*MARATHON\b|\bMARATHON\s+\d\b", _re.IGNORECASE), "Goodyear", "Goodyear"),
         (_re.compile(r"\bKELLY\b|\bK\.?\s*EDGE\b", _re.IGNORECASE), "Kelly", "Goodyear"),
-        (_re.compile(r"\bGT\s*RADIAL\b|\bSPORTACTIVE\b|\bSAVERO\b|\bADVTURO\b|\bCHAMPIRO\b", _re.IGNORECASE), "GT RADIAL", "Ofertas"),
-        (_re.compile(r"\bGITICOMFORT\b|\bGITI4X4\b|\bGITI\b|\bXCURSION\b", _re.IGNORECASE), "Giti", "Ofertas"),
-        (_re.compile(r"\bWANLI\b|\bSA302\b|\bSP026\b|\bSL106\b|\bSP022\b", _re.IGNORECASE), "Wanli", "Ofertas"),
+
+        # ── Marcas Ofertas (todas son submarcas/proveedores de ofertas especiales) ──
+        (_re.compile(r"\bSPORTACTIVE\b|\bSAVERO\b|\bADVTURO\b|\bCHAMPIRO\b|\bGT\s*RADIAL\b", _re.IGNORECASE), "GT RADIAL", "Ofertas"),
+        (_re.compile(r"\bGITICOMFORT\b|\bGITI4X4\b|\bGITI\b|\bXCURSION\b|\bCOMFORT\s*F\d\b", _re.IGNORECASE), "Giti", "Ofertas"),
+        (_re.compile(r"\bWANLI\b|\bSA302\b|\bSP026\b|\bSL106\b|\bSP022\b|\bE01\s*RFID\b", _re.IGNORECASE), "Wanli", "Ofertas"),
         (_re.compile(r"\bSUNNY\b|\bNP226\b", _re.IGNORECASE), "Sunny", "Ofertas"),
         (_re.compile(r"\bMAXMILER\b", _re.IGNORECASE), "Maxmiler", "Ofertas"),
+
+        # ── Marcas Neumáticos (estándar) ──
         (_re.compile(r"\bLINGLONG\b|\bGREENMAX\b", _re.IGNORECASE), "Linglong", "Neumaticos"),
-        (_re.compile(r"\bHABILEAD\b", _re.IGNORECASE), "Habilead", "Neumaticos"),
-        (_re.compile(r"\bYOKOHAMA\b|\bGEOLANDAR\b|\bES32\b", _re.IGNORECASE), "Yokohama", "Neumaticos"),
-        (_re.compile(r"\bPIRELLI\b|\bSCORPN\b|\bP400\b|\bP1cint\b|\bF\.ENGY\b|\bF\.EVO\b|\bCINTURATO\b", _re.IGNORECASE), "Pirelli", "Neumaticos"),
+        (_re.compile(r"\bHABILEAD\b|\bH202\b|\bH206\b|\bS801\b|\bRS01\b", _re.IGNORECASE), "Habilead", "Neumaticos"),
+        (_re.compile(r"\bYOKOHAMA\b|\bGEOLANDAR\b|\bES32\b|\bES32A\b", _re.IGNORECASE), "Yokohama", "Neumaticos"),
+        (_re.compile(r"\bPIRELLI\b|\bSCORPN\b|\bSCORPION\b|\bP400\b|\bP1cint\b|\bF\.?ENGY\b|\bF\.?EVO\b|\bCINTURATO\b|\bFORMULA\s+EVO\b|\bS-ATR\b|\bS-MTR\b|\bS-HT\b|\bS-VERD\b|\bS-VEAS\b", _re.IGNORECASE), "Pirelli", "Neumaticos"),
         (_re.compile(r"\bHANKOOK\b|\bKINERGY\b", _re.IGNORECASE), "Hankook", "Neumaticos"),
-        (_re.compile(r"\bNEXEN\b|\bN'?FERA\b", _re.IGNORECASE), "Nexen", "Neumaticos"),
+        (_re.compile(r"\bNEXEN\b|\bN['’]?FERA\b", _re.IGNORECASE), "Nexen", "Neumaticos"),
         (_re.compile(r"\bBRIDGESTONE\b|\bDUELER\b|\bECOPIA\b", _re.IGNORECASE), "Bridgestone", "Neumaticos"),
-        (_re.compile(r"\bFATE\b", _re.IGNORECASE), "Fate", "Neumaticos"),
+        (_re.compile(r"\bFATE\b|\bAR-?360\b", _re.IGNORECASE), "Fate", "Neumaticos"),
         (_re.compile(r"\bMICHELIN\b", _re.IGNORECASE), "Michelin", "Neumaticos"),
         (_re.compile(r"\bCONTINENTAL\b", _re.IGNORECASE), "Continental", "Neumaticos"),
         (_re.compile(r"\bDUNLOP\b", _re.IGNORECASE), "Dunlop", "Neumaticos"),
         (_re.compile(r"\bFIRESTONE\b|\bF600\b", _re.IGNORECASE), "Firestone", "Neumaticos"),
-        (_re.compile(r"\bXBRI\b|\bFASTWAY\b|\bSPORT\+\b|\bBRUTUS\b|\bFORZA\b|\bECOLOGY\b", _re.IGNORECASE), "Xbri", "Neumaticos"),
-        (_re.compile(r"\bSUNSET\b|\bVENTTURA\b|\bOVER CARGO\b", _re.IGNORECASE), "Sunset", "Neumaticos"),
-        (_re.compile(r"\bDURABLE\b|\bCARGO\b|\bTOURING\b|\bCITY\b", _re.IGNORECASE), "Durable", "Neumaticos"),
-        (_re.compile(r"\bFRASLE\b", _re.IGNORECASE), "Frasle", "pastillas de freno"),
-        (_re.compile(r"\bPASTILLA\b|\bPASTILLAS\b", _re.IGNORECASE), None, "pastillas de freno"),
+        (_re.compile(r"\bXBRI\b|\bFASTWAY\b|\bSPORT\+\b|\bBRUTUS\b|\bFORZA\b|\bECOLOGY\b|\bFASTDRIVE\b", _re.IGNORECASE), "Xbri", "Neumaticos"),
+        (_re.compile(r"\bSUNSET\b|\bVENTTURA\b|\bOVER\s*CARGO\b", _re.IGNORECASE), "Sunset", "Neumaticos"),
+        # Durable solo si menciona "DURABLE" explícito o tiene patrón DR0X/DC0X específico
+        (_re.compile(r"\bDURABLE\b|\bDR01\b|\bDC01\b|\bCARGO\s*\d\b", _re.IGNORECASE), "Durable", "Neumaticos"),
     ]
 
     productos = db.query(Producto).filter(Producto.activo == True).all()
