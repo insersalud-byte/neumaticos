@@ -542,6 +542,105 @@ def deduplicar_categorias(db: Session = Depends(get_db)):
     }
 
 
+@router.post("/recategorizar-por-marca-real")
+def recategorizar_por_marca_real(
+    aplicar: bool = False,
+    db: Session = Depends(get_db),
+):
+    """
+    Recorre TODOS los productos activos y corrige la marca/categoria según patrones
+    detectados en la descripcion. Útil después de imports masivos donde se asignó
+    una marca/categoria equivocada.
+    """
+    import re as _re
+
+    # Mapeo descripción → (marca_canónica, categoría_canónica)
+    # El orden importa: patrones más específicos primero.
+    REGLAS = [
+        (_re.compile(r"\bGOODYEAR\b|\bASSURANCE\b|\bEFFICIENTGRIP\b|\bEAGLE F1\b|\bWRANGLER\b|\bWRL\.?\b|\bFORTERA\b|\bFORTITUDE\b|\bOPTILIFE\b|\bDURAPLUS\b|\bEXCELLENCE\b|\bASSU\b", _re.IGNORECASE), "Goodyear", "Goodyear"),
+        (_re.compile(r"\bKELLY\b|\bK\.?\s*EDGE\b", _re.IGNORECASE), "Kelly", "Goodyear"),
+        (_re.compile(r"\bGT\s*RADIAL\b|\bSPORTACTIVE\b|\bSAVERO\b|\bADVTURO\b|\bCHAMPIRO\b", _re.IGNORECASE), "GT RADIAL", "Ofertas"),
+        (_re.compile(r"\bGITICOMFORT\b|\bGITI4X4\b|\bGITI\b|\bXCURSION\b", _re.IGNORECASE), "Giti", "Ofertas"),
+        (_re.compile(r"\bWANLI\b|\bSA302\b|\bSP026\b|\bSL106\b|\bSP022\b", _re.IGNORECASE), "Wanli", "Ofertas"),
+        (_re.compile(r"\bSUNNY\b|\bNP226\b", _re.IGNORECASE), "Sunny", "Ofertas"),
+        (_re.compile(r"\bMAXMILER\b", _re.IGNORECASE), "Maxmiler", "Ofertas"),
+        (_re.compile(r"\bLINGLONG\b|\bGREENMAX\b", _re.IGNORECASE), "Linglong", "Neumaticos"),
+        (_re.compile(r"\bHABILEAD\b", _re.IGNORECASE), "Habilead", "Neumaticos"),
+        (_re.compile(r"\bYOKOHAMA\b|\bGEOLANDAR\b|\bES32\b", _re.IGNORECASE), "Yokohama", "Neumaticos"),
+        (_re.compile(r"\bPIRELLI\b|\bSCORPN\b|\bP400\b|\bP1cint\b|\bF\.ENGY\b|\bF\.EVO\b|\bCINTURATO\b", _re.IGNORECASE), "Pirelli", "Neumaticos"),
+        (_re.compile(r"\bHANKOOK\b|\bKINERGY\b", _re.IGNORECASE), "Hankook", "Neumaticos"),
+        (_re.compile(r"\bNEXEN\b|\bN'?FERA\b", _re.IGNORECASE), "Nexen", "Neumaticos"),
+        (_re.compile(r"\bBRIDGESTONE\b|\bDUELER\b|\bECOPIA\b", _re.IGNORECASE), "Bridgestone", "Neumaticos"),
+        (_re.compile(r"\bFATE\b", _re.IGNORECASE), "Fate", "Neumaticos"),
+        (_re.compile(r"\bMICHELIN\b", _re.IGNORECASE), "Michelin", "Neumaticos"),
+        (_re.compile(r"\bCONTINENTAL\b", _re.IGNORECASE), "Continental", "Neumaticos"),
+        (_re.compile(r"\bDUNLOP\b", _re.IGNORECASE), "Dunlop", "Neumaticos"),
+        (_re.compile(r"\bFIRESTONE\b|\bF600\b", _re.IGNORECASE), "Firestone", "Neumaticos"),
+        (_re.compile(r"\bXBRI\b|\bFASTWAY\b|\bSPORT\+\b|\bBRUTUS\b|\bFORZA\b|\bECOLOGY\b", _re.IGNORECASE), "Xbri", "Neumaticos"),
+        (_re.compile(r"\bSUNSET\b|\bVENTTURA\b|\bOVER CARGO\b", _re.IGNORECASE), "Sunset", "Neumaticos"),
+        (_re.compile(r"\bDURABLE\b|\bCARGO\b|\bTOURING\b|\bCITY\b", _re.IGNORECASE), "Durable", "Neumaticos"),
+        (_re.compile(r"\bFRASLE\b", _re.IGNORECASE), "Frasle", "pastillas de freno"),
+        (_re.compile(r"\bPASTILLA\b|\bPASTILLAS\b", _re.IGNORECASE), None, "pastillas de freno"),
+    ]
+
+    productos = db.query(Producto).filter(Producto.activo == True).all()
+    cambios = []
+    actualizados = 0
+
+    for p in productos:
+        desc = p.descripcion or ""
+        marca_actual = (p.marca or "").strip()
+        cat_actual = (p.categoria or "").strip()
+
+        # Buscar primera regla que matchee
+        marca_nueva = None
+        cat_nueva = None
+        for regex, marca_r, cat_r in REGLAS:
+            if regex.search(desc):
+                marca_nueva = marca_r if marca_r else marca_actual
+                cat_nueva = cat_r
+                break
+
+        if not cat_nueva:
+            continue
+
+        cambio_marca = (marca_nueva and marca_nueva.lower() != marca_actual.lower()) if marca_nueva else False
+        cambio_cat = cat_nueva.lower() != cat_actual.lower()
+
+        if not (cambio_marca or cambio_cat):
+            continue
+
+        cambios.append({
+            "id": p.id, "descripcion": desc[:60],
+            "marca": {"antes": marca_actual, "despues": marca_nueva} if cambio_marca else None,
+            "categoria": {"antes": cat_actual, "despues": cat_nueva} if cambio_cat else None,
+        })
+
+        if aplicar:
+            if cambio_marca:
+                p.marca = marca_nueva
+            if cambio_cat:
+                # Asegurar que la categoria exista en la tabla
+                cat = db.query(Categoria).filter(func.lower(Categoria.nombre) == cat_nueva.lower()).first()
+                if not cat:
+                    cat = Categoria(nombre=cat_nueva)
+                    db.add(cat)
+                    db.flush()
+                p.categoria = cat.nombre
+            actualizados += 1
+
+    if aplicar:
+        db.commit()
+
+    return {
+        "modo": "aplicado" if aplicar else "dry-run (pasá ?aplicar=true para ejecutar)",
+        "productos_recorridos": len(productos),
+        "productos_a_corregir": len(cambios),
+        "actualizados": actualizados,
+        "muestra": cambios[:20],
+    }
+
+
 @router.post("/deduplicar-productos")
 def deduplicar_productos(
     aplicar: bool = False,
