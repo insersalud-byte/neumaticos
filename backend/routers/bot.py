@@ -216,6 +216,7 @@ def catalogo_json(
             "precio_6_cuotas": round(p.precio_cuota_6 or 0),
             "precio_12_cuotas": round(p.precio_cuota_12 or 0),
             "stock": p.stock_real,
+            "imagen_url": p.imagen_url or "",
         }
 
     return {

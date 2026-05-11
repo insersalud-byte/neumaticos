@@ -146,6 +146,7 @@
                     <table class="w-full text-sm">
                         <thead class="bg-[#27272a]">
                             <tr class="text-[10px] text-gray-500 uppercase tracking-wider">
+                                <th class="px-4 py-3 text-left">Foto</th>
                                 <th class="px-4 py-3 text-left">Código</th>
                                 <th class="px-4 py-3 text-left">Artículo</th>
                                 <th class="px-4 py-3 text-left">Categoría</th>
@@ -345,6 +346,21 @@
                 <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Marca</label>
                 <input id="art-marca" type="text" class="input-dark" placeholder="Marca (opcional)">
             </div>
+            <!-- Foto del artículo -->
+            <div>
+                <label class="text-xs text-gray-500 uppercase font-bold mb-1 block">Foto del Artículo (opcional)</label>
+                <div class="flex items-center gap-3">
+                    <div id="foto-preview" class="hidden w-16 h-16 rounded-lg overflow-hidden border border-[#27272a] flex-shrink-0">
+                        <img id="foto-img" src="" class="w-full h-full object-cover"/>
+                    </div>
+                    <label class="flex-1 flex items-center gap-2 bg-[#09090b] border border-dashed border-[#3f3f46] hover:border-emerald-500 rounded-lg p-3 cursor-pointer transition">
+                        <i class="fas fa-image text-gray-500"></i>
+                        <span class="text-xs text-gray-500" id="foto-label-art">Clic para subir foto...</span>
+                        <input type="file" id="art-foto" accept="image/*" class="hidden" onchange="previewFoto(this)"/>
+                    </label>
+                    <button type="button" onclick="quitarFotoArt()" id="btn-quitar-foto-art" class="hidden text-red-500 hover:text-red-400 text-sm"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
         </div>
         <div class="p-6 border-t border-[#27272a] flex gap-3">
             <button onclick="cerrarModalArticulo()" class="flex-1 bg-[#27272a] hover:bg-[#3f3f46] text-white font-bold py-3 rounded-lg transition">Cancelar</button>
@@ -452,7 +468,11 @@
             const compra = a.precio_costo || 0;
             const venta = a.precio_venta || 0;
             const ganancia = compra > 0 ? ((venta - compra) / compra * 100).toFixed(1) : 0;
+            const fotoHtml = a.foto_url
+                ? `<img src="${a.foto_url}" class="w-10 h-10 rounded-lg object-cover border border-[#27272a]" onerror="this.outerHTML='<div class=\'w-10 h-10 rounded-lg bg-[#27272a] flex items-center justify-center\'><i class=\'fas fa-image text-gray-600\'></i></div>'">`
+                : `<div class="w-10 h-10 rounded-lg bg-[#27272a] flex items-center justify-center"><i class="fas fa-image text-gray-600"></i></div>`;
             return `<tr class="hover:bg-white/5">
+                <td class="px-4 py-3">${fotoHtml}</td>
                 <td class="px-4 py-3 text-gray-400 font-mono text-xs">${a.codigo || '-'}</td>
                 <td class="px-4 py-3 text-white font-semibold">${a.descripcion}</td>
                 <td class="px-4 py-3 text-gray-400">${a.categoria || '-'}</td>
@@ -512,8 +532,7 @@
         document.getElementById('art-ganancia').value = '30';
         document.getElementById('art-venta').value = '0';
         document.getElementById('art-stock').value = '0';
-        const fotoPreview = document.getElementById('foto-preview');
-        if (fotoPreview) fotoPreview.classList.add('hidden');
+        quitarFotoArt();
         setPublicar(true);
 
         await cargarCategorias();
@@ -612,8 +631,27 @@
             reader.onload = function(e) {
                 document.getElementById('foto-img').src = e.target.result;
                 document.getElementById('foto-preview').classList.remove('hidden');
+                document.getElementById('foto-label-art').textContent = input.files[0].name;
+                document.getElementById('btn-quitar-foto-art').classList.remove('hidden');
             }
             reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    async function quitarFotoArt() {
+        const fotoInput = document.getElementById('art-foto');
+        if (fotoInput) fotoInput.value = '';
+        const fotoImg = document.getElementById('foto-img');
+        if (fotoImg) fotoImg.src = '';
+        const fotoPreview = document.getElementById('foto-preview');
+        if (fotoPreview) fotoPreview.classList.add('hidden');
+        const label = document.getElementById('foto-label-art');
+        if (label) label.textContent = 'Clic para subir foto...';
+        const btnQuitar = document.getElementById('btn-quitar-foto-art');
+        if (btnQuitar) btnQuitar.classList.add('hidden');
+        // Si está editando un artículo existente, borra la foto del servidor
+        if (editandoId) {
+            await fetch(`/api/v1/articulos/${editandoId}/foto`, { method: 'DELETE' }).catch(() => {});
         }
     }
 
@@ -639,12 +677,6 @@
         };
         if (modoDuplicado) payload.modo_duplicado = modoDuplicado;
 
-        // Manejar foto si se subió
-        const fotoInput = document.getElementById('art-foto');
-        if (fotoInput && fotoInput.files && fotoInput.files[0]) {
-            payload.foto_base64 = await toBase64(fotoInput.files[0]);
-        }
-
         try {
             const url = editandoId ? `/api/v1/articulos/${editandoId}` : '/api/v1/articulos';
             const method = editandoId ? 'PUT' : 'POST';
@@ -657,12 +689,28 @@
 
             const data = await res.json().catch(() => ({}));
 
-            // ¿El backend detectó duplicado y pide confirmación?
             if (data.requiere_confirmacion) {
                 return await manejarConflictoDuplicado(data);
             }
 
             if (!res.ok) throw new Error(data.message || 'Error al guardar');
+
+            const articuloId = data.id || editandoId;
+
+            // Subir foto a Cloudinary si se seleccionó una
+            const fotoInput = document.getElementById('art-foto');
+            if (articuloId && fotoInput && fotoInput.files && fotoInput.files[0]) {
+                const formData = new FormData();
+                formData.append('foto', fotoInput.files[0]);
+                const fotoRes = await fetch(`/api/v1/articulos/${articuloId}/foto`, {
+                    method: 'POST',
+                    body: formData
+                });
+                if (!fotoRes.ok) {
+                    const err = await fotoRes.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Error al subir la foto');
+                }
+            }
 
             await Swal.fire({
                 icon:'success',
