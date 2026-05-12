@@ -1,19 +1,10 @@
 import re
 import unicodedata
-import os
-import cloudinary
-import cloudinary.uploader
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from core.database import get_db
 from models.models import Producto, Categoria
-
-cloudinary.config(
-    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", "ddtfwa15q"),
-    api_key=os.environ.get("CLOUDINARY_API_KEY", "842335413724259"),
-    api_secret=os.environ.get("CLOUDINARY_API_SECRET", "5ea8H2Qxb7C66i26zNjJ8LFnLzk"),
-)
 
 router = APIRouter(prefix="/api/v1/articulos", tags=["articulos"])
 
@@ -163,7 +154,6 @@ def listar_articulos(
                 "stock_real": a.stock_real or 0,
                 "stock_local": a.stock_local or 0,
                 "activo": a.activo,
-                "foto_url": a.imagen_url or "",
             }
             for a in articulos
         ]
@@ -887,7 +877,7 @@ def get_articulo(articulo_id: int, db: Session = Depends(get_db)):
         "stock_local": a.stock_local or 0,
         "activo": a.activo,
         "publicar_web": a.publicar_web,
-        "foto_url": a.imagen_url or "",
+        "foto_url": a.foto_base64 if a.foto_base64 else "",
     }
 
 
@@ -924,40 +914,6 @@ def actualizar_articulo(articulo_id: int, data: dict, db: Session = Depends(get_
     
     db.commit()
     return {"message": "Artículo actualizado"}
-
-
-@router.post("/{articulo_id}/foto")
-async def subir_foto(articulo_id: int, foto: UploadFile = File(...), db: Session = Depends(get_db)):
-    a = db.query(Producto).filter(Producto.id == articulo_id).first()
-    if not a:
-        raise HTTPException(status_code=404, detail="Artículo no encontrado")
-    contents = await foto.read()
-    result = cloudinary.uploader.upload(
-        contents,
-        folder="giorda-neumaticos",
-        public_id=f"producto_{articulo_id}",
-        overwrite=True,
-        resource_type="image",
-        transformation=[{"width": 800, "height": 800, "crop": "limit", "quality": "auto:good"}],
-    )
-    a.imagen_url = result["secure_url"]
-    db.commit()
-    return {"imagen_url": a.imagen_url}
-
-
-@router.delete("/{articulo_id}/foto")
-def eliminar_foto(articulo_id: int, db: Session = Depends(get_db)):
-    a = db.query(Producto).filter(Producto.id == articulo_id).first()
-    if not a:
-        raise HTTPException(status_code=404, detail="Artículo no encontrado")
-    if a.imagen_url:
-        try:
-            cloudinary.uploader.destroy(f"giorda-neumaticos/producto_{articulo_id}")
-        except Exception:
-            pass
-    a.imagen_url = ""
-    db.commit()
-    return {"message": "Foto eliminada"}
 
 
 @router.delete("/{articulo_id}")
