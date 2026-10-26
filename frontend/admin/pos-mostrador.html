@@ -199,6 +199,20 @@
                 oninput="buscarUnificadoPOS(this.value,'dropCliente')" autocomplete="off"/>
               <div id="dropCliente" class="autocomplete-box hidden"></div>
             </div>
+            <!-- Documento: DNI / CUIT / CUIL -->
+            <div class="relative">
+              <label class="block text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Documento</label>
+              <div class="flex gap-2">
+                <select id="selDocTipo" class="input-dark" style="width:92px;flex-shrink:0;cursor:pointer" onchange="formatearDocPOS()">
+                  <option value="DNI">DNI</option>
+                  <option value="CUIT">CUIT</option>
+                  <option value="CUIL">CUIL</option>
+                </select>
+                <input id="inpDoc" type="text" inputmode="numeric" placeholder="Número" class="input-dark mono" style="min-width:0"
+                  oninput="formatearDocPOS(); const _d=this.value.replace(/\D/g,''); if(_d.length>=6) buscarUnificadoPOS(_d,'dropDoc')" autocomplete="off"/>
+              </div>
+              <div id="dropDoc" class="autocomplete-box hidden"></div>
+            </div>
             <!-- Patente -->
             <div class="relative">
               <label class="block text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Patente</label>
@@ -669,7 +683,7 @@
 
     async function buscarUnificadoPOS(q, dropId) {
       clearTimeout(_timerPosAC);
-      ['dropCliente','dropPatente','dropTelefono'].forEach(id => {
+      ['dropCliente','dropPatente','dropTelefono','dropDoc'].forEach(id => {
         if (id !== dropId) document.getElementById(id)?.classList.add('hidden');
       });
       const drop = document.getElementById(dropId);
@@ -704,7 +718,27 @@
       document.getElementById('inpPatente').value = x.patente || '';
       document.getElementById('inpModelo').value = x.modelo || '';
       if (x.kilometraje) document.getElementById('inpKm').value = x.kilometraje;
-      ['dropCliente','dropPatente','dropTelefono'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+      setDocPOS(x.cliente_dni_cuit || '');
+      ['dropCliente','dropPatente','dropTelefono','dropDoc'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+    }
+
+    // ─── DOCUMENTO DNI / CUIT / CUIL ──────────────────────
+    function setDocPOS(num) {
+      const d = String(num || '').replace(/\D/g, '');
+      const sel = document.getElementById('selDocTipo');
+      if (d.length === 11) sel.value = /^(30|33|34)/.test(d) ? 'CUIT' : 'CUIL';
+      else sel.value = 'DNI';
+      document.getElementById('inpDoc').value = d;
+      formatearDocPOS();
+    }
+    function formatearDocPOS() {
+      const inp = document.getElementById('inpDoc');
+      const tipo = document.getElementById('selDocTipo').value;
+      let d = inp.value.replace(/\D/g, '');
+      if (tipo === 'DNI') { d = d.slice(0, 8); inp.value = d; inp.placeholder = 'Ej: 30123456'; return; }
+      d = d.slice(0, 11);
+      inp.placeholder = 'Ej: 20-30123456-7';
+      inp.value = d.length > 10 ? `${d.slice(0,2)}-${d.slice(2,10)}-${d.slice(10)}` : d.length > 2 ? `${d.slice(0,2)}-${d.slice(2)}` : d;
     }
 
     // ─── PRODUCTO BUSQUEDA ────────────────────────────────
@@ -1048,6 +1082,8 @@
         cliente_nombre: document.getElementById('inpCliente').value || 'Anónimo',
         cliente_telefono: document.getElementById('inpTelefono').value || '',
         cliente_id: clienteId,
+        cliente_doc_tipo: document.getElementById('selDocTipo').value,
+        cliente_doc: document.getElementById('inpDoc').value.replace(/\D/g, ''),
         patente: document.getElementById('inpPatente').value || '',
         modelo_vehiculo: document.getElementById('inpModelo').value || '',
         vehiculo_id: vehiculoId,
@@ -1111,7 +1147,8 @@
       clienteId = null;
       vehiculoId = null;
       ultimaVentaId = null;
-      ['inpCliente','inpPatente','inpModelo','inpTelefono','inpObs','inpKm'].forEach(id => { document.getElementById(id).value = ''; });
+      ['inpCliente','inpPatente','inpModelo','inpTelefono','inpObs','inpKm','inpDoc'].forEach(id => { document.getElementById(id).value = ''; });
+      document.getElementById('selDocTipo').value = 'DNI';
       document.getElementById('inpBonif').value = 0;
       document.getElementById('selPlan').value = '';
       document.getElementById('infoCuota').classList.add('hidden');
@@ -1334,7 +1371,7 @@
 
     // ─── CERRAR DROPDOWNS AL CLICK FUERA ─────────────────
     document.addEventListener('click', (e) => {
-      ['dropCliente','dropBusqueda','dropPatente','dropTelefono'].forEach(id => {
+      ['dropCliente','dropBusqueda','dropPatente','dropTelefono','dropDoc'].forEach(id => {
         const el = document.getElementById(id);
         if (el && !el.closest('div')?.contains(e.target)) el.classList.add('hidden');
       });

@@ -163,8 +163,20 @@ def generar_presupuesto_pdf(venta_id: int, db: Session = Depends(get_db)):
     elements.append(Spacer(1, 3*mm))
 
     elements.append(_section_header("DATOS DEL CLIENTE"))
+    _doc_tipo, _doc = "", ""
+    try:
+        _snap = json.loads(venta.datos_cliente_snapshot or "{}")
+        _doc_tipo, _doc = (_snap.get("doc_tipo") or ""), (_snap.get("doc") or "")
+    except Exception:
+        pass
+    if _doc and len(_doc) == 11:
+        _doc = f"{_doc[:2]}-{_doc[2:10]}-{_doc[10:]}"
     cliente_data = [
         [_p("Cliente:",   _ST_LABEL), _p(venta.cliente_nombre or "Consumidor Final", _ST_VALUE)],
+    ]
+    if _doc:
+        cliente_data.append([_p(f"{_doc_tipo or 'Doc.'}:", _ST_LABEL), _p(_doc, _ST_INFO)])
+    cliente_data += [
         [_p("Teléfono:",  _ST_LABEL), _p(venta.cliente_telefono or "-", _ST_INFO)],
         [_p("Vehículo:",  _ST_LABEL), _p(f"{venta.vehiculo_patente or '-'} {venta.vehiculo_modelo or ''}" + (f" | {venta.kilometraje:,} km" if venta.kilometraje else ""), _ST_VALUE)],
         [_p("Fecha:",     _ST_LABEL), _p(venta.fecha_creacion.strftime("%d/%m/%Y %H:%M") if venta.fecha_creacion else "-", _ST_INFO)],

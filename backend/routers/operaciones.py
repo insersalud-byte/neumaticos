@@ -486,6 +486,7 @@ def buscar_cliente_completo(q: str = "", db: Session = Depends(get_db)):
         or_(
             Cliente.nombre.ilike(f"%{q}%"),
             Cliente.telefono.ilike(f"%{q}%"),
+            Cliente.dni_cuit.ilike(f"%{q.replace('-', '').strip()}%"),
         )
     ).limit(10).all()
 
@@ -500,6 +501,7 @@ def buscar_cliente_completo(q: str = "", db: Session = Depends(get_db)):
                         "cliente_id": c.id,
                         "cliente_nombre": c.nombre or "",
                         "cliente_telefono": c.telefono or "",
+                        "cliente_dni_cuit": c.dni_cuit or "",
                         "vehiculo_id": v.id,
                         "patente": v.patente or "",
                         "modelo": v.modelo or "",
@@ -513,6 +515,7 @@ def buscar_cliente_completo(q: str = "", db: Session = Depends(get_db)):
                     "cliente_id": c.id,
                     "cliente_nombre": c.nombre or "",
                     "cliente_telefono": c.telefono or "",
+                    "cliente_dni_cuit": c.dni_cuit or "",
                     "vehiculo_id": None,
                     "patente": "",
                     "modelo": "",
@@ -537,6 +540,7 @@ def buscar_cliente_completo(q: str = "", db: Session = Depends(get_db)):
                             "cliente_id": c.id,
                             "cliente_nombre": c.nombre or "",
                             "cliente_telefono": c.telefono or "",
+                            "cliente_dni_cuit": c.dni_cuit or "",
                             "vehiculo_id": tv.id,
                             "patente": tv.patente or "",
                             "modelo": tv.modelo or "",
@@ -625,6 +629,35 @@ def convertir_cotizacion(cot_id: int, db: Session = Depends(get_db)):
     }
 
 
+def _doc_desde_payload(data: dict):
+    doc_tipo = (data.get("cliente_doc_tipo") or "").strip().upper()
+    if doc_tipo not in ("DNI", "CUIT", "CUIL"):
+        doc_tipo = ""
+    doc_num = "".join(ch for ch in str(data.get("cliente_doc") or "") if ch.isdigit())
+    return doc_tipo, doc_num
+
+
+def _buscar_cliente_por_documento(db: Session, data: dict):
+    """Si no vino cliente_id pero sí documento, reutiliza el cliente con ese DNI/CUIT."""
+    _, doc_num = _doc_desde_payload(data)
+    if len(doc_num) < 6:
+        return None
+    c = db.query(Cliente).filter(Cliente.dni_cuit == doc_num).first()
+    return c.id if c else None
+
+
+def _guardar_documento_cliente(db: Session, data: dict, cliente_id):
+    """Guarda el DNI/CUIT/CUIL en el cliente. Devuelve (tipo, numero) para el snapshot."""
+    doc_tipo, doc_num = _doc_desde_payload(data)
+    if doc_num and cliente_id:
+        c = db.query(Cliente).filter(Cliente.id == cliente_id).first()
+        if c:
+            c.dni_cuit = doc_num
+            if doc_tipo == "CUIT" and doc_num[:2] in ("30", "33", "34"):
+                c.tipo_cliente = "empresa"
+    return doc_tipo, doc_num
+
+
 @router.post("/venta-mostrador")
 def venta_mostrador(data: dict, db: Session = Depends(get_db)):
     items = data.get("items", [])
@@ -647,7 +680,10 @@ def venta_mostrador(data: dict, db: Session = Depends(get_db)):
     cliente_id = data.get("cliente_id")
     cliente_nombre = data.get("cliente_nombre", "").strip()
     cliente_telefono = data.get("cliente_telefono", "").strip()
-    
+
+    if not cliente_id:
+        cliente_id = _buscar_cliente_por_documento(db, data)
+
     if not cliente_id:
         if cliente_nombre:
             # Buscar por nombre (case-insensitive)
@@ -676,6 +712,9 @@ def venta_mostrador(data: dict, db: Session = Depends(get_db)):
                 db.add(cliente)
                 db.flush()
             cliente_id = cliente.id
+
+    # Documento del cliente (DNI / CUIT / CUIL)
+    doc_tipo, doc_num = _guardar_documento_cliente(db, data, cliente_id)
 
     # Buscar o crear vehículo
     vehiculo_id = data.get("vehiculo_id")
@@ -729,11 +768,11 @@ def venta_mostrador(data: dict, db: Session = Depends(get_db)):
             venta.monto_debe = debe
             venta.enviar_a_taller = data.get("enviar_a_taller", False)
             venta.observaciones = data.get("observaciones", "")
-            venta.datos_cliente_snapshot = json.dumps({"nombre": cliente_nombre, "telefono": cliente_telefono})
+            venta.datos_cliente_snapshot = json.dumps({"nombre": cliente_nombre, "telefono": cliente_telefono, "doc_tipo": doc_tipo, "doc": doc_num})
             db.commit()
             return {"venta_id": venta.id, "cliente_id": cliente_id, "vehiculo_id": vehiculo_id}
 
-    snapshot = json.dumps({"nombre": cliente_nombre, "telefono": cliente_telefono})
+    snapshot = json.dumps({"nombre": cliente_nombre, "telefono": cliente_telefono, "doc_tipo": doc_tipo, "doc": doc_num})
     venta = Venta(
         cliente_id=cliente_id,
         cliente_nombre=cliente_nombre,
@@ -831,7 +870,10 @@ def crear_operacion(data: dict, db: Session = Depends(get_db)):
     cliente_id = data.get("cliente_id")
     cliente_nombre = data.get("cliente_nombre", "").strip()
     cliente_telefono = data.get("cliente_telefono", "").strip()
-    
+
+    if not cliente_id:
+        cliente_id = _buscar_cliente_por_documento(db, data)
+
     if not cliente_id:
         if cliente_nombre:
             cliente = db.query(Cliente).filter(func.lower(Cliente.nombre) == func.lower(cliente_nombre)).first()
@@ -856,6 +898,9 @@ def crear_operacion(data: dict, db: Session = Depends(get_db)):
                 db.flush()
             cliente_id = cliente.id
 
+    # Documento del cliente (DNI / CUIT / CUIL)
+    doc_tipo, doc_num = _guardar_documento_cliente(db, data, cliente_id)
+
     vehiculo_id = data.get("vehiculo_id")
     patente = data.get("patente", "").strip().upper()
     modelo = data.get("modelo_vehiculo", "").strip()
@@ -877,7 +922,7 @@ def crear_operacion(data: dict, db: Session = Depends(get_db)):
             vehiculo.activo = True
         vehiculo_id = vehiculo.id
 
-    snapshot = json.dumps({"nombre": cliente_nombre, "telefono": cliente_telefono})
+    snapshot = json.dumps({"nombre": cliente_nombre, "telefono": cliente_telefono, "doc_tipo": doc_tipo, "doc": doc_num})
     venta = Venta(
         cliente_id=cliente_id,
         cliente_nombre=cliente_nombre,
