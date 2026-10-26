@@ -19,6 +19,43 @@
         .custom-scrollbar::-webkit-scrollbar-track{background:transparent}
         .custom-scrollbar::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
         .glass-header{background:rgba(5,5,5,0.95);backdrop-filter:blur(20px);border-bottom:1px solid #1f1f22}
+        /* ===== MOBILE ===== */
+        .flt-btn.on{outline:2px solid #fff3;}
+        @media (max-width:767px){
+            input,select,textarea{font-size:16px!important}
+            .cc-desc{display:none}
+            .cc-hbtns{display:grid!important;grid-template-columns:1fr 1fr;gap:8px!important}
+            .cc-hbtns > button{padding:12px 8px!important;font-size:13px!important}
+            .cc-hbtns > button.cc-import{grid-column:1 / -1;font-size:11px!important;padding:9px!important}
+            .cc-filtros{display:grid!important;grid-template-columns:1fr 1fr 1fr;gap:8px!important}
+            .cc-filtros > button{padding:11px 4px!important;font-size:11px!important}
+            .cc-table thead{display:none}
+            .cc-table,.cc-table tbody{display:block}
+            .cc-table tr{display:grid!important;grid-template-columns:1fr auto;gap:2px 12px;padding:14px 16px}
+            .cc-table tr[style*="none"]{display:none!important}
+            .cc-table td{display:block;padding:0!important}
+            .cc-table td[colspan]{grid-column:1 / -1;padding:24px 0!important}
+            .cc-table td.cc-name{grid-column:1;font-size:15px;line-height:1.3}
+            .cc-table td.cc-saldo{grid-column:2;grid-row:1 / span 2;align-self:center;font-size:17px;text-align:right}
+            .cc-table td.cc-tel,.cc-table td.cc-cuit{grid-column:1;font-size:12px}
+            .cc-table td.cc-tel:empty,.cc-table td.cc-cuit:empty{display:none}
+            .cc-table td.cc-acc{grid-column:1 / -1;margin-top:10px}
+            .cc-table td.cc-acc > div{display:grid!important;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px}
+            .cc-table td.cc-acc a,.cc-table td.cc-acc button{padding:11px 0!important;font-size:12px!important;text-align:center;border-radius:10px!important}
+            .cc-modal{padding:0!important;align-items:flex-end!important}
+            .cc-modal-inner{max-width:100%!important;width:100%!important;border-radius:18px 18px 0 0!important;max-height:94dvh!important;display:flex!important;flex-direction:column;border-left:0!important;border-right:0!important;border-bottom:0!important}
+            .cc-modal-head{padding:14px 16px!important;flex-shrink:0}
+            .cc-modal-head h3{font-size:17px!important}
+            .cc-modal-body{max-height:none!important;flex:1;overflow-y:auto;padding:14px!important;-webkit-overflow-scrolling:touch}
+            .cc-modal-body .overflow-y-auto{max-height:none!important;overflow:visible!important}
+            .cc-modal-body .imputar-input{width:7.5rem!important;padding:9px!important}
+            .cc-acciones{display:grid!important;grid-template-columns:1fr 1fr;gap:8px!important}
+            .cc-acciones > *{padding:12px 0!important;font-size:13px!important;border-radius:10px!important}
+            .cc-modal-body button[id^="btnProcesar"],.cc-modal-body button[onclick^="procesarPago"]{padding:14px!important;font-size:15px!important}
+            .cc-modal-foot{flex-direction:column;gap:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom))!important}
+            .cc-modal-foot > *{width:100%;text-align:center;padding:12px!important}
+            .cc-hist-saldo p:last-child{font-size:16px!important}
+        }
     </style>
 </head>
 <body class="bg-black text-white flex h-screen overflow-hidden">
@@ -63,19 +100,19 @@
     <main class="flex-1 overflow-x-hidden overflow-y-auto bg-black p-4 md:p-8 pb-24 md:pb-8 relative custom-scrollbar">
         <div class="max-w-7xl mx-auto pb-20 md:pb-0">
 
-            <div class="bg-[#18181b] border border-[#27272a] p-5 md:p-6 rounded-2xl shadow-2xl mb-6 md:mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div class="bg-[#18181b] border border-[#27272a] p-4 md:p-6 rounded-2xl shadow-2xl mb-4 md:mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 md:gap-6">
                 <div class="w-full lg:w-auto">
                     <h2 class="text-2xl md:text-3xl font-black text-white italic tracking-tighter">CUENTAS CORRIENTES</h2>
-                    <p class="text-gray-500 text-sm mt-1">Gestión de créditos, saldos deudores y remitos.</p>
+                    <p class="cc-desc text-gray-500 text-sm mt-1">Gestión de créditos, saldos deudores y remitos.</p>
                 </div>
-                <div class="w-full lg:w-auto flex gap-3 flex-wrap">
+                <div class="cc-hbtns w-full lg:w-auto flex gap-3 flex-wrap">
                     <button id="tabBtnClientes" onclick="switchTab('clientes')" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-5 rounded-lg transition text-xs md:text-sm">
                         <i class="fas fa-users mr-1"></i> CLIENTES
                     </button>
                     <button id="tabBtnProveedores" onclick="switchTab('proveedores')" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 px-5 rounded-lg transition text-xs md:text-sm">
                         <i class="fas fa-truck mr-1"></i> PROVEEDORES
                     </button>
-                    <button onclick="importarContactosExcel()" style="background:#164e63;color:#67e8f9;font-weight:700;padding:10px 20px;border-radius:8px;font-size:12px;border:none;cursor:pointer;transition:background .2s" onmouseover="this.style.background='#155e75'" onmouseout="this.style.background='#164e63'">
+                    <button class="cc-import" onclick="importarContactosExcel()" style="background:#164e63;color:#67e8f9;font-weight:700;padding:10px 20px;border-radius:8px;font-size:12px;border:none;cursor:pointer;transition:background .2s" onmouseover="this.style.background='#155e75'" onmouseout="this.style.background='#164e63'">
                         <i class="fas fa-file-excel mr-1"></i> IMPORTAR CONTACTOS
                     </button>
                 </div>
@@ -83,20 +120,21 @@
 
             <!-- TAB CLIENTES -->
             <div id="tabClientes">
-                <div class="flex gap-3 mb-4 flex-wrap">
-                    <button onclick="cargarClientes(false)" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition text-xs">VER TODOS</button>
-                    <button onclick="cargarClientes(true)" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition text-xs">SOLO DEUDORES</button>
+                <div class="cc-filtros flex gap-3 mb-4 flex-wrap">
+                    <button id="fltTodos" onclick="cargarClientes(false)" class="flt-btn bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition text-xs">VER TODOS</button>
+                    <button id="fltDeud" onclick="cargarClientes(true)" class="flt-btn on bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition text-xs">SOLO DEUDORES</button>
                     <button onclick="abrirFormCliente(null)" style="background:#14532d;color:#86efac;font-weight:700;padding:8px 16px;border-radius:8px;font-size:12px;border:none;cursor:pointer" onmouseover="this.style.background='#166534'" onmouseout="this.style.background='#14532d'">
-                        <i class="fas fa-user-plus mr-1"></i> NUEVO CLIENTE
+                        <i class="fas fa-user-plus mr-1"></i> NUEVO
                     </button>
                 </div>
                 <div class="bg-[#18181b] border border-[#27272a] rounded-2xl overflow-hidden shadow-xl">
                     <div class="p-4">
                         <input id="buscar-cliente" type="text" placeholder="Buscar cliente por nombre..." oninput="filtrarTablaClientes()"
                             class="w-full bg-[#09090b] border border-[#27272a] text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-red-500 transition placeholder-gray-600">
+                        <p id="resumen-clientes" class="text-xs text-gray-500 mt-2"></p>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
+                        <table class="cc-table w-full text-sm">
                             <thead class="bg-[#222] border-b border-gray-800">
                                 <tr>
                                     <th class="px-6 py-4 text-left text-gray-400 font-semibold uppercase text-xs">Cliente</th>
@@ -143,7 +181,7 @@
                             class="w-full bg-[#09090b] border border-[#27272a] text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500 transition placeholder-gray-600">
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
+                        <table class="cc-table w-full text-sm">
                             <thead class="bg-[#222] border-b border-gray-800">
                                 <tr>
                                     <th class="px-6 py-4 text-left text-gray-400 font-semibold uppercase text-xs">Proveedor</th>
@@ -166,10 +204,10 @@
 </div>
 
 <!-- MODAL DETALLE CLIENTE -->
-<div id="modalCtaCte" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
-    <div id="modalInner" class="bg-[#18181b] border border-gray-700 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300">
+<div id="modalCtaCte" class="cc-modal fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
+    <div id="modalInner" class="cc-modal-inner bg-[#18181b] border border-gray-700 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300">
 
-        <div class="bg-[#222] border-b border-gray-800 p-5 flex justify-between items-center">
+        <div class="cc-modal-head bg-[#222] border-b border-gray-800 p-5 flex justify-between items-center">
             <div>
                 <h3 class="text-xl font-bold text-white" id="modalNombre">Cliente</h3>
                 <p class="text-gray-400 text-xs" id="modalTel">Tel: ---</p>
@@ -177,7 +215,7 @@
             <button onclick="cerrarModalCtaCte()" class="text-gray-500 hover:text-white text-xl"><i class="fas fa-times"></i></button>
         </div>
 
-        <div class="p-5 grid grid-cols-1 lg:grid-cols-2 gap-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
+        <div class="cc-modal-body p-5 grid grid-cols-1 lg:grid-cols-2 gap-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
 
             <div class="space-y-4">
                 <div class="bg-[#222] rounded-xl p-4 border border-gray-800">
@@ -243,7 +281,7 @@
                     </button>
                 </div>
 
-                <div class="flex gap-2">
+                <div class="cc-acciones flex gap-2">
                     <a id="linkPDF" href="#" target="_blank"
                         class="flex-1 text-center text-red-500 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded text-xs font-bold transition">
                         <i class="fas fa-file-pdf mr-1"></i> PDF
@@ -272,10 +310,10 @@
 </div>
 
 <!-- MODAL DETALLE PROVEEDOR -->
-<div id="modalProv" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
-    <div id="modalProvInner" class="bg-[#18181b] border border-gray-700 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300">
+<div id="modalProv" class="cc-modal fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
+    <div id="modalProvInner" class="cc-modal-inner bg-[#18181b] border border-gray-700 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300">
 
-        <div class="bg-[#222] border-b border-gray-800 p-5 flex justify-between items-center">
+        <div class="cc-modal-head bg-[#222] border-b border-gray-800 p-5 flex justify-between items-center">
             <div>
                 <h3 class="text-xl font-bold text-white" id="provModalNombre">Proveedor</h3>
                 <p class="text-gray-400 text-xs" id="provModalCuit">CUIT: ---</p>
@@ -283,7 +321,7 @@
             <button onclick="cerrarModalProv()" class="text-gray-500 hover:text-white text-xl"><i class="fas fa-times"></i></button>
         </div>
 
-        <div class="p-5 grid grid-cols-1 lg:grid-cols-2 gap-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
+        <div class="cc-modal-body p-5 grid grid-cols-1 lg:grid-cols-2 gap-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
 
             <div class="space-y-4">
                 <div class="bg-[#222] rounded-xl p-4 border border-gray-800">
@@ -354,11 +392,11 @@
 </div>
 
 <!-- MODAL HISTORIAL CLIENTE -->
-<div id="modalHistorial" class="fixed inset-0 bg-black/85 hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
-    <div id="modalHistorialInner" class="bg-[#18181b] border border-gray-700 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]">
+<div id="modalHistorial" class="cc-modal fixed inset-0 bg-black/85 hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
+    <div id="modalHistorialInner" class="cc-modal-inner bg-[#18181b] border border-gray-700 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]">
 
         <!-- Header -->
-        <div class="bg-[#222] border-b border-gray-800 p-5 flex justify-between items-center flex-shrink-0">
+        <div class="cc-modal-head bg-[#222] border-b border-gray-800 p-5 flex justify-between items-center flex-shrink-0">
             <div>
                 <h3 class="text-xl font-bold text-white flex items-center gap-2">
                     <i class="fas fa-history text-purple-400"></i>
@@ -367,7 +405,7 @@
                 <p class="text-gray-400 text-xs mt-0.5" id="histTel">Tel: ---</p>
             </div>
             <div class="flex items-center gap-3">
-                <div class="text-right">
+                <div class="cc-hist-saldo text-right">
                     <p class="text-[10px] text-gray-500 uppercase">Saldo deudor</p>
                     <p id="histSaldo" class="text-xl font-black text-red-400">...</p>
                 </div>
@@ -376,7 +414,7 @@
         </div>
 
         <!-- Body -->
-        <div class="p-5 grid grid-cols-1 lg:grid-cols-2 gap-5 overflow-y-auto custom-scrollbar flex-1">
+        <div class="cc-modal-body p-5 grid grid-cols-1 lg:grid-cols-2 gap-5 overflow-y-auto custom-scrollbar flex-1">
 
             <!-- Facturas adeudadas -->
             <div>
@@ -400,7 +438,7 @@
         </div>
 
         <!-- Footer -->
-        <div class="bg-[#111] border-t border-gray-800 p-4 flex justify-between items-center flex-shrink-0">
+        <div class="cc-modal-foot bg-[#111] border-t border-gray-800 p-4 flex justify-between items-center flex-shrink-0">
             <a id="histBtnPDF" href="#" target="_blank"
                class="text-red-500 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 px-4 py-2 rounded-lg text-sm font-bold transition">
                 <i class="fas fa-file-pdf mr-1"></i> PDF Resumen
@@ -429,27 +467,34 @@
             if (!res.ok) throw new Error('Error cargando clientes');
             const data = await res.json();
             const clientes = data.data || data || [];
+            document.getElementById('fltTodos')?.classList.toggle('on', !soloDeudores);
+            document.getElementById('fltDeud')?.classList.toggle('on', !!soloDeudores);
+            const _deud = clientes.filter(c => (c.saldo_deudor || 0) > 0);
+            const _tot = _deud.reduce((s, c) => s + (c.saldo_deudor || 0), 0);
+            const _res = document.getElementById('resumen-clientes');
+            if (_res) _res.innerHTML = `${clientes.length} cliente${clientes.length === 1 ? '' : 's'} · <span class="text-gray-400">${_deud.length} con deuda</span> · Total adeudado <strong class="text-red-400 font-mono">${currency.format(_tot)}</strong>`;
 
             tbody.innerHTML = '';
             if (!clientes.length) {
                 tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500 italic">No hay clientes en esta vista.</td></tr>`;
                 return;
             }
+            let html = '';
             clientes.forEach(c => {
                 const saldoClass = c.saldo_deudor > 0 ? 'text-red-400' : 'text-green-400';
                 const tipoLabel = c.tipo_cliente === 'empresa'
                     ? `<span style="background:#1e3a5f;color:#93c5fd;font-size:10px;padding:1px 6px;border-radius:4px;font-weight:700">EMPRESA</span>`
                     : `<span style="background:#14532d;color:#86efac;font-size:10px;padding:1px 6px;border-radius:4px;font-weight:700">PERSONA</span>`;
-                tbody.innerHTML += `
+                html += `
                 <tr class="hover:bg-white/5 transition cursor-pointer" onclick="abrirDetalle(${c.id})">
-                    <td class="px-6 py-4 font-semibold text-white">${c.nombre || ''} ${tipoLabel}<br><span class="text-[10px] text-gray-500 font-mono">${c.dni_cuit || ''}</span></td>
-                    <td class="px-6 py-4 text-gray-400 text-sm">${c.telefono || '-'}</td>
-                    <td class="px-6 py-4 text-right font-bold font-mono ${saldoClass}">${currency.format(c.saldo_deudor || 0)}</td>
-                    <td class="px-6 py-4 text-center">
+                    <td class="cc-name px-6 py-4 font-semibold text-white">${c.nombre || ''} ${tipoLabel}<br><span class="text-[10px] text-gray-500 font-mono">${c.dni_cuit || ''}</span></td>
+                    <td class="cc-tel px-6 py-4 text-gray-400 text-sm">${c.telefono ? '<span class="md:hidden"><i class="fas fa-phone text-[10px] mr-1"></i></span>'+c.telefono : '<span class="hidden md:inline">-</span>'}</td>
+                    <td class="cc-saldo px-6 py-4 text-right font-bold font-mono ${saldoClass}">${currency.format(c.saldo_deudor || 0)}</td>
+                    <td class="cc-acc px-6 py-4 text-center">
                         <div class="flex justify-center gap-2">
-                            <a href="/api/v1/reportes/resumen-cuenta/${c.id}" target="_blank"
+                            <a href="/api/v1/reportes/resumen-cuenta/${c.id}" onclick="event.stopPropagation()" target="_blank"
                                 class="text-red-500 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded text-xs font-bold transition" title="PDF">
-                                <i class="fas fa-file-pdf"></i>
+                                <i class="fas fa-file-pdf"></i><span class="md:hidden ml-1">PDF</span>
                             </a>
                             <button onclick="event.stopPropagation();abrirDetalle(${c.id})"
                                 class="bg-[#222] hover:bg-cyan-900 text-cyan-400 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition">
@@ -461,12 +506,13 @@
                             </button>
                             <button onclick="event.stopPropagation();abrirFormClienteById(${c.id})"
                                 class="bg-[#222] hover:bg-yellow-900 text-yellow-400 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition">
-                                <i class="fas fa-edit"></i>
+                                <i class="fas fa-edit"></i><span class="md:hidden ml-1">Editar</span>
                             </button>
                         </div>
                     </td>
                 </tr>`;
             });
+            tbody.innerHTML = html;
         } catch (e) {
             tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-red-500">Error al cargar clientes.</td></tr>`;
         }
@@ -864,15 +910,16 @@
             tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 italic">No hay proveedores en esta vista.</td></tr>`;
             return;
         }
+        let html = '';
         lista.forEach(p => {
             const deudaClass = p.saldo_deudor > 0 ? 'text-orange-400' : 'text-green-400';
-            tbody.innerHTML += `
+            html += `
             <tr class="hover:bg-white/5 transition cursor-pointer" onclick="abrirDetalleProv(${p.id})">
-                <td class="px-6 py-4 font-semibold text-white">${p.nombre || ''}</td>
-                <td class="px-6 py-4 text-gray-400 text-sm">${p.cuit || '-'}</td>
-                <td class="px-6 py-4 text-gray-400 text-sm">${p.telefono || '-'}</td>
-                <td class="px-6 py-4 text-right font-bold font-mono ${deudaClass}">${currency.format(p.saldo_deudor || 0)}</td>
-                <td class="px-6 py-4 text-center">
+                <td class="cc-name px-6 py-4 font-semibold text-white">${p.nombre || ''}</td>
+                <td class="cc-cuit px-6 py-4 text-gray-400 text-sm">${p.cuit ? '<span class="md:hidden">CUIT </span>'+p.cuit : '<span class="hidden md:inline">-</span>'}</td>
+                <td class="cc-tel px-6 py-4 text-gray-400 text-sm">${p.telefono ? '<span class="md:hidden"><i class="fas fa-phone text-[10px] mr-1"></i></span>'+p.telefono : '<span class="hidden md:inline">-</span>'}</td>
+                <td class="cc-saldo px-6 py-4 text-right font-bold font-mono ${deudaClass}">${currency.format(p.saldo_deudor || 0)}</td>
+                <td class="cc-acc px-6 py-4 text-center">
                     <div class="flex justify-center gap-2">
                         <button onclick="event.stopPropagation();abrirDetalleProv(${p.id})"
                             class="bg-[#222] hover:bg-orange-900 text-orange-400 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition">
@@ -880,12 +927,13 @@
                         </button>
                         <button onclick="event.stopPropagation();abrirFormProveedorById(${p.id})"
                             class="bg-[#222] hover:bg-yellow-900 text-yellow-400 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition">
-                            <i class="fas fa-edit"></i>
+                            <i class="fas fa-edit"></i><span class="md:hidden ml-1">Editar</span>
                         </button>
                     </div>
                 </td>
             </tr>`;
         });
+        tbody.innerHTML = html;
     }
 
     function filtrarTablaProveedores() {
