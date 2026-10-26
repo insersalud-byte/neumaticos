@@ -62,6 +62,40 @@
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+    #posBarraMovil { display: none; }
+
+    /* ===== CELULAR ===== */
+    @media (max-width: 767px) {
+      body { overflow-x: hidden; }
+      .input-dark, select, textarea { font-size: 16px !important; }
+      main.pos-main { overflow: visible; min-width: 0; }
+      .pos-header { padding: 0 12px !important; height: 52px; position: sticky; top: 0; z-index: 30; }
+      .pos-header .btn-ghost { padding: 8px 10px !important; }
+      .pos-header .lbl-desk { display: none; }
+      .pos-header .titulo-pv { display: none; }
+      .pos-grid { flex-direction: column; overflow: visible !important; }
+      .pos-left { overflow: visible !important; padding: 12px !important; gap: 12px !important; }
+      .pos-right { width: 100% !important; border-left: 0 !important; border-top: 1px solid #1f1f22; padding-bottom: 84px; scroll-margin-top: 56px; }
+      .pos-right > div { padding: 16px !important; }
+      .pos-right button { padding-top: 13px !important; padding-bottom: 13px !important; }
+      .card { border-radius: 14px; }
+      #carritoBody .carrito-row.flex { flex-wrap: wrap; row-gap: 8px; }
+      #carritoBody .carrito-row.flex > div:first-child { flex-basis: 100%; }
+      #carritoBody .carrito-row.flex > span.w-24 { margin-left: auto; }
+      #carritoBody .carrito-row button { min-width: 34px; min-height: 34px; font-size: 14px; }
+      #carritoBody .carrito-row p.truncate { white-space: normal; }
+      #itemLibreBox .grid-cols-12 > div:first-child { grid-column: span 12 / span 12; }
+      #itemLibreBox .grid-cols-12 > div:nth-child(2) { grid-column: span 3 / span 3; }
+      #itemLibreBox .grid-cols-12 > div:nth-child(3) { grid-column: span 6 / span 6; }
+      #itemLibreBox .grid-cols-12 > div:nth-child(4) { grid-column: span 3 / span 3; }
+      #posBarraMovil {
+        display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+        align-items: center; gap: 12px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+        background: rgba(5,5,5,.97); border-top: 1px solid #27272a; backdrop-filter: blur(10px);
+      }
+      #modalCots > div, #modalEditCot > div { max-height: 92vh; }
+      #sidebarOverlay.on { display: block; }
+    }
   </style>
 </head>
 <body class="bg-[#000000] text-white min-h-screen flex">
@@ -77,7 +111,7 @@
         </div>
         <span class="text-yellow-400 font-black">TALLEROS</span>
       </h1>
-      <button class="md:hidden text-gray-500 hover:text-white" onclick="document.getElementById('sidebar').classList.add('-translate-x-full')">
+      <button class="md:hidden text-gray-500 hover:text-white" onclick="cerrarMenuPOS()">
         <i class="fas fa-times"></i>
       </button>
     </div>
@@ -161,32 +195,32 @@
   </aside>
 
   <!-- MAIN -->
-  <main class="flex-1 flex flex-col min-h-screen overflow-hidden">
+  <main class="pos-main flex-1 flex flex-col min-h-screen overflow-hidden">
 
     <!-- TOP BAR -->
-    <header class="h-14 bg-[#050505] border-b border-[#1f1f22] flex items-center justify-between px-6 flex-shrink-0">
+    <header class="pos-header h-14 bg-[#050505] border-b border-[#1f1f22] flex items-center justify-between px-6 flex-shrink-0">
       <div class="flex items-center gap-3">
-        <button class="md:hidden text-gray-500 hover:text-white mr-2" onclick="document.getElementById('sidebar').classList.remove('-translate-x-full')">
+        <button class="md:hidden text-gray-400 hover:text-white mr-1 text-lg" onclick="abrirMenuPOS()">
           <i class="fas fa-bars"></i>
         </button>
-        <span class="text-xs text-gray-600 uppercase tracking-widest font-bold">Punto de Venta</span>
+        <span class="titulo-pv text-xs text-gray-600 uppercase tracking-widest font-bold">Punto de Venta</span>
         <span class="badge-red">MOSTRADOR</span>
       </div>
       <div class="flex items-center gap-3">
         <button onclick="abrirCotizaciones()" class="btn-ghost text-xs py-2 px-3">
-          <i class="fas fa-clock mr-1 text-yellow-500"></i> Cotizaciones
+          <i class="fas fa-clock mr-1 text-yellow-500"></i> <span class="lbl-desk">Cotizaciones</span><span class="md:hidden">Cotiz.</span>
         </button>
         <button onclick="nuevaVenta()" class="btn-ghost text-xs py-2 px-3">
-          <i class="fas fa-plus mr-1"></i> Nueva Venta
+          <i class="fas fa-plus mr-1"></i> <span class="lbl-desk">Nueva Venta</span><span class="md:hidden">Nueva</span>
         </button>
       </div>
     </header>
 
     <!-- CONTENT GRID -->
-    <div class="flex-1 flex overflow-hidden">
+    <div class="pos-grid flex-1 flex overflow-hidden">
 
       <!-- LEFT: CLIENTE + BUSQUEDA + CARRITO -->
-      <div class="flex-1 flex flex-col p-5 gap-4 overflow-y-auto">
+      <div class="pos-left flex-1 flex flex-col p-5 gap-4 overflow-y-auto">
 
         <!-- Cliente / Vehículo -->
         <div class="card p-4">
@@ -314,7 +348,7 @@
       </div>
 
       <!-- RIGHT: TOTALES + PAGO -->
-      <div class="w-80 flex-shrink-0 border-l border-[#1f1f22] flex flex-col bg-[#050505]">
+      <div id="posPanelPago" class="pos-right w-80 flex-shrink-0 border-l border-[#1f1f22] flex flex-col bg-[#050505]">
 
         <!-- Totales -->
         <div class="p-5 border-b border-[#1f1f22]">
@@ -410,6 +444,18 @@
       </div>
     </div>
   </main>
+
+  <!-- Celular: overlay del menú y barra inferior con total -->
+  <div id="sidebarOverlay" class="hidden fixed inset-0 bg-black/60" style="z-index:45" onclick="cerrarMenuPOS()"></div>
+  <div id="posBarraMovil">
+    <div class="flex-1 min-w-0">
+      <p class="text-[10px] text-gray-500 uppercase tracking-widest font-bold"><span id="movCount">0 items</span></p>
+      <p id="movTotal" class="mono text-xl font-black text-red-500 leading-tight">$0</p>
+    </div>
+    <button onclick="irAPagoPOS()" class="btn-red" style="padding:13px 22px;font-size:14px">
+      <i class="fas fa-cash-register mr-1"></i> Cobrar
+    </button>
+  </div>
 
   <!-- MODAL: Cotizaciones pendientes -->
   <div id="modalCots" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
@@ -1376,6 +1422,29 @@
         if (el && !el.closest('div')?.contains(e.target)) el.classList.add('hidden');
       });
     });
+
+    // ─── CELULAR: menú, barra de total y pago ─────────────
+    function abrirMenuPOS() {
+      document.getElementById('sidebar').classList.remove('-translate-x-full');
+      document.getElementById('sidebarOverlay').classList.add('on');
+    }
+    function cerrarMenuPOS() {
+      document.getElementById('sidebar').classList.add('-translate-x-full');
+      document.getElementById('sidebarOverlay').classList.remove('on');
+    }
+    function irAPagoPOS() {
+      document.getElementById('posPanelPago').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    (function sincronizarBarraMovil() {
+      const tot = document.getElementById('lblTotal'), cnt = document.getElementById('carritoCount');
+      const sync = () => {
+        document.getElementById('movTotal').textContent = tot.textContent;
+        document.getElementById('movCount').textContent = cnt.textContent;
+      };
+      new MutationObserver(sync).observe(tot, { childList: true, characterData: true, subtree: true });
+      new MutationObserver(sync).observe(cnt, { childList: true, characterData: true, subtree: true });
+      sync();
+    })();
 
     // ─── INIT ─────────────────────────────────────────────
     cargarPlanes();
